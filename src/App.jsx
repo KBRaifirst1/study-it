@@ -115,7 +115,7 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.13.0";
+const APP_VERSION = "1.14.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
@@ -2132,7 +2132,7 @@ function AppInner() {
     return () => { window.removeEventListener("error", onErr); window.removeEventListener("unhandledrejection", onRej); };
   }, []);
 
-  const submitFeedback = () => {
+  const submitFeedback = async () => {
     const d = feedbackDraft;
     if (!d.text.trim() && d.rating === null) { showToast("Add a rating or a message"); return; }
     const entry = {
@@ -2142,9 +2142,41 @@ function AppInner() {
     setFeedbackLog((l) => [entry, ...l].slice(0, 200));
     setFeedbackDraft({ rating: null, category: "Suggestion", text: "", includeContext: true });
     setShowFeedback(false);
-    if (ownerEmail) { sendFeedbackByEmail(entry); showToast(`Saved + opened email to ${ownerEmail}`); }
-    else { showToast("Thanks — feedback saved locally"); }
-    track("action", "feedback_submitted");
+
+    // Write to Supabase feedback table when connected. The table is owner-readable only (RLS).
+    // Anonymous inserts allowed so even non-signed-in users can submit. The deployer reads from
+    // their Supabase dashboard → Table Editor → feedback.
+    let supabaseWrote = false;
+    if (supabase) {
+      try {
+        const payload = {
+          user_email: user?.email || null,
+          rating: d.rating === 1 ? "positive" : d.rating === -1 ? "negative" : d.rating === 0 ? "neutral" : null,
+          category: d.category,
+          message: d.text.trim() || null,
+          context: entry.context,
+          app_version: APP_VERSION,
+          user_agent: navigator.userAgent.slice(0, 200),
+        };
+        const { error } = await supabase.from("feedback").insert(payload);
+        if (error) {
+          logError(error, "feedback insert");
+        } else {
+          supabaseWrote = true;
+        }
+      } catch (e) {
+        logError(e, "feedback supabase write");
+      }
+    }
+
+    if (supabaseWrote) {
+      showToast("Thanks — feedback sent");
+    } else if (ownerEmail) {
+      sendFeedbackByEmail(entry); showToast(`Saved + opened email to ${ownerEmail}`);
+    } else {
+      showToast("Thanks — feedback saved locally (no Supabase connection)");
+    }
+    track("action", "feedback_submitted", { sent_to_supabase: supabaseWrote });
   };
 
   const rateGeneration = (verdict) => {
@@ -8309,23 +8341,11 @@ Deno.serve(async (req) => {
         .topic-field:focus { border-bottom-color: ${C.accent} !important; box-shadow: 0 1px 0 ${C.accent} !important; }
         .chip-btn:hover { border-color: ${C.ink} !important; color: ${C.ink} !important; background: ${C.paper} !important; transform: translateY(-1px); box-shadow: 0 2px 6px -3px rgba(0,0,0,0.15); }
         .chip-btn:active { transform: translateY(0); }
-        .fab-feedback:hover { transform: scale(1.05); box-shadow: 0 12px 28px -8px rgba(0,0,0,0.5) !important; }
-        .fab-feedback { transition: transform 0.18s cubic-bezier(0.2,0.7,0.2,1), box-shadow 0.18s; }
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
         }
       `}</style>
       <div className="grain" aria-hidden="true" />
-
-      {/* Floating Feedback FAB */}
-      <button onClick={() => setShowFeedback(true)} title={ownerEmail ? `Send feedback to ${ownerEmail}` : "Send feedback"} aria-label="Send feedback" className="fab-feedback" style={{
-        position: "fixed", bottom: 22, right: 22, zIndex: 150,
-        width: 48, height: 48, borderRadius: "50%", background: C.ink, color: C.paper, border: "none",
-        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-        boxShadow: `0 8px 22px -6px rgba(0,0,0,0.4)`,
-      }}>
-        <MessageCircle size={19} />
-      </button>
 
       {/* Command Palette (⌘K) */}
       {showCommandPalette && (() => {
@@ -8596,9 +8616,14 @@ Deno.serve(async (req) => {
               <input type="checkbox" checked={feedbackDraft.includeContext} onChange={(e) => setFeedbackDraft({ ...feedbackDraft, includeContext: e.target.checked })} />
               Include current view, topic, and recent errors (helps debug)
             </label>
+            <div style={{ padding: "8px 12px", background: C.paperLight, border: `1px solid ${C.rule}`, borderRadius: 2, fontFamily: fontSerif, fontSize: 11, color: C.inkMuted, marginBottom: 12, fontStyle: "italic", lineHeight: 1.5 }}>
+              {supabase
+                ? "Goes to the app owner's feedback inbox. They'll see your message, rating, and (if you checked the box above) which page you were on."
+                : "Saved locally only — no Supabase connection. The app owner won't see this unless they configure Supabase."}
+            </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <Btn variant="ghost" onClick={() => setShowFeedback(false)}>Cancel</Btn>
-              <Btn variant="primary" onClick={submitFeedback}>{ownerEmail ? <>Send to owner ↗</> : "Send"}</Btn>
+              <Btn variant="primary" onClick={submitFeedback}>{supabase ? "Send" : (ownerEmail ? <>Send to owner ↗</> : "Save locally")}</Btn>
             </div>
           </div>
         </div>
@@ -8660,6 +8685,15 @@ Deno.serve(async (req) => {
               }}>Sign in</button>
             )
           ) : null}
+          {/* Feedback button — replaces the old floating FAB. Sits next to Sign in for visibility. */}
+          <button onClick={() => setShowFeedback(true)} title="Send feedback" aria-label="Send feedback" style={{
+            fontFamily: fontSans, fontSize: 11, padding: "4px 10px", background: "transparent", color: C.inkSoft,
+            border: `1px solid ${C.rule}`, borderRadius: 2, marginRight: 6,
+            cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 500,
+          }}>
+            <MessageCircle size={12} />
+            Feedback
+          </button>
           <button className="icon-btn" onClick={() => setShowExamPlanner(true)} title="Exam planner" style={iconBtnStyle}>
             <Calendar size={16} color={C.inkSoft} />
             {persistentProfile.examDate && <span style={{ fontFamily: fontMono, fontSize: 10, color: C.inkSoft, marginLeft: 2 }}>{Math.max(0, Math.ceil((new Date(persistentProfile.examDate).getTime() - Date.now()) / 86400000))}d</span>}
