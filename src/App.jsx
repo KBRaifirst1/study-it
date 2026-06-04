@@ -115,7 +115,7 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.12.0";
+const APP_VERSION = "1.13.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
@@ -129,23 +129,23 @@ const HELP_CONTENT = [
       {
         id: "gs-what",
         title: "What is Study It?",
-        body: "An editorial AI study companion built around Anthropic's Claude. You bring your own API key (or use a free local model via WebGPU); the app does the rest — generates flashcards, practice quizzes, explainers, concept maps, slide decks, audio overview scripts, briefings, mind maps, and more. NotebookLM-inspired: you can ground every output in your own sources via Notebooks, with [S1], [S2] citations linking claims back to where they came from.",
+        body: "An editorial AI study companion. You bring your own AI API key (or use a free local model via WebGPU); the app does the rest — generates flashcards, practice quizzes, explainers, concept maps, slide decks, audio overview scripts, briefings, mind maps, and more. NotebookLM-inspired: you can ground every output in your own sources via Notebooks, with [S1], [S2] citations linking claims back to where they came from.",
       },
       {
         id: "gs-first-5",
         title: "First 5 minutes",
-        body: "1. Open Settings → AI Provider. Paste your Anthropic API key (starts with sk-ant-) and click Save. Or, if you have a recent GPU, switch the provider to Local AI and download a model — free but much less capable than Claude.\n\n2. Type a topic in the AI Tutor (e.g. \"photosynthesis\") and click any mode card — Flashcards, Practice, Explain, etc.\n\n3. For source-grounded work: go to Library → New notebook, paste in textbook excerpts or article text as Sources, then generate. Outputs will cite [S1], [S2] back to your sources.",
+        body: "1. Open Settings → AI Provider. Paste your AI API key (starts with sk-ant-, available at console.anthropic.com) and click Save. Or, if you have a recent GPU, switch the provider to Local AI and download a model — free but much less capable than the cloud AI.\n\n2. Type a topic in the AI Tutor (e.g. \"photosynthesis\") and click any mode card — Flashcards, Practice, Explain, etc.\n\n3. For source-grounded work: go to Library → New notebook, paste in textbook excerpts or article text as Sources, then generate. Outputs will cite [S1], [S2] back to your sources.",
         action: { label: "Open Settings", onClick: "openSettings" },
       },
       {
         id: "gs-keys",
         title: "Bringing your own API key",
-        body: "Anthropic API keys start with sk-ant-. You can get one at console.anthropic.com (paid). The key is stored only in your browser's localStorage — never sent anywhere except direct browser-to-Anthropic API calls. You pay Anthropic directly for usage. You can remove the key at any time in Settings.",
+        body: "API keys start with sk-ant- (sign up at console.anthropic.com — paid). The key is stored only in your browser's localStorage — never sent anywhere except direct browser-to-AI API calls. You pay the API provider directly for usage. You can remove the key at any time in Settings.",
       },
       {
         id: "gs-local",
         title: "Free local AI (WebGPU)",
-        body: "Settings → AI Provider → Local AI. Runs Llama 3.2, Phi 3.5, or Gemma 2 entirely in your browser via WebGPU. Honest tradeoff: these models are dramatically less capable than Claude — fine for vocab drilling, weak on rigorous analysis or up-to-date information. Requires a recent GPU and ~1-3GB model download (cached after first use).",
+        body: "Settings → AI Provider → Local AI. Runs Llama 3.2, Phi 3.5, or Gemma 2 entirely in your browser via WebGPU. Honest tradeoff: these models are dramatically less capable than the cloud AI — fine for vocab drilling, weak on rigorous analysis or up-to-date information. Requires a recent GPU and ~1-3GB model download (cached after first use).",
       },
     ],
   },
@@ -203,7 +203,7 @@ const HELP_CONTENT = [
       {
         id: "nb-exit",
         title: "Exiting a notebook",
-        body: "Click \"Exit notebook\" on the strip to return to topic mode (no source grounding, AI uses Claude's training only). The notebook still exists — just isn't active. Re-activate by clicking it again in Library.",
+        body: "Click \"Exit notebook\" on the strip to return to topic mode (no source grounding, AI uses its training only). The notebook still exists — just isn't active. Re-activate by clicking it again in Library.",
       },
     ],
   },
@@ -251,7 +251,7 @@ const HELP_CONTENT = [
       {
         id: "ocr-honest",
         title: "Honest limits",
-        body: "This uses Claude's vision model — there's no separate handwriting model. Two Opus 4.8 calls per run = highest API tier cost. If a literate human adult can't read your handwriting, this can't either. The 3-variant approach + focused refinement gives meaningful gains on hard cases but isn't magic.",
+        body: "This uses the cloud AI's vision model — there's no separate handwriting model. Two frontier-tier calls per run = highest API cost. If a literate human adult can't read your handwriting, this can't either. The 3-variant approach + focused refinement gives meaningful gains on hard cases but isn't magic.",
       },
     ],
   },
@@ -322,13 +322,13 @@ const HELP_CONTENT = [
       {
         id: "int-diag",
         title: "Diagnostics panel",
-        body: "Footer → Diagnostics (or ⌘K → Diagnostics). Real internal state, computed live: app version, build date, browser + OS, online status, WebGPU support, localStorage usage with % of 5MB quota, Anthropic API usage (session + lifetime counts, input/output token estimates, avg + p95 latency), notebook/source/vault counts, recent errors. Copy diagnostics button bundles everything into a text blob for bug reports.",
+        body: "Footer → Diagnostics (or ⌘K → Diagnostics). Real internal state, computed live: app version, build date, browser + OS, online status, WebGPU support, localStorage usage with % of 5MB quota, AI API usage (session + lifetime counts, input/output token estimates, avg + p95 latency), notebook/source/vault counts, recent errors. Copy diagnostics button bundles everything into a text blob for bug reports.",
         action: { label: "Open Diagnostics", onClick: "openDiagnostics" },
       },
       {
         id: "int-offline",
         title: "Offline mode",
-        body: 'When your browser detects no network, a red OFFLINE pill appears in the header. Anthropic calls will fail — but local-only features (Vault browsing, Notebook editing, notes, saved generations) still work. The pill auto-clears when you\'re back online.',
+        body: 'When your browser detects no network, a red OFFLINE pill appears in the header. Cloud AI calls will fail — but local-only features (Vault browsing, Notebook editing, notes, saved generations) still work. The pill auto-clears when you\'re back online.',
       },
       {
         id: "int-storage",
@@ -338,7 +338,7 @@ const HELP_CONTENT = [
       {
         id: "int-when-broken",
         title: "When something feels off",
-        body: "1. Open Diagnostics — check the API error count, the last error message, and the latency. High latency? Anthropic's API might be slow. 401/403? Re-enter your key. 2. Check the OFFLINE indicator. 3. Try resetting session counters. 4. As a last resort, you can clear localStorage from your browser's devtools (Application → Storage) — but this wipes everything (API key, Notebooks, Vault, classes). Export your data first if you can.",
+        body: "1. Open Diagnostics — check the API error count, the last error message, and the latency. High latency? The cloud AI API might be slow. 401/403? Re-enter your key. 2. Check the OFFLINE indicator. 3. Try resetting session counters. 4. As a last resort, you can clear localStorage from your browser's devtools (Application → Storage) — but this wipes everything (API key, Notebooks, Vault, classes). Export your data first if you can.",
       },
     ],
   },
@@ -349,7 +349,7 @@ const HELP_CONTENT = [
       {
         id: "priv-storage",
         title: "Where your data lives",
-        body: "Almost everything is in your browser's localStorage: API key, notebooks, sources, vault, classes, notes, settings. None of this is sent anywhere unless you explicitly opt-in:\n• Sync (optional) — encrypts profile + classes to Supabase with row-level security\n• Drive (optional) — you grant OAuth access; only files you choose\n• Anthropic — API calls go DIRECTLY from your browser to api.anthropic.com (the dangerous-direct-browser-access header is set). Your prompts/responses never route through any intermediate server.",
+        body: "Almost everything is in your browser's localStorage: API key, notebooks, sources, vault, classes, notes, settings. None of this is sent anywhere unless you explicitly opt-in:\n• Sync (optional) — encrypts profile + classes to Supabase with row-level security\n• Drive (optional) — you grant OAuth access; only files you choose\n• Cloud AI — API calls go DIRECTLY from your browser to the AI provider. Your prompts/responses never route through any intermediate server.",
       },
       {
         id: "priv-analytics",
@@ -2871,7 +2871,7 @@ Respond ONLY with valid JSON: { "transcript": "full transcription", "uncertainCo
           // Scanned PDF + non-vision local model — honest fail
           textBlocks.push({
             name: pdfRecord.name,
-            text: `[Unreadable PDF: text extraction failed and the loaded local model is not vision-capable. Switch to the Phi-3.5-vision model (Settings → AI Provider) to read scanned PDFs, or use Claude.]`,
+            text: `[Unreadable PDF: text extraction failed and the loaded local model is not vision-capable. Switch to the Phi-3.5-vision model (Settings → AI Provider) to read scanned PDFs, or use Cloud AI.]`,
             pages: extracted.numPages || 0,
             extractMode: "unreadable",
           });
@@ -3512,7 +3512,7 @@ OUTPUT
         }
       }
       // All retries failed — return whatever we last got with a warning
-      showToast(`Local model produced flawed MCQs after 3 attempts — try a stronger model or use Claude`);
+      showToast(`Local model produced flawed MCQs after 3 attempts — try a stronger model or use Cloud AI`);
       const lastText = await generate(sys, p, maxTokens, "MCQ problems schema.", "questions");
       return await safeParseJSON(lastText);
     };
@@ -4031,7 +4031,7 @@ OUTPUT
     if (!mathInput.trim()) return;
     // Honest preflight: if user is on Anthropic but no API key, tell them clearly instead of generic fail
     if (aiProvider === "anthropic" && !anthropicApiKey) {
-      setMathSolution({ error: "No Anthropic API key set. Add one in Settings → AI Provider, or switch to Local AI." });
+      setMathSolution({ error: "No Cloud AI API key set. Add one in Settings → AI Provider, or switch to Local AI." });
       return;
     }
     if (aiProvider === "webllm" && !webllmEngineRef.current) {
@@ -4049,7 +4049,7 @@ OUTPUT
       const text = await callClaude(mathInput, sys, false, opts);
       const parsed = await safeParseJSON(text);
       if (!parsed || !parsed.steps) {
-        setMathSolution({ error: aiProvider === "webllm" ? "Local model returned malformed output. Try a stronger model or use Claude." : "Couldn't parse the solution. Try rephrasing." });
+        setMathSolution({ error: aiProvider === "webllm" ? "Local model returned malformed output. Try a stronger model or use Cloud AI." : "Couldn't parse the solution. Try rephrasing." });
         return;
       }
       setMathSolution(parsed);
@@ -4065,7 +4065,7 @@ OUTPUT
     if (!codeExplainDraft.trim()) return;
     // Honest preflight: catch missing-key / unloaded-model up front
     if (aiProvider === "anthropic" && !anthropicApiKey) {
-      setCodeExplainResult({ error: "No Anthropic API key set. Add one in Settings → AI Provider, or switch to Local AI." });
+      setCodeExplainResult({ error: "No Cloud AI API key set. Add one in Settings → AI Provider, or switch to Local AI." });
       return;
     }
     if (aiProvider === "webllm" && !webllmEngineRef.current) {
@@ -4083,7 +4083,7 @@ OUTPUT
       const text = await callClaude(prompt, sys, false, opts);
       const parsed = await safeParseJSON(text);
       if (!parsed || !parsed.summary) {
-        setCodeExplainResult({ error: aiProvider === "webllm" ? "Local model returned malformed output. Try a stronger model or use Claude." : "Couldn't parse the explanation. Try a shorter snippet." });
+        setCodeExplainResult({ error: aiProvider === "webllm" ? "Local model returned malformed output. Try a stronger model or use Cloud AI." : "Couldn't parse the explanation. Try a shorter snippet." });
         return;
       }
       setCodeExplainResult(parsed);
@@ -4579,8 +4579,8 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
             <div className="section-eyebrow" style={{ marginBottom: 6 }}>Welcome to Study It · v{APP_VERSION}</div>
             <h2 style={{ fontFamily: fontDisplay, fontSize: 26, fontWeight: 500, margin: "0 0 10px", letterSpacing: "-0.01em" }}>Three things to know to get rolling</h2>
             <ol style={{ fontFamily: fontSerif, fontSize: 15, color: C.ink, lineHeight: 1.7, paddingLeft: 22, margin: "0 0 12px" }}>
-              <li><strong>Bring your own Claude API key</strong> in Settings → AI Provider. Direct browser-to-Anthropic — nothing routes through us.</li>
-              <li><strong>Or enable WebGPU local AI</strong> in Settings — Llama / Phi / Gemma run entirely in your browser, free but much less capable than Claude.</li>
+              <li><strong>Bring your own AI API key</strong> in Settings → AI Provider. Direct browser-to-provider — nothing routes through us.</li>
+              <li><strong>Or enable WebGPU local AI</strong> in Settings — Llama / Phi / Gemma run entirely in your browser, free but much less capable than the cloud AI.</li>
               <li><strong>Create a Notebook</strong> in Library to ground AI outputs in your own sources (PDFs, articles, your notes) with [S1], [S2] citations.</li>
             </ol>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -4797,7 +4797,7 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
                   {connector && <div style={{ marginTop: 10, fontFamily: fontSerif, fontSize: 14, lineHeight: 1.7, color: C.ink }}><RichText>{connector}</RichText></div>}
                 </>
               ) : (
-                <p style={{ fontFamily: fontSerif, fontSize: 13, color: C.inkMuted, fontStyle: "italic", marginTop: 6 }}>Study a couple of topics and Claude will draw the connections between them.</p>
+                <p style={{ fontFamily: fontSerif, fontSize: 13, color: C.inkMuted, fontStyle: "italic", marginTop: 6 }}>Study a couple of topics and Study It will draw the connections between them.</p>
               )}
             </div>
 
@@ -4967,7 +4967,7 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
       ) : liveNotebooks.length > 0 ? (
         <div style={{ marginBottom: 20, padding: 12, background: C.paperLight, border: `1px dashed ${C.rule}`, borderRadius: 3, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
           <div style={{ fontFamily: fontSerif, fontSize: 13, color: C.inkSoft, fontStyle: "italic" }}>
-            No notebook active — answers come from Claude's training only. <strong style={{ color: C.ink, fontStyle: "normal" }}>Open a notebook</strong> to ground generations in your own sources.
+            No notebook active — answers come from the model's training only. <strong style={{ color: C.ink, fontStyle: "normal" }}>Open a notebook</strong> to ground generations in your own sources.
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {notebooks.slice(0, 3).map((n) => (
@@ -4986,7 +4986,7 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
         Learn anything, <em style={{ color: C.accent }}>beautifully.</em>
       </h1>
       <p style={{ fontFamily: fontSerif, fontSize: 17, color: C.inkSoft, fontStyle: "italic", maxWidth: 600, marginBottom: 28 }}>
-        Thirteen ways to engage with what you're studying. Chat with your tutor, generate flashcards, build a study plan, or test yourself rigorously — all powered by Claude.
+        Thirteen ways to engage with what you're studying. Chat with your tutor, generate flashcards, build a study plan, or test yourself rigorously — all in one place.
       </p>
 
       {/* Resume Recent — surface saved generations as first-class entry points */}
@@ -6407,7 +6407,7 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
         <Card onClick={() => setShowCodeExplain(true)}>
           <Code size={24} color={C.moss} style={{ marginBottom: 10 }} />
           <div style={{ fontFamily: fontDisplay, fontSize: 22, fontWeight: 500, marginBottom: 4 }}>Explain code</div>
-          <div style={{ fontSize: 13, color: C.inkSoft }}>Paste any code and Claude explains it line-by-line.</div>
+          <div style={{ fontSize: 13, color: C.inkSoft }}>Paste any code and Study It explains it line-by-line.</div>
         </Card>
       </div>
     </div>
@@ -6711,7 +6711,7 @@ If you're signed in with Supabase and notebooks sync is enabled, your notebooks 
 ## Privacy
 
 - The archive is built locally in your browser. Nothing leaves your device until you save the .zip somewhere.
-- API keys are deliberately omitted. You'll need to re-enter your Anthropic API key after restoring.
+- API keys are deliberately omitted. You'll need to re-enter your AI API key after restoring.
 - If you use cloud sync, your data is also stored in your Supabase project under your account.
 
 ---
@@ -7279,7 +7279,7 @@ END:VCALENDAR\`;
                   {endpoint && (
                     <Btn variant="ghost" onClick={async () => {
                       showToast("Pinging your search endpoint…");
-                      const { error, results } = await localWebSearch("Anthropic Claude AI", 3);
+                      const { error, results } = await localWebSearch("test query for connectivity", 3);
                       if (error) { showToast(`Test failed: ${error}`); }
                       else { showToast(`Test passed — got ${results.length} results`); }
                     }}>
@@ -7971,15 +7971,15 @@ Deno.serve(async (req) => {
     //   • Claude streams: only for the 3 prose modes (explain / briefing / audioOverview).
     //   • Local model streams: shows for ALL modes — local generations are slow and the user needs
     //     to see progress or they'll assume the app froze. Includes live tokens/sec readout.
-    const isClaudeStreamingMode = mode === "explain" || mode === "briefing" || mode === "audioOverview";
+    const isCloudStreamingMode = mode === "explain" || mode === "briefing" || mode === "audioOverview";
     const showStreamingPreview = loading && streamPartial && (
-      (aiProvider === "anthropic" && isClaudeStreamingMode) ||
+      (aiProvider === "anthropic" && isCloudStreamingMode) ||
       (aiProvider === "webllm") // ALL modes for local
     );
     if (showStreamingPreview) {
       const providerLabel = aiProvider === "webllm"
         ? (LOCAL_MODELS[webllmLoadedModel]?.label || "Local model")
-        : "Claude";
+        : "Cloud AI";
       const modeLabel = ({
         explain: "Explainer", briefing: "Briefing", audioOverview: "Audio overview",
         flashcards: "Flashcards", recall: "Recall cards", practice: "Practice MCQs", exam: "Exam",
@@ -7992,7 +7992,7 @@ Deno.serve(async (req) => {
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
             <Loader2 size={16} className="spin" color={C.gold} />
             <SectionLabel style={{ color: C.gold }}>Streaming · {streamPartial.length.toLocaleString()} chars</SectionLabel>
-            {/* Live tokens/sec for local model (Claude doesn't expose per-call rate) */}
+            {/* Live tokens/sec for local model (the cloud API doesn't expose per-call rate) */}
             {aiProvider === "webllm" && webllmStats.running && webllmStats.tokensPerSec > 0 && (
               <span style={{ fontFamily: fontMono, fontSize: 10, color: C.moss, padding: "2px 8px", background: C.mossSoft, border: `1px solid ${C.moss}`, borderRadius: 2 }}>
                 {webllmStats.tokensPerSec} tok/s
@@ -8014,7 +8014,7 @@ Deno.serve(async (req) => {
           <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkMuted, fontStyle: "italic", marginTop: 10, lineHeight: 1.5 }}>
             {aiProvider === "webllm"
               ? `Streaming response from ${providerLabel} (running locally via WebGPU). Generation continues while you read; the formatted view will appear once it completes. ${LOCAL_MODELS[webllmLoadedModel]?.tier === "tiny" ? "This is a tiny model — output quality reflects its size." : ""}`
-              : "Streaming raw response from Claude. The final formatted view will appear once generation completes. Cancel by navigating away — partial generations don't save to the Vault."}
+              : "Streaming raw response from the cloud AI. The final formatted view will appear once generation completes. Cancel by navigating away — partial generations don't save to the Vault."}
           </div>
         </div>
       );
@@ -8629,7 +8629,7 @@ Deno.serve(async (req) => {
 
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
           {!isOnline && (
-            <span title="You're offline — Anthropic API calls will fail. Local-only features (Vault, Notebooks, notes) still work." style={{ fontFamily: fontMono, fontSize: 10, padding: "4px 10px", background: C.accent, color: C.paper, borderRadius: 2, marginRight: 6, fontWeight: 600, letterSpacing: "0.1em", display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <span title="You're offline — cloud AI API calls will fail. Local-only features (Vault, Notebooks, notes) still work." style={{ fontFamily: fontMono, fontSize: 10, padding: "4px 10px", background: C.accent, color: C.paper, borderRadius: 2, marginRight: 6, fontWeight: 600, letterSpacing: "0.1em", display: "inline-flex", alignItems: "center", gap: 4 }}>
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.paper }} /> OFFLINE
             </span>
           )}
@@ -8715,7 +8715,7 @@ Deno.serve(async (req) => {
               </div>
             </div>
             <p style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, fontStyle: "italic", lineHeight: 1.55, margin: 0, maxWidth: 340 }}>
-              Powered by Anthropic's Claude. Your sources stay on your device unless you connect Drive or sync your profile.
+              Your sources stay on your device unless you connect Drive or sync your profile.
             </p>
           </div>
           <div style={{ display: "flex", gap: 36, flexWrap: "wrap" }}>
@@ -8993,7 +8993,7 @@ Deno.serve(async (req) => {
             <div style={{ marginTop: 36, paddingTop: 24, borderTop: `2px solid ${C.ink}` }}>
               <SectionLabel>AI Provider</SectionLabel>
               <p style={{ fontFamily: fontSerif, fontSize: 13, color: C.inkSoft, fontStyle: "italic", margin: "4px 0 12px" }}>
-                Choose where the AI work happens. Anthropic Claude is paid but world-class. Local WebGPU AI is free and offline, but dramatically less capable.
+                Choose where the AI work happens. Cloud AI (paid) is world-class. Local WebGPU AI is free and offline, but dramatically less capable.
               </p>
 
               {/* Provider switcher */}
@@ -9001,20 +9001,20 @@ Deno.serve(async (req) => {
                 <button onClick={() => setAiProvider("anthropic")}
                   style={{ padding: 14, background: aiProvider === "anthropic" ? C.ink : C.paperLight, color: aiProvider === "anthropic" ? C.paper : C.ink, border: `2px solid ${aiProvider === "anthropic" ? C.ink : C.rule}`, borderRadius: 3, cursor: "pointer", textAlign: "left" }}>
                   <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: "0.1em", opacity: 0.7, marginBottom: 4 }}>CLOUD · PAID</div>
-                  <div style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Anthropic Claude</div>
+                  <div style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Cloud AI</div>
                   <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.85 }}>Frontier quality. Thinking, web search, vision, multi-agent. Needs API key.</div>
                 </button>
                 <button onClick={() => setAiProvider("webllm")} disabled={webgpuSupported === false}
                   style={{ padding: 14, background: aiProvider === "webllm" ? C.moss : C.paperLight, color: aiProvider === "webllm" ? C.paper : C.ink, border: `2px solid ${aiProvider === "webllm" ? C.moss : C.rule}`, borderRadius: 3, cursor: webgpuSupported === false ? "not-allowed" : "pointer", textAlign: "left", opacity: webgpuSupported === false ? 0.5 : 1 }}>
                   <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: "0.1em", opacity: 0.7, marginBottom: 4 }}>LOCAL · FREE · WEBGPU</div>
                   <div style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Local AI</div>
-                  <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.85 }}>{webgpuSupported === false ? "Not available — your browser doesn't expose WebGPU." : webgpuSupported === null ? "Detecting WebGPU…" : "Runs Llama / Phi / Gemma in your browser. Free, offline. Much weaker than Claude."}</div>
+                  <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.85 }}>{webgpuSupported === false ? "Not available — your browser doesn't expose WebGPU." : webgpuSupported === null ? "Detecting WebGPU…" : "Runs Llama / Phi / Gemma in your browser. Free, offline. Much weaker than cloud AI."}</div>
                 </button>
               </div>
 
               {aiProvider === "anthropic" ? (
                 <div style={{ padding: 14, background: C.paperLight, borderRadius: 3, marginBottom: 18 }}>
-                  <SectionLabel style={{ marginBottom: 8 }}>Anthropic API key</SectionLabel>
+                  <SectionLabel style={{ marginBottom: 8 }}>Cloud AI API key (Anthropic)</SectionLabel>
                   <p style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, fontStyle: "italic", margin: "0 0 8px" }}>
                     Stored only on this device's localStorage. Sent directly to <code style={{ fontFamily: fontMono, fontSize: 11 }}>api.anthropic.com</code>.
                   </p>
@@ -9025,7 +9025,7 @@ Deno.serve(async (req) => {
                         <div style={{ fontFamily: fontMono, fontSize: 10, color: C.moss, letterSpacing: "0.1em" }}>CLAUDE CONNECTED</div>
                         <div style={{ fontFamily: fontMono, fontSize: 12, color: C.ink }}>Key: sk-…{anthropicApiKey.slice(-6)}</div>
                       </div>
-                      <button onClick={() => { setAnthropicApiKey(""); setAiKeyStatus("Key removed"); showToast("Anthropic key removed"); }} style={{ background: "transparent", border: `1px solid ${C.rule}`, padding: "6px 12px", cursor: "pointer", fontFamily: fontSans, fontSize: 12, borderRadius: 2 }}>Remove key</button>
+                      <button onClick={() => { setAnthropicApiKey(""); setAiKeyStatus("Key removed"); showToast("API key removed"); }} style={{ background: "transparent", border: `1px solid ${C.rule}`, padding: "6px 12px", cursor: "pointer", fontFamily: fontSans, fontSize: 12, borderRadius: 2 }}>Remove key</button>
                     </div>
                   ) : (
                     <div>
@@ -9041,15 +9041,15 @@ Deno.serve(async (req) => {
                         <Btn variant="primary" onClick={() => {
                           const k = anthropicApiKeyDraft.trim();
                           if (!k) { setAiKeyStatus("Paste a key first"); return; }
-                          if (!k.startsWith("sk-ant-")) { setAiKeyStatus("Anthropic keys start with sk-ant-"); return; }
-                          setAnthropicApiKey(k); setAnthropicApiKeyDraft(""); setAiKeyStatus("✓ Key saved — Claude is live");
-                          showToast("Claude connected");
+                          if (!k.startsWith("sk-ant-")) { setAiKeyStatus("Keys must start with sk-ant-"); return; }
+                          setAnthropicApiKey(k); setAnthropicApiKeyDraft(""); setAiKeyStatus("✓ Key saved — Cloud AI is live");
+                          showToast("Cloud AI connected");
                           setTimeout(() => setAiKeyStatus(""), 4000);
                         }}>Save key</Btn>
                       </div>
                       {aiKeyStatus && <div style={{ fontFamily: fontMono, fontSize: 11, marginTop: 6, color: aiKeyStatus.startsWith("✓") ? C.moss : C.accent }}>{aiKeyStatus}</div>}
                       <div style={{ fontFamily: fontMono, fontSize: 11, marginTop: 8, color: C.inkMuted }}>
-                        Get one at <span style={{ fontFamily: fontMono }}>console.anthropic.com/settings/keys</span>. Usage billed to your Anthropic account (typically a few cents per session at Sonnet, more at Opus).
+                        Get one at <span style={{ fontFamily: fontMono }}>console.anthropic.com/settings/keys</span>. Usage billed to your API account (typically a few cents per session on the mid tier, more on the frontier tier).
                       </div>
                     </div>
                   )}
@@ -9058,7 +9058,7 @@ Deno.serve(async (req) => {
                 <div style={{ padding: 14, background: C.paperLight, borderRadius: 3, marginBottom: 18 }}>
                   <SectionLabel style={{ marginBottom: 8 }}>Local WebGPU model</SectionLabel>
                   <p style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, fontStyle: "italic", margin: "0 0 8px" }}>
-                    Model downloads once into your browser's IndexedDB, then runs fully offline. Honest expectations: even the 8B models won't match Claude on curriculum design, lateral reading, or chain-of-verification — but with recent upgrades they CAN do flashcards, simple explanations, MCQs (validated + auto-retried), and short Q&A reliably. The vision-tier model reads printed text and simple diagrams. <strong>PDFs work via client-side text extraction</strong> — Phi-3.5-vision additionally rasterizes scanned PDFs. <strong>Web search works</strong> if you've configured the Edge Function proxy. <strong>Still genuinely disabled on local:</strong> multi-agent verification (capability gap — small models can't usefully critique their own work).
+                    Model downloads once into your browser's IndexedDB, then runs fully offline. Honest expectations: even the 8B models won't match the cloud AI on curriculum design, lateral reading, or chain-of-verification — but with recent upgrades they CAN do flashcards, simple explanations, MCQs (validated + auto-retried), and short Q&A reliably. The vision-tier model reads printed text and simple diagrams. <strong>PDFs work via client-side text extraction</strong> — Phi-3.5-vision additionally rasterizes scanned PDFs. <strong>Web search works</strong> if you've configured the Edge Function proxy. <strong>Still genuinely disabled on local:</strong> multi-agent verification (capability gap — small models can't usefully critique their own work).
                   </p>
 
                   {/* Tier-grouped model picker */}
@@ -9680,7 +9680,7 @@ Deno.serve(async (req) => {
             {onboardingStep === 0 && (
               <div>
                 <p style={{ fontFamily: fontSerif, fontSize: 16, lineHeight: 1.6, color: C.ink, marginBottom: 16 }}>
-                  Study It is an AI-powered learning workspace. Bring your own material (notes, PDFs, lecture transcripts) and Claude turns it into flashcards, practice quizzes, explainers, mind maps, and more — grounded in your sources, not made-up.
+                  Study It is an AI-powered learning workspace. Bring your own material (notes, PDFs, lecture transcripts) and Study It turns it into flashcards, practice quizzes, explainers, mind maps, and more — grounded in your sources, not made-up.
                 </p>
                 <p style={{ fontFamily: fontSerif, fontSize: 14, color: C.inkSoft, fontStyle: "italic", marginBottom: 18, lineHeight: 1.55 }}>
                   Three quick questions and you'll be ready. About 60 seconds.
@@ -9707,7 +9707,7 @@ Deno.serve(async (req) => {
                   autoFocus
                   onKeyDown={(e) => { if (e.key === "Enter" && canAdvance) setOnboardingStep(2); }}
                   style={{ width: "100%", padding: "10px 14px", background: C.paperLight, border: `1px solid ${C.rule}`, borderRadius: 2, fontFamily: fontSans, fontSize: 14, color: C.ink, outline: "none", boxSizing: "border-box", marginBottom: 14 }} />
-                <SectionLabel style={{ marginBottom: 6 }}>What's tricky about it? (Optional — helps Claude target your weak spots)</SectionLabel>
+                <SectionLabel style={{ marginBottom: 6 }}>What's tricky about it? (Optional — helps Study It target your weak spots)</SectionLabel>
                 <textarea value={onboardingDraft.subjectDesc}
                   onChange={(e) => setOnboardingDraft({ ...onboardingDraft, subjectDesc: e.target.value })}
                   placeholder="e.g. I keep mixing up SN1 vs SN2 reactions; my exam emphasizes mechanisms over memorization"
@@ -9720,7 +9720,7 @@ Deno.serve(async (req) => {
             {onboardingStep === 2 && (
               <div>
                 <p style={{ fontFamily: fontSerif, fontSize: 15, lineHeight: 1.6, color: C.ink, marginBottom: 14 }}>
-                  This tunes how Claude paces you and what it surfaces on the Today tab.
+                  This tunes how Study It paces you and what it surfaces on the Today tab.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {[
@@ -9757,7 +9757,7 @@ Deno.serve(async (req) => {
             {onboardingStep === 3 && (
               <div>
                 <p style={{ fontFamily: fontSerif, fontSize: 15, lineHeight: 1.6, color: C.ink, marginBottom: 14 }}>
-                  Pick the level Claude should target. You can change this anytime in Settings or by mode.
+                  Pick the level Study It should target. You can change this anytime in Settings or by mode.
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
                   {[
@@ -9958,7 +9958,7 @@ Deno.serve(async (req) => {
                   </div>
                 </div>
 
-                <SectionLabel style={{ marginBottom: 6 }}>Anthropic API usage</SectionLabel>
+                <SectionLabel style={{ marginBottom: 6 }}>Cloud AI API usage</SectionLabel>
                 <div style={{ marginBottom: 16 }}>
                   <Row label="Calls this session" value={apiUsage.sessionCalls.toLocaleString()} />
                   <Row label="Calls lifetime" value={apiUsage.lifetimeCalls.toLocaleString()} />
@@ -10008,7 +10008,7 @@ Browser: ${browser} on ${platform}
 Online: ${isOnline}
 WebGPU: ${webgpuSupported}
 localStorage: ${lsKb} KB / ${lsKeys} keys (${lsLectern} app)
-Anthropic calls — session: ${apiUsage.sessionCalls}, lifetime: ${apiUsage.lifetimeCalls}
+Cloud AI calls — session: ${apiUsage.sessionCalls}, lifetime: ${apiUsage.lifetimeCalls}
 Tokens (session, est.) — in: ~${apiUsage.sessionInputTokens}, out: ~${apiUsage.sessionOutputTokens}
 Tokens (lifetime, est.) — in: ~${apiUsage.lifetimeInputTokens}, out: ~${apiUsage.lifetimeOutputTokens}
 Latency — avg: ${avgLatency} ms, p95: ${p95Latency} ms
@@ -10046,7 +10046,7 @@ Recent errors: ${errorEntries.length}`;
               </div>
             </div>
             <p style={{ fontFamily: fontSerif, fontSize: 14, color: C.ink, lineHeight: 1.6, marginBottom: 18 }}>
-              An editorial AI study companion. Built around Anthropic's Claude. NotebookLM-inspired source-grounded generation. Honest about what works and what doesn't.
+              An editorial AI study companion. NotebookLM-inspired source-grounded generation. Honest about what works and what doesn't.
             </p>
             <SectionLabel style={{ marginBottom: 8 }}>Built with</SectionLabel>
             <div style={{ background: C.paperLight, border: `1px solid ${C.rule}`, borderRadius: 3, padding: 12, marginBottom: 14 }}>
@@ -10063,7 +10063,7 @@ Recent errors: ${errorEntries.length}`;
             </div>
             <SectionLabel style={{ marginBottom: 8 }}>Powered by</SectionLabel>
             <p style={{ fontFamily: fontSerif, fontSize: 13, color: C.inkSoft, lineHeight: 1.55, marginBottom: 16 }}>
-              Anthropic's Claude family — Opus 4.8 (frontier), Opus 4.7, Sonnet 4.6, Haiku 4.5. Your API key, your usage, your control. Bring your own key in Settings → AI Provider.
+              Frontier cloud-AI models (Opus, Sonnet, Haiku tiers) for high-quality work; on-device WebGPU models for offline/free use. Your API key, your usage, your control. Bring your own key in Settings → AI Provider.
             </p>
             <div style={{ padding: 12, background: C.paperDark, borderRadius: 3, fontFamily: fontMono, fontSize: 10, color: C.inkMuted, letterSpacing: "0.05em" }}>
               All data is stored locally in your browser. No server-side analytics. Drive integration is opt-in. Supabase sync is opt-in.
@@ -10096,7 +10096,7 @@ Recent errors: ${errorEntries.length}`;
               <div style={{ padding: 12, background: C.goldSoft, border: `1px solid ${C.gold}`, borderRadius: 3, marginBottom: 16 }}>
                 <div style={{ fontFamily: fontMono, fontSize: 10, color: C.gold, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4, fontWeight: 600 }}>Honest cost</div>
                 <div style={{ fontFamily: fontSerif, fontSize: 13, color: C.ink, lineHeight: 1.55 }}>
-                  Two Opus 4.8 calls × {3 * images.length} images in the first call + {images.length} in the refinement. Frontier model is the most expensive tier. If a human literate adult can't read the handwriting, this still can't either — there's no separate handwriting model behind this, just Claude's vision used carefully.
+                  Two Opus 4.8 calls × {3 * images.length} images in the first call + {images.length} in the refinement. Frontier model is the most expensive tier. If a human literate adult can't read the handwriting, this still can't either — there's no separate handwriting model behind this, just the cloud AI's vision used carefully.
                 </div>
               </div>
               <SectionLabel style={{ marginBottom: 8 }}>{images.length} image{images.length === 1 ? "" : "s"} ready</SectionLabel>
