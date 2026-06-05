@@ -115,7 +115,7 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.14.0";
+const APP_VERSION = "1.15.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
@@ -1224,6 +1224,269 @@ function AppInner() {
   const [showOcrEnhance, setShowOcrEnhance] = useState(false);
   const [ocrResult, setOcrResult] = useState(null); // { transcript, uncertain, passes }
   const [ocrLoading, setOcrLoading] = useState(false);
+
+  // ============ CAMERA SCANNER — live edge-detect + auto-capture (like Apple's scanner) ============
+  // Browsers can't match Apple's native VisionKit scanner — no privileged hardware-accelerated
+  // edge detection, no gyroscope fusion. But we CAN do meaningful work with pure JS:
+  //   • getUserMedia for live camera preview (back camera on mobile)
+  //   • Per-frame downscaled luminance analysis to find the brightest rectangular region (the paper)
+  //   • Stability detection: if same bounding box detected for N consecutive frames → auto-capture
+  //   • Full-resolution capture from video stream, cropped to the detected region
+  // Honest scope: detects axis-aligned bounding box. No perspective correction (that needs OpenCV).
+  // Works best on: white/light paper on darker desk surface, decent lighting. Failure mode is graceful:
+  // user can always tap "Capture now" to bypass auto-detection.
+  const [showCameraScanner, setShowCameraScanner] = useState(false);
+  const [scannerStatus, setScannerStatus] = useState(""); // "Searching for paper..." | "Hold steady..." | "Captured!"
+  const [scannerStableFrames, setScannerStableFrames] = useState(0);
+  const cameraVideoRef = useRef(null);
+  const cameraStreamRef = useRef(null);
+  const cameraOverlayRef = useRef(null); // canvas overlay for drawing detected corners
+  const cameraDetectFrameRef = useRef(null); // animation-frame id
+  const cameraLastBoundsRef = useRef(null);
+  const cameraStableCountRef = useRef(0);
+  const cameraCapturedRef = useRef(false);
+
+  // Per-frame paper detection. Returns { x, y, width, height, confidence } or null.
+  // Algorithm: downscale to 240px wide, compute luminance, threshold at mean+30, find bounding box
+  // of bright pixels, return if it covers >20% of frame with >60% density inside the box.
+  const detectPaperInFrame = (video, processingWidth = 240) => {
+    if (!video || video.readyState < 2) return null;
+    const vw = video.videoWidth, vh = video.videoHeight;
+    if (!vw || !vh) return null;
+    const scale = processingWidth / vw;
+    const pw = Math.round(vw * scale), ph = Math.round(vh * scale);
+    const tmp = document.createElement("canvas");
+    tmp.width = pw; tmp.height = ph;
+    const tctx = tmp.getContext("2d");
+    tctx.drawImage(video, 0, 0, pw, ph);
+    const imgData = tctx.getImageData(0, 0, pw, ph);
+    const d = imgData.data;
+
+    // Compute luma + mean
+    const N = pw * ph;
+    const luma = new Uint8Array(N);
+    let sum = 0;
+    for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+      const y = (d[i] + d[i + 1] + d[i + 2]) / 3;
+      luma[j] = y; sum += y;
+    }
+    const mean = sum / N;
+    const threshold = Math.min(245, mean + 25); // dynamic threshold
+
+    // Find bounding box of bright pixels
+    let minX = pw, minY = ph, maxX = 0, maxY = 0, brightCount = 0;
+    for (let y = 0; y < ph; y++) {
+      for (let x = 0; x < pw; x++) {
+        if (luma[y * pw + x] > threshold) {
+          brightCount++;
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    const boxW = maxX - minX, boxH = maxY - minY;
+    const boxArea = boxW * boxH;
+    const totalArea = pw * ph;
+    if (boxArea / totalArea < 0.18 || brightCount / totalArea < 0.12) return null;
+
+    const density = brightCount / boxArea;
+    if (density < 0.55) return null; // bright region must be solid (paper), not scattered (clouds, lights)
+
+    // Edge margin filter — if box touches the frame edge it's likely not the paper but background
+    if (minX < 3 || minY < 3 || maxX > pw - 3 || maxY > ph - 3) {
+      // Allow if it covers >80% of frame (close-up shot)
+      if (boxArea / totalArea < 0.80) return null;
+    }
+
+    // Return in ORIGINAL video coordinates (scale back up)
+    const invScale = 1 / scale;
+    return {
+      x: minX * invScale, y: minY * invScale,
+      width: boxW * invScale, height: boxH * invScale,
+      confidence: density,
+    };
+  };
+
+  // Start the camera stream + per-frame detection loop
+  const startCameraScanner = async () => {
+    cameraCapturedRef.current = false;
+    cameraLastBoundsRef.current = null;
+    cameraStableCountRef.current = 0;
+    setScannerStableFrames(0);
+    setScannerStatus("Requesting camera permission…");
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false,
+      });
+      cameraStreamRef.current = stream;
+      if (cameraVideoRef.current) {
+        cameraVideoRef.current.srcObject = stream;
+        await cameraVideoRef.current.play().catch(() => {});
+      }
+      setScannerStatus("Searching for paper…");
+      // Detection loop
+      const loop = () => {
+        if (cameraCapturedRef.current || !cameraStreamRef.current) return;
+        const video = cameraVideoRef.current;
+        const overlay = cameraOverlayRef.current;
+        if (video && overlay && video.videoWidth > 0) {
+          // Resize overlay to match video display size
+          const rect = video.getBoundingClientRect();
+          if (overlay.width !== Math.round(rect.width) || overlay.height !== Math.round(rect.height)) {
+            overlay.width = Math.round(rect.width);
+            overlay.height = Math.round(rect.height);
+          }
+          const octx = overlay.getContext("2d");
+          octx.clearRect(0, 0, overlay.width, overlay.height);
+
+          const bounds = detectPaperInFrame(video);
+          if (bounds) {
+            // Convert video-coords to overlay-coords for drawing
+            const dx = bounds.x / video.videoWidth * overlay.width;
+            const dy = bounds.y / video.videoHeight * overlay.height;
+            const dw = bounds.width / video.videoWidth * overlay.width;
+            const dh = bounds.height / video.videoHeight * overlay.height;
+
+            // Stability check: same-ish bounds as last frame?
+            const last = cameraLastBoundsRef.current;
+            const stable = last && Math.abs(bounds.x - last.x) < bounds.width * 0.05
+                                && Math.abs(bounds.y - last.y) < bounds.height * 0.05
+                                && Math.abs(bounds.width - last.width) < bounds.width * 0.08
+                                && Math.abs(bounds.height - last.height) < bounds.height * 0.08;
+            if (stable) {
+              cameraStableCountRef.current += 1;
+            } else {
+              cameraStableCountRef.current = 0;
+            }
+            cameraLastBoundsRef.current = bounds;
+            setScannerStableFrames(cameraStableCountRef.current);
+
+            // Draw detected rectangle (green when stable, gold when searching)
+            const stableEnough = cameraStableCountRef.current >= 12; // ~500ms at 25fps
+            octx.strokeStyle = stableEnough ? "#52a06b" : "#c8a96a";
+            octx.lineWidth = 4;
+            octx.strokeRect(dx, dy, dw, dh);
+            // Corner brackets for visual feedback
+            octx.lineWidth = 6;
+            const bracketLen = Math.min(dw, dh) * 0.12;
+            [[dx, dy, 1, 1], [dx + dw, dy, -1, 1], [dx, dy + dh, 1, -1], [dx + dw, dy + dh, -1, -1]].forEach(([cx, cy, sx, sy]) => {
+              octx.beginPath();
+              octx.moveTo(cx + bracketLen * sx, cy);
+              octx.lineTo(cx, cy);
+              octx.lineTo(cx, cy + bracketLen * sy);
+              octx.stroke();
+            });
+
+            if (stableEnough && !cameraCapturedRef.current) {
+              cameraCapturedRef.current = true;
+              setScannerStatus("Captured!");
+              setTimeout(() => captureCameraFrame(bounds), 100); // small delay so user sees "Captured!"
+              return; // stop the loop
+            } else {
+              setScannerStatus(stable ? `Hold steady… (${Math.min(12, cameraStableCountRef.current)}/12)` : "Paper detected — hold steady");
+            }
+          } else {
+            cameraStableCountRef.current = 0;
+            cameraLastBoundsRef.current = null;
+            setScannerStableFrames(0);
+            setScannerStatus("Searching for paper…");
+          }
+        }
+        cameraDetectFrameRef.current = requestAnimationFrame(loop);
+      };
+      cameraDetectFrameRef.current = requestAnimationFrame(loop);
+    } catch (e) {
+      logError(e, "camera scanner getUserMedia");
+      setScannerStatus(`Camera unavailable: ${e.message || "permission denied"}`);
+    }
+  };
+
+  // Capture current video frame at full res, crop to detected bounds, add to images
+  const captureCameraFrame = (bounds) => {
+    const video = cameraVideoRef.current;
+    if (!video) return;
+    const vw = video.videoWidth, vh = video.videoHeight;
+    // Crop with a small padding so we don't shave the page edge
+    const pad = Math.min(vw, vh) * 0.02;
+    const cx = Math.max(0, (bounds?.x || 0) - pad);
+    const cy = Math.max(0, (bounds?.y || 0) - pad);
+    const cw = Math.min(vw - cx, (bounds?.width || vw) + 2 * pad);
+    const ch = Math.min(vh - cy, (bounds?.height || vh) + 2 * pad);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(cw); canvas.height = Math.round(ch);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, cx, cy, cw, ch, 0, 0, cw, ch);
+
+    const dataURL = canvas.toDataURL("image/jpeg", 0.92);
+    // Add to images using the same shape handleImageUpload uses
+    if (enhanceContrast) {
+      preprocessImageForOCR(dataURL).then((processed) => {
+        const base64 = processed.split(",")[1];
+        setImages((prev) => [...prev, { data: base64, mediaType: "image/jpeg", preview: dataURL, preprocessed: true, scanned: true }]);
+        stopCameraScanner();
+        showToast("Captured page from camera");
+      }).catch(() => {
+        const base64 = dataURL.split(",")[1];
+        setImages((prev) => [...prev, { data: base64, mediaType: "image/jpeg", preview: dataURL, scanned: true }]);
+        stopCameraScanner();
+        showToast("Captured page from camera");
+      });
+    } else {
+      const base64 = dataURL.split(",")[1];
+      setImages((prev) => [...prev, { data: base64, mediaType: "image/jpeg", preview: dataURL, scanned: true }]);
+      stopCameraScanner();
+      showToast("Captured page from camera");
+    }
+    track("action", "camera_scan_capture", { stable_frames: cameraStableCountRef.current });
+  };
+
+  const stopCameraScanner = () => {
+    if (cameraDetectFrameRef.current) {
+      cancelAnimationFrame(cameraDetectFrameRef.current);
+      cameraDetectFrameRef.current = null;
+    }
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((t) => t.stop());
+      cameraStreamRef.current = null;
+    }
+    setShowCameraScanner(false);
+    setScannerStatus("");
+    cameraCapturedRef.current = false;
+    cameraStableCountRef.current = 0;
+    cameraLastBoundsRef.current = null;
+    setScannerStableFrames(0);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (cameraStreamRef.current) cameraStreamRef.current.getTracks().forEach((t) => t.stop());
+      if (cameraDetectFrameRef.current) cancelAnimationFrame(cameraDetectFrameRef.current);
+    };
+  }, []);
+
+  // Auto-start when the modal opens
+  useEffect(() => {
+    if (showCameraScanner) {
+      setTimeout(() => startCameraScanner(), 100); // wait for video element to mount
+    } else {
+      // Cleanup if it gets closed externally
+      if (cameraStreamRef.current) {
+        cameraStreamRef.current.getTracks().forEach((t) => t.stop());
+        cameraStreamRef.current = null;
+      }
+      if (cameraDetectFrameRef.current) {
+        cancelAnimationFrame(cameraDetectFrameRef.current);
+        cameraDetectFrameRef.current = null;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCameraScanner]);
   const [ocrPassStatus, setOcrPassStatus] = useState("");
   const [ocrDomain, setOcrDomain] = useState(""); // optional domain hint for disambiguation
 
@@ -2596,11 +2859,13 @@ function AppInner() {
   //   BINARIZED: Otsu adaptive threshold to pure black/white (best on faint pencil & low-contrast)
   const preprocessImageForOCR = (srcDataUrl, variant = "enhanced") => new Promise((resolve, reject) => {
     try {
-      const img = new Image();
-      img.onload = () => {
+      // Use createImageBitmap with imageOrientation: "from-image" so EXIF orientation is auto-applied.
+      // Phone photos often have EXIF rotation metadata — without this, a sideways photo stays sideways
+      // when drawn to canvas, which devastates OCR. Fall back to <img> if createImageBitmap unavailable.
+      const drawAndProcess = (bitmap) => {
         try {
           const maxDim = 2000;
-          let { width, height } = img;
+          let width = bitmap.width, height = bitmap.height;
           if (width > maxDim || height > maxDim) {
             const scale = maxDim / Math.max(width, height);
             width = Math.round(width * scale); height = Math.round(height * scale);
@@ -2609,7 +2874,32 @@ function AppInner() {
           canvas.width = width; canvas.height = height;
           const ctx = canvas.getContext("2d");
           ctx.imageSmoothingQuality = "high";
-          ctx.drawImage(img, 0, 0, width, height);
+          ctx.drawImage(bitmap, 0, 0, width, height);
+          processCanvas(canvas, ctx, width, height, variant, resolve, reject);
+        } catch (e) { reject(e); }
+      };
+      if (typeof createImageBitmap === "function") {
+        fetch(srcDataUrl).then((r) => r.blob()).then((blob) => {
+          createImageBitmap(blob, { imageOrientation: "from-image" }).then(drawAndProcess).catch((e) => {
+            // Fall back to <img> path
+            fallbackImg();
+          });
+        }).catch(fallbackImg);
+      } else {
+        fallbackImg();
+      }
+      function fallbackImg() {
+        const img = new Image();
+        img.onload = () => drawAndProcess(img);
+        img.onerror = reject;
+        img.src = srcDataUrl;
+      }
+    } catch (e) { reject(e); }
+  });
+
+  // Extracted from preprocessImageForOCR so the EXIF-aware bitmap path and the fallback <img> path share it
+  const processCanvas = (canvas, ctx, width, height, variant, resolve, reject) => {
+    try {
           if (variant === "original") {
             resolve(canvas.toDataURL("image/jpeg", 0.95)); return;
           }
@@ -2684,11 +2974,7 @@ function AppInner() {
           ctx.putImageData(imgData, 0, 0);
           resolve(canvas.toDataURL("image/jpeg", 0.95));
         } catch (e) { reject(e); }
-      };
-      img.onerror = reject;
-      img.src = srcDataUrl;
-    } catch (e) { reject(e); }
-  });
+  };
 
   // ============ POWER OCR — multi-variant + frontier model + focused refinement ============
   // Pipeline:
@@ -3363,6 +3649,12 @@ OUTPUT
     // example from the actual subject. If a generic placeholder feels needed, rewrite using a concrete real instance instead.
     const noFakeExamplesClause = `\n\nREAL CONTENT ONLY — NO PLACEHOLDERS OR EXAMPLES-OF-EXAMPLES: Every piece of content must be substantive and specific to "${topic}". NEVER produce: filler phrases like "for example, [something]" without filling in the something; placeholder text like "Example: ...", "Sample: ...", "Insert your X here"; fabricated names ("John Smith", "Jane Doe", "Acme Corp", "Example University", "Dr. Example"); fake quotes attributed to invented people; "Lorem ipsum" or similar; structural skeletons like "Question 1: [question about X]" — write the actual question. Either give a real, concrete, specific instance from the subject or omit the example slot entirely. Generic illustrative analogies are fine when they actually illuminate — but never use them as filler.`;
 
+    // Typo tolerance: explicitly tell the model to silently understand intent through typos/misspellings.
+    // Most modern models already do this implicitly, but making it explicit removes the rare edge case
+    // where Claude over-corrects ("did you mean X?") on something obvious. Real lift on student input
+    // where they're typing fast or learning a new subject and don't know exact spelling.
+    const typoToleranceClause = `\n\nTYPO TOLERANCE: The user may misspell words, use wrong capitalization, or have typos. Silently understand their intent — do NOT surface "I assume you meant X" or ask for clarification on obvious typos (e.g. "phtosynthesis" → photosynthesis, "Bayesian thereom" → Bayes' theorem, "calculas" → calculus). Only ask for clarification if the meaning is genuinely ambiguous between two distinct concepts. In your output, use the correct spelling — don't echo back the user's typo.`;
+
     const formattingClause = isYoung
       ? `FORMATTING: Simple, friendly language. Plain math (5+3=8) not LaTeX${difficulty === "middle" ? "; use $...$ only for formulas" : ""}. **bold** for key terms.`
       : `FORMATTING: LaTeX for math — inline $...$, display $$...$$. Markdown code blocks with language. **bold** for key terms.`;
@@ -3613,7 +3905,7 @@ OUTPUT
         sourcesUsed += text.length;
       }
       const notebookSourcesClause = activeNb && sourceBlocks.length > 0 ? `\n\nNOTEBOOK SOURCES — the user's curated sources for the notebook "${activeNb.name}". Ground your response in these. When you make a factual claim that comes from a source, cite it inline as [S1], [S2], etc., matching the source numbers below. If the user asks about something not in the sources, say so explicitly rather than inventing.\n\n${sourceBlocks.join("\n\n———\n\n")}\n\nEND OF NOTEBOOK SOURCES.` : "";
-      const baseEnd = `${diffClause} ${formattingClause}${expertiseClause}${webClause}${youthSafetyClause}${weaknessClause}${masteryClause}${learnerContextClause}${languageClause}${domainClause}${interleavingClause}${predictionClause}${notebookSourcesClause}${noFakeExamplesClause}`;
+      const baseEnd = `${diffClause} ${formattingClause}${expertiseClause}${webClause}${youthSafetyClause}${weaknessClause}${masteryClause}${learnerContextClause}${languageClause}${domainClause}${interleavingClause}${predictionClause}${notebookSourcesClause}${noFakeExamplesClause}${typoToleranceClause}`;
       const mcqVerifyClause = ` Before returning, verify EACH question: (1) exactly one option is unambiguously correct and the others are clearly wrong, (2) terminology is precise and the stem is not misleading, (3) correctIndex points to the right option. Silently rewrite any question that fails these checks.`;
 
       if (selectedMode === "flashcards" || selectedMode === "recall") {
@@ -5094,6 +5386,15 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
             <MaterialBtn icon={<FileIcon size={14} />} label="PDF" onClick={() => pdfInputRef.current?.click()} />
             <MaterialBtn icon={<FileText size={14} />} label="Doc" onClick={() => docInputRef.current?.click()} />
           </div>
+          {/* Camera scanner — live edge-detect + auto-capture. Better than the simple Photo button
+              because it auto-detects when paper is in frame and crops automatically. */}
+          <button onClick={() => setShowCameraScanner(true)} style={{
+            marginTop: 8, width: "100%", padding: "10px", background: C.ink, color: C.paper, border: "none",
+            fontFamily: fontSans, fontSize: 12, letterSpacing: "0.05em", cursor: "pointer", borderRadius: 2,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 600,
+          }}>
+            <Camera size={14} /> Scan with auto-detect
+          </button>
           <button onClick={() => { setPasteDraft(pastedText); setShowPasteModal(true); }} style={{
             marginTop: 8, width: "100%", padding: "10px", background: C.paperDark, border: `1px solid ${C.rule}`,
             fontFamily: fontSans, fontSize: 12, letterSpacing: "0.05em", color: C.ink, cursor: "pointer", borderRadius: 2,
@@ -8900,6 +9201,63 @@ Deno.serve(async (req) => {
             <div style={{ marginTop: 14, padding: 12, background: C.accentSoft, color: C.accent, borderRadius: 2, fontSize: 13, fontFamily: fontSerif }}>{codeExplainResult.error}</div>
           )}
         </ModalShell>
+      )}
+
+      {/* ============ CAMERA SCANNER — live edge-detect + auto-capture ============ */}
+      {showCameraScanner && (
+        <div onClick={(e) => { if (e.target === e.currentTarget) stopCameraScanner(); }} style={{
+          position: "fixed", inset: 0, background: "#000", zIndex: 200,
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        }}>
+          <div style={{ position: "absolute", top: 14, left: 14, right: 14, display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 5 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#fff", fontFamily: fontSans, fontSize: 13 }}>
+              <Camera size={16} />
+              <span>{scannerStatus || "Initializing camera…"}</span>
+            </div>
+            <button onClick={stopCameraScanner} aria-label="Close scanner" style={{
+              padding: "8px 14px", background: "rgba(255,255,255,0.15)", color: "#fff", border: "1px solid rgba(255,255,255,0.4)",
+              borderRadius: 3, fontFamily: fontSans, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+            }}>
+              <X size={14} /> Cancel
+            </button>
+          </div>
+
+          <div style={{ position: "relative", width: "100%", maxWidth: 900, maxHeight: "75vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <video ref={cameraVideoRef} playsInline autoPlay muted style={{
+              width: "100%", maxHeight: "75vh", objectFit: "contain", borderRadius: 4, background: "#111",
+            }} />
+            <canvas ref={cameraOverlayRef} style={{
+              position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none",
+            }} />
+          </div>
+
+          {/* Stable-frames progress bar */}
+          {scannerStableFrames > 0 && (
+            <div style={{ width: "60%", maxWidth: 380, marginTop: 14, height: 4, background: "rgba(255,255,255,0.2)", borderRadius: 99, overflow: "hidden" }}>
+              <div style={{ width: `${Math.min(100, scannerStableFrames / 12 * 100)}%`, height: "100%", background: "#52a06b", transition: "width 0.08s" }} />
+            </div>
+          )}
+
+          <div style={{ marginTop: 18, display: "flex", gap: 10, alignItems: "center" }}>
+            <button onClick={() => {
+              const video = cameraVideoRef.current;
+              if (!video) return;
+              const bounds = detectPaperInFrame(video) || { x: 0, y: 0, width: video.videoWidth, height: video.videoHeight };
+              cameraCapturedRef.current = true;
+              captureCameraFrame(bounds);
+            }} style={{
+              width: 70, height: 70, borderRadius: "50%", background: "#fff", border: "4px solid rgba(255,255,255,0.5)",
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+            }} title="Capture now">
+              <div style={{ width: 54, height: 54, borderRadius: "50%", background: "#fff", border: "2px solid #000" }} />
+            </button>
+          </div>
+
+          <div style={{ marginTop: 14, color: "rgba(255,255,255,0.7)", fontFamily: fontSerif, fontSize: 12, fontStyle: "italic", maxWidth: 500, textAlign: "center", padding: "0 20px" }}>
+            Point at a sheet of paper on a contrasting (darker) surface with even lighting. The scanner auto-captures when it sees a stable rectangular region. Or tap the shutter button to capture manually.
+          </div>
+        </div>
       )}
 
       {showMathSolver && (        <ModalShell onClose={() => { setShowMathSolver(false); setMathInput(""); setMathSolution(null); }} title="Math solver" icon={<Calculator size={18} />} wide>
