@@ -129,7 +129,7 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.26.0";
+const APP_VERSION = "1.27.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
@@ -2340,7 +2340,17 @@ function AppInner() {
         setSupabase(client);
         setSupabaseReady(true);
         client.auth.getSession().then(({ data }) => { if (data && data.session) setUser(data.session.user); });
-        client.auth.onAuthStateChange((_evt, session) => { setUser(session ? session.user : null); });
+        // Listen for all auth events. PASSWORD_RECOVERY fires when the user lands on the app via a
+        // password-reset email link — Supabase has already created a temporary session at that point,
+        // we just need to prompt them to set a new password.
+        client.auth.onAuthStateChange((evt, session) => {
+          setUser(session ? session.user : null);
+          if (evt === "PASSWORD_RECOVERY") {
+            showToast("Reset link verified — set a new password below");
+            setChangePasswordDraft({ next: "", confirm: "", error: "", loading: false });
+            setShowChangePassword(true);
+          }
+        });
       } catch (e) { logError(e, "supabase init"); }
     };
     if (window.supabase && window.supabase.createClient) { ready(); return; }
