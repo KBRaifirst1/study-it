@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="12" ry="12" fill="#F4EFE6"/>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="11.25" ry="11.25" fill="none" stroke="#E0D9C8" stroke-width="1"/>
+  <text x="32" y="46" font-family="Cormorant Garamond, EB Garamond, Garamond, Georgia, serif" font-size="44" font-weight="600" text-anchor="middle" fill="#2C2A26" font-style="italic">S</text>
+  <rect x="22" y="51" width="20" height="2" fill="#C8A96A"/>
+</svg>
