@@ -129,7 +129,7 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.27.0";
+const APP_VERSION = "1.30.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
@@ -1250,6 +1250,22 @@ function AppInner() {
   const [webllmProgress, setWebllmProgress] = useState(0); // 0-1
   const [webllmLoading, setWebllmLoading] = useState(false);
   const [webgpuSupported, setWebgpuSupported] = useState(null); // null = checking, true/false
+
+  // ============ SMOLVLM (Transformers.js vision encoder) ============
+  // Separate from WebLLM: this is a vision-language model loaded via HuggingFace Transformers.js.
+  // We use it ONLY to describe uploaded images, then feed the description into the existing WebLLM
+  // (or Cloud AI) pipeline as text context. Two-stage: vision encode → text generation.
+  //
+  // Why this exists: WebLLM only has Phi-3.5-Vision (~3 GB, crashes Safari). SmolVLM-500M
+  // (~500 MB) fits Safari's WebGPU memory limits and works as a lightweight image describer.
+  //
+  // Quality note: SmolVLM is significantly weaker than Claude vision. It's good for basic
+  // image descriptions and printed-text reading, less reliable for handwriting / complex diagrams.
+  const smolVLMRef = useRef({ processor: null, model: null });
+  const [smolVLMLoaded, setSmolVLMLoaded] = useState(false);
+  const [smolVLMLoading, setSmolVLMLoading] = useState(false);
+  const [smolVLMStatus, setSmolVLMStatus] = useState("");
+  const [smolVLMProgress, setSmolVLMProgress] = useState(0);
   useEffect(() => { try { localStorage.setItem("lectern_ai_provider", aiProvider); } catch {} }, [aiProvider]);
   useEffect(() => { try { localStorage.setItem("lectern_local_model", localModel); } catch {} }, [localModel]);
 
@@ -1266,6 +1282,9 @@ function AppInner() {
 
   // Lazy-load WebLLM library + initialize an engine for the chosen local model.
   // The library is ~30 MB; the model itself is 0.7–2.4 GB. Both are cached in IndexedDB after first load.
+  // IMPORTANT: progress callback is throttled to ~250ms intervals — WebLLM can fire it hundreds of
+  // times per second, and each call triggers a React re-render. On Safari (which has weaker WebGPU
+  // memory management than Chrome) the re-render churn was contributing to OOM crashes.
   const initWebllm = async () => {
     if (webllmEngineRef.current && webllmLoadedModel === localModel) return webllmEngineRef.current;
     if (webgpuSupported === false) throw new Error("WebGPU not available in this browser. Use a recent Chrome/Edge on a desktop with a supported GPU.");
@@ -1276,10 +1295,23 @@ function AppInner() {
       // Pinned version for stability. esm.run mirrors npm via jsDelivr.
       const webllm = await import(/* @vite-ignore */ "https://esm.run/@mlc-ai/web-llm@0.2.79");
       setWebllmStatus(`Downloading ${LOCAL_MODELS[localModel]?.label || localModel}… (first time only — cached after)`);
+      // Progress throttling state — preserve between callback fires
+      let lastUpdateTime = 0;
+      let lastText = "";
       const engine = await webllm.CreateMLCEngine(localModel, {
         initProgressCallback: (p) => {
-          setWebllmProgress(typeof p.progress === "number" ? p.progress : 0);
-          if (p.text) setWebllmStatus(p.text);
+          const now = Date.now();
+          // Always update on text change (status messages are important and rare).
+          // Otherwise throttle to 4 Hz max (250ms) — sufficient for a visible progress bar.
+          if (p.text && p.text !== lastText) {
+            lastText = p.text;
+            setWebllmStatus(p.text);
+            setWebllmProgress(typeof p.progress === "number" ? p.progress : 0);
+            lastUpdateTime = now;
+          } else if (now - lastUpdateTime >= 250) {
+            setWebllmProgress(typeof p.progress === "number" ? p.progress : 0);
+            lastUpdateTime = now;
+          }
         },
       });
       webllmEngineRef.current = engine;
@@ -1296,6 +1328,91 @@ function AppInner() {
       throw e;
     }
   };
+
+  // ============ SMOLVLM LAZY-LOAD + IMAGE DESCRIBE ============
+  // Load Transformers.js + SmolVLM-500M-Instruct vision-language model. ~500 MB download cached
+  // in IndexedDB by Transformers.js after first load. Works on Safari (small enough for its WebGPU).
+  const initSmolVLM = async () => {
+    if (smolVLMRef.current.model && smolVLMRef.current.processor) return smolVLMRef.current;
+    if (webgpuSupported === false) throw new Error("WebGPU not available — SmolVLM requires WebGPU.");
+    setSmolVLMLoading(true);
+    setSmolVLMStatus("Loading Transformers.js runtime…");
+    setSmolVLMProgress(0);
+    try {
+      // Pinned version for stability. Use CDN since the project doesn't bundle Transformers.js.
+      const tf = await import(/* @vite-ignore */ "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3");
+      setSmolVLMStatus("Downloading SmolVLM-500M (first time only — cached after)");
+      const modelId = "HuggingFaceTB/SmolVLM-500M-Instruct";
+      // Throttled progress callback (same pattern as WebLLM)
+      let lastUpdateTime = 0;
+      const progressCb = (p) => {
+        const now = Date.now();
+        if (now - lastUpdateTime < 250) return;
+        lastUpdateTime = now;
+        if (p && typeof p.progress === "number") setSmolVLMProgress(p.progress / 100);
+        if (p && p.status) setSmolVLMStatus(p.file ? `${p.status}: ${p.file}` : p.status);
+      };
+      const processor = await tf.AutoProcessor.from_pretrained(modelId, { progress_callback: progressCb });
+      const model = await tf.AutoModelForVision2Seq.from_pretrained(modelId, {
+        dtype: { embed_tokens: "fp16", vision_encoder: "q4", decoder_model_merged: "q4" },
+        device: "webgpu",
+        progress_callback: progressCb,
+      });
+      smolVLMRef.current = { processor, model, tf };
+      setSmolVLMLoaded(true);
+      setSmolVLMStatus("✓ SmolVLM ready");
+      setSmolVLMProgress(1);
+      track("action", "smolvlm_loaded");
+      setTimeout(() => { setSmolVLMStatus(""); setSmolVLMLoading(false); }, 3500);
+      return smolVLMRef.current;
+    } catch (e) {
+      setSmolVLMStatus(`Failed: ${e.message}`);
+      setSmolVLMLoading(false);
+      logError(e, "smolvlm init");
+      throw e;
+    }
+  };
+
+  // Convert uploaded images to plain-text descriptions via SmolVLM. Used to bridge images into
+  // text-only WebLLM models (and as a fallback when Cloud AI isn't configured on Safari).
+  // Returns a single newline-joined string of all image descriptions, or null on failure.
+  const describeImagesWithSmolVLM = async (imageArr, queryHint) => {
+    if (!imageArr || imageArr.length === 0) return null;
+    const ctx = await initSmolVLM();
+    if (!ctx || !ctx.model || !ctx.processor) return null;
+    const { processor, model, tf } = ctx;
+    const descriptions = [];
+    for (let i = 0; i < imageArr.length; i++) {
+      try {
+        const img = imageArr[i];
+        // SmolVLM expects an image input — convert our base64 to an HTMLImage via load_image
+        const dataUrl = img.preview || `data:${img.mediaType || "image/jpeg"};base64,${img.data}`;
+        const rawImage = await tf.load_image(dataUrl);
+        const messages = [{
+          role: "user",
+          content: [
+            { type: "image" },
+            { type: "text", text: queryHint ? `Describe this image in detail. Context: ${queryHint}` : "Describe this image in detail, including any text visible." },
+          ],
+        }];
+        const prompt = processor.apply_chat_template(messages, { add_generation_prompt: true });
+        const inputs = await processor(prompt, [rawImage], { return_tensors: "pt" });
+        const generatedIds = await model.generate({ ...inputs, max_new_tokens: 256, do_sample: false });
+        const generatedTexts = processor.batch_decode(generatedIds.slice(null, [inputs.input_ids.dims.at(-1), null]), { skip_special_tokens: true });
+        descriptions.push(`[Image ${i + 1}]: ${(generatedTexts[0] || "").trim()}`);
+      } catch (e) {
+        logError(e, "smolvlm describe");
+        descriptions.push(`[Image ${i + 1}]: (could not be described — ${e.message})`);
+      }
+    }
+    return descriptions.join("\n\n");
+  };
+
+  // Safari detection — Safari's WebGPU is newer and has weaker memory management than Chrome's.
+  // Large models (1B+) often crash the tab on Safari with "a problem occurred repeatedly" errors.
+  // We warn users BEFORE they try to load a model so they can switch browsers or pick smaller.
+  const isSafariBrowser = typeof navigator !== "undefined" &&
+    /^((?!chrome|android).)*safari/i.test(navigator.userAgent || "");
 
   // Inference stats — surfaced live during streaming generation
   const [webllmStats, setWebllmStats] = useState({ tokensPerSec: 0, totalTokens: 0, firstTokenMs: 0, running: false });
@@ -3017,10 +3134,28 @@ function AppInner() {
       const modelIsVision = LOCAL_MODELS[localModel]?.tier === "vision";
       let imagesForLocal = (useMaterials && modelIsVision && images.length > 0) ? [...images] : [];
 
+      // ============ SMOLVLM VISION FALLBACK ============
+      // If the user has images but the local model isn't vision-capable, AND SmolVLM is loaded,
+      // describe the images via SmolVLM and inject the description into the system prompt as text.
+      // This bridges images into text-only local models (e.g. Llama 3.2 1B can now "see" images).
+      let augmentedSystem = systemPrompt;
+      if (useMaterials && !modelIsVision && images.length > 0 && smolVLMLoaded) {
+        try {
+          showToast("Describing images with SmolVLM…");
+          const desc = await describeImagesWithSmolVLM(images, topic || prompt.slice(0, 120));
+          if (desc) {
+            augmentedSystem = `${systemPrompt}\n\n[Image content described by local vision model — quality may vary]:\n${desc}\n\n[End of image descriptions]`;
+          }
+        } catch (e) {
+          logError(e, "smolvlm describe in callClaude");
+          // Continue without image context rather than failing the whole generation
+        }
+      }
+
       // ============ PDF PROCESSING FOR LOCAL MODEL ============
       // Bridges the gap: extract text (pdf.js) and inject as system-prompt block; for scanned PDFs
       // with a vision-tier model, rasterize pages and add them to images. Honest fallback otherwise.
-      let augmentedSystem = systemPrompt;
+      // (augmentedSystem already declared above for SmolVLM vision fallback — reusing it here)
       if (useMaterials && pdfs.length > 0) {
         showToast(`Processing ${pdfs.length} PDF${pdfs.length === 1 ? "" : "s"} for local model…`);
         try {
@@ -5895,6 +6030,57 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
                   </button>
                 </div>
               ))}
+            </div>
+          )}
+          {/* Vision-capability hint — when images are uploaded but the active local model can't read
+              them. The non-vision local model would silently ignore the images and the user would
+              wonder why their photo isn't being used. This hint surfaces the issue + offers fixes:
+              1) Switch to Cloud AI (best quality, instant if API key configured)
+              2) Use SmolVLM (free, offline, ~500 MB, works on Safari, much weaker than Claude)
+              3) Remove images and proceed text-only */}
+          {images.length > 0 && aiProvider === "webllm" && LOCAL_MODELS[webllmLoadedModel]?.tier !== "vision" && !smolVLMLoaded && (
+            <div style={{ marginTop: 10, padding: "10px 12px", background: C.blueSoft, border: `1px solid ${C.blue}`, borderRadius: 2, display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <Lightbulb size={14} color={C.blue} style={{ marginTop: 2, flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: fontMono, fontSize: 10, color: C.blue, letterSpacing: "0.08em", marginBottom: 4 }}>IMAGE READING</div>
+                <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, lineHeight: 1.5, marginBottom: 8 }}>
+                  Your current local AI model{webllmLoadedModel ? ` (${LOCAL_MODELS[webllmLoadedModel]?.label})` : ""} can't read images. Pick one:
+                </div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                  {anthropicApiKey ? (
+                    <Btn variant="primary" onClick={() => { setAiProvider("anthropic"); showToast("Switched to Cloud AI — images will be read by Claude"); }}>
+                      Switch to Cloud AI (best quality)
+                    </Btn>
+                  ) : (
+                    <Btn variant="primary" onClick={() => { setShowSettings(true); track("action", "image_hint_open_settings"); }}>
+                      Set up Cloud AI (best quality)
+                    </Btn>
+                  )}
+                  <Btn variant="ghost" onClick={() => { initSmolVLM().catch(() => {}); track("action", "smolvlm_init_from_hint"); }} disabled={smolVLMLoading}>
+                    {smolVLMLoading ? <><Loader2 size={11} className="spin" /> Loading…</> : <>Load SmolVLM (~500 MB, offline)</>}
+                  </Btn>
+                  <button onClick={() => setImages([])} style={{ background: "transparent", border: "none", color: C.inkMuted, fontFamily: fontSans, fontSize: 11, cursor: "pointer", textDecoration: "underline" }}>
+                    Remove images
+                  </button>
+                </div>
+                <div style={{ fontFamily: fontSerif, fontSize: 11, color: C.inkMuted, fontStyle: "italic", lineHeight: 1.5, marginTop: 4 }}>
+                  Cloud AI (Claude) reads images, handwriting, diagrams excellently. SmolVLM is free + offline + Safari-friendly but much weaker — best for basic descriptions and printed text.
+                </div>
+                {smolVLMLoading && smolVLMStatus && (
+                  <div style={{ fontFamily: fontMono, fontSize: 10, color: C.blue, marginTop: 6 }}>
+                    {smolVLMStatus} {smolVLMProgress > 0 && `(${Math.round(smolVLMProgress * 100)}%)`}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {/* SmolVLM loaded confirmation banner */}
+          {images.length > 0 && aiProvider === "webllm" && LOCAL_MODELS[webllmLoadedModel]?.tier !== "vision" && smolVLMLoaded && (
+            <div style={{ marginTop: 10, padding: "8px 12px", background: C.mossSoft, border: `1px solid ${C.moss}`, borderRadius: 2, display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.moss }} />
+              <div style={{ fontFamily: fontMono, fontSize: 11, color: C.moss, flex: 1 }}>
+                SMOLVLM ACTIVE · images will be described locally before generation
+              </div>
             </div>
           )}
           {pdfs.map((pdf, i) => (
@@ -10156,6 +10342,20 @@ Deno.serve(async (req) => {
                     </div>
                   )}
 
+                  {/* Safari WebGPU warning — Safari's WebGPU has weaker memory management than Chrome.
+                      Large models often crash the tab. Honest heads-up before the user commits to a download. */}
+                  {isSafariBrowser && webgpuSupported && !webllmLoadedModel && !webllmLoading && (
+                    <div style={{ marginTop: 8, padding: "10px 12px", background: C.goldSoft, border: `1px solid ${C.gold}`, borderRadius: 2 }}>
+                      <div style={{ fontFamily: fontMono, fontSize: 10, color: C.gold, letterSpacing: "0.08em", marginBottom: 4 }}>SAFARI HEADS-UP</div>
+                      <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
+                        Safari's WebGPU implementation is newer and uses memory less efficiently than Chrome's. Large models can crash the tab with "a problem occurred repeatedly" errors. If that happens, either:
+                        <span style={{ display: "block", marginTop: 4 }}>• <strong>Pick the smallest model</strong> (Llama 3.2 1B is the lightest)</span>
+                        <span style={{ display: "block" }}>• <strong>Use Chrome / Arc / Edge</strong> instead — their WebGPU is more battle-tested</span>
+                        <span style={{ display: "block" }}>• <strong>Stick with Cloud AI</strong> (Claude API) — it's faster and higher quality anyway</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Ready indicator + live inference stats */}
                   {webllmLoadedModel && webllmLoadedModel === localModel && !webllmLoading && (
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, padding: "8px 12px", background: C.mossSoft, border: `1px solid ${C.moss}`, borderRadius: 2 }}>
@@ -10172,11 +10372,48 @@ Deno.serve(async (req) => {
 
                   {/* Download / benchmark / cache buttons */}
                   <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-                    {!webllmLoadedModel && !webllmLoading && webgpuSupported && (
-                      <Btn variant="primary" onClick={() => initWebllm().catch(() => {})}>
-                        <Download size={12} /> Download &amp; load {LOCAL_MODELS[localModel]?.label || "model"}
-                      </Btn>
-                    )}
+                    {!webllmLoadedModel && !webllmLoading && webgpuSupported && (() => {
+                      // Safari safety gate: if on Safari AND the selected model is >2 GB, gate the
+                      // download behind an explicit confirmation. Safari's WebGPU has tight memory
+                      // limits — large models crash the tab. Same flow on Chrome → unrestricted.
+                      const selectedSize = LOCAL_MODELS[localModel]?.size || "";
+                      const sizeMatch = selectedSize.match(/([\d.]+)\s*GB/i);
+                      const sizeGB = sizeMatch ? parseFloat(sizeMatch[1]) : 0;
+                      const isRiskyOnSafari = isSafariBrowser && sizeGB > 2;
+                      if (isRiskyOnSafari) {
+                        return (
+                          <div style={{ padding: 12, background: C.accentSoft, border: `1px solid ${C.accent}`, borderRadius: 2, width: "100%" }}>
+                            <div style={{ fontFamily: fontMono, fontSize: 10, color: C.accent, letterSpacing: "0.08em", marginBottom: 6 }}>⚠ TOO LARGE FOR SAFARI</div>
+                            <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, lineHeight: 1.5, marginBottom: 10 }}>
+                              <strong>{LOCAL_MODELS[localModel]?.label}</strong> is {selectedSize} — Safari will crash trying to load it ("a problem occurred repeatedly"). On Chrome / Arc / Edge, this works fine.
+                            </div>
+                            <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, lineHeight: 1.5, marginBottom: 10 }}>
+                              <strong>Safer options:</strong>
+                              <span style={{ display: "block", marginTop: 4 }}>• Switch to <strong>Llama 3.2 1B</strong> (~700 MB) or <strong>SmolLM2 1.7B</strong> (~1 GB) — both fit Safari's memory</span>
+                              <span style={{ display: "block" }}>• Open this site in Chrome / Arc to use bigger models</span>
+                              <span style={{ display: "block" }}>• Use Cloud AI (Anthropic API key) — faster and higher quality anyway</span>
+                            </div>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                              <Btn variant="primary" onClick={() => setLocalModel("Llama-3.2-1B-Instruct-q4f16_1-MLC")}>
+                                Switch to Llama 3.2 1B
+                              </Btn>
+                              <button onClick={() => {
+                                if (confirm(`This will probably crash Safari and you'll see "a problem occurred repeatedly". You'll need to close the tab and start over. Are you sure you want to try downloading ${LOCAL_MODELS[localModel]?.label} (${selectedSize}) on Safari anyway?`)) {
+                                  initWebllm().catch(() => {});
+                                }
+                              }} style={{ background: "transparent", border: "none", color: C.inkMuted, fontFamily: fontSans, fontSize: 11, cursor: "pointer", textDecoration: "underline" }}>
+                                Try anyway (likely to crash)
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return (
+                        <Btn variant="primary" onClick={() => initWebllm().catch(() => {})}>
+                          <Download size={12} /> Download &amp; load {LOCAL_MODELS[localModel]?.label || "model"}
+                        </Btn>
+                      );
+                    })()}
                     {webllmLoadedModel === localModel && !webllmLoading && (
                       <>
                         <Btn variant="ghost" onClick={runBenchmark} disabled={benchmarkRunning}>
