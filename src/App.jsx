@@ -115,7 +115,7 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.15.0";
+const APP_VERSION = "1.20.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
@@ -358,6 +358,314 @@ const HELP_CONTENT = [
       },
     ],
   },
+  {
+    category: "The 8 Tabs",
+    icon: "🧭",
+    entries: [
+      {
+        id: "tab-today",
+        title: "Today tab — daily home",
+        body: "Where to find it: top of every page, leftmost tab.\n\nWhat it does: A daily-review dashboard. Shows: your study streak; total sessions; minutes studied today; concepts mastered; accuracy rating; Skill of the Day card (rotating study technique with explainer); Daily Challenge (one focused practice question, fresh each day); Minimum Viable Session (a 90-second study micro-prompt for low-energy days); Implementation Intention prompt (write down WHEN and WHERE you'll study tomorrow — a behavior-science nudge that doubles follow-through rates).\n\nHow to use it: Start your study session here. Click Skill of the Day to learn the technique. Click Daily Challenge to do today's practice. Fill in the Implementation Intention field with something specific like \"9am at the library.\"\n\nWhy it matters: the daily structure removes decision fatigue. You don't have to figure out what to study — Today suggests something concrete.",
+      },
+      {
+        id: "tab-library",
+        title: "Library tab — notebooks + classes",
+        body: "Where to find it: second tab from left in the header.\n\nWhat it does: Two things in one place. (1) Your notebooks (source-grounded study collections — see the Notebooks section). (2) Your classes (subjects you're studying — used by the curriculum builder and the iCal subscription).\n\nHow to use it: Click \"New notebook\" to create a notebook scoped to a specific topic. Add classes with their typical study time and difficulty so the curriculum builder can plan a realistic week for you.\n\nClasses don't require you to attach sources. They're just labels that help the AI understand what you're working on across multiple sessions.",
+      },
+      {
+        id: "tab-tutor",
+        title: "AI Tutor tab — the main workspace",
+        body: "Where to find it: third tab from left, the ✦ icon.\n\nWhat it does: The primary place where AI generation happens. Type a topic, pick a mode (flashcards / explainer / quiz / etc.), generate.\n\nHow to use it: (1) Type a topic in the search bar at the top. (2) Optionally upload material (notes, PDFs, photos via the upload buttons). (3) Click any mode card. (4) Wait for generation — depending on Quality Studio settings, this can be 5 seconds to 2 minutes. (5) Review the output. Save to Vault if useful; rate cards if it was flashcards.\n\nResume Recent strip at the top shows your last 3 generations across all topics — clicking jumps back into them instantly.",
+      },
+      {
+        id: "tab-second-brain",
+        title: "Second Brain tab — your generation history",
+        body: "Where to find it: fourth tab from left.\n\nWhat it does: A searchable timeline of every AI generation you've saved to the Vault. Filter by mode (only flashcards, only quizzes), filter by topic, filter by date. Click any entry to view the full generation again.\n\nHow to use it: Save generations from the AI Tutor by clicking the bookmark icon on the output. They appear here. The Vault is purely local (browser localStorage) — it doesn't sync across devices unless you've enabled Supabase sync.\n\nUseful for revisiting past explanations, re-running spaced-repetition reviews on old flashcard sets, or pulling up that explainer you generated about photosynthesis three weeks ago.",
+      },
+      {
+        id: "tab-projects",
+        title: "Projects tab — long-form work",
+        body: "Where to find it: fifth tab from left.\n\nWhat it does: For multi-step, multi-session study projects (e.g. \"prepare for AP Bio exam\" or \"learn React in 30 days\"). Tracks progress across multiple sub-topics, generated materials, and review sessions.\n\nHow to use it: Create a project, define the goal + deadline, let the AI break it into milestones. Each milestone becomes a focused study target with its own generated materials. Mark milestones complete as you work through them.",
+      },
+      {
+        id: "tab-code-stem",
+        title: "Code & STEM tab — math, code, derivations",
+        body: "Where to find it: sixth tab from left.\n\nWhat it does: Specialized tools for technical subjects.\n\nTools available: (1) Math Solver — paste an equation or word problem, get step-by-step solution with explanations. (2) Whiteboard — draw equations/diagrams freehand on a canvas, AI reads + explains them. (3) Derive a Proof — give the AI a theorem and it walks through the proof step-by-step. (4) Explain Code — paste any code, get line-by-line explanation.\n\nHow to use: Pick a tool, type your question or paste your code, click the action button. Output appears inline.\n\nProvider-aware: Math Solver and Explain Code do honest preflight checks. If you're on Cloud AI without an API key, they tell you. If you're on Local AI without a model loaded, they tell you. They don't silently fail.",
+      },
+      {
+        id: "tab-wellbeing",
+        title: "Wellbeing tab — sustainable studying",
+        body: "Where to find it: seventh tab from left.\n\nWhat it does: Tracks your study sessions across the week and shows whether you're studying sustainably. Includes a heatmap of when you studied (real, not fake — derived from your actual session timestamps), a fatigue indicator (long sessions without breaks get flagged), and gentle break-reminder defaults.\n\nHow to use it: Mostly automatic — the app tracks sessions as you do them. Visit this tab when you want to see the bigger picture: am I studying every day? Am I burning out by doing 4-hour sessions? When do I tend to be most productive?\n\nThe app does NOT lecture you or score your habits. It just shows what's happening so you can decide.",
+      },
+      {
+        id: "tab-integrations",
+        title: "Integrations tab — external connections",
+        body: "Where to find it: rightmost tab.\n\nWhat it does: All your external-service connections and configurations in one place.\n\nCards available: (1) Backend configuration — Setup Pack import/export, manual Supabase override. (2) Web search for local model — point to your Edge Function. (3) iCal subscription — generate a calendar feed URL. (4) Google Drive — OAuth sign-in for direct Markdown export to your Drive folders. (5) Anthropic byo-key — manage your API key (alternate location to Settings).\n\nMost users only touch this tab during initial setup. After that it sits idle.",
+      },
+    ],
+  },
+  {
+    category: "Each Output Mode in Detail",
+    icon: "✦",
+    entries: [
+      {
+        id: "mode-flashcards",
+        title: "Flashcards (spaced repetition)",
+        body: "What it does: Generates a deck of front/back cards from your topic or sources. Uses SM-2 spaced repetition under the hood — every time you rate a card (Again / Hard / Good / Easy), the algorithm schedules its next review interval (1 day → 6 days → exponentially increasing intervals based on ease).\n\nWhere to find it: AI Tutor → Flashcards card. Or Code & STEM has math-specific variants.\n\nHow to use it: Type topic → click Flashcards → review each card by clicking to flip → rate honestly. Cards you rate \"Again\" come back tomorrow. Cards you rate \"Easy\" disappear for weeks.\n\nThe review queue (Today tab) surfaces cards that are DUE for review based on the spaced-repetition schedule. Don't try to review every card every day — trust the algorithm.",
+      },
+      {
+        id: "mode-practice",
+        title: "Practice (10-question quiz)",
+        body: "What it does: Generates 10 multiple-choice questions with 4 options each. After you finish, shows which you got right/wrong with full explanations.\n\nHow to use it: Type topic → click Practice → answer one at a time → see your score + concept-level breakdown at the end.\n\nIf you score ≥80% but not perfect: a \"Quick Mastery Check\" appears. The app re-quizzes you on the same concepts with different wording/distractors. Pass that re-quiz to level up to harder difficulty.\n\nIf you score <80%: focus on the explanations of what you missed before retrying.",
+      },
+      {
+        id: "mode-exam",
+        title: "Exam (timed simulation)",
+        body: "What it does: Generates a longer, timed quiz (10-25 questions) styled like an actual exam. Multi-format: MCQs, short answer, sometimes longer free-response.\n\nHow to use it: Pick number of questions + time limit. The countdown timer starts immediately. Submit when done OR when time runs out.\n\nUse this to simulate test conditions before a real exam — the time pressure is part of the practice.",
+      },
+      {
+        id: "mode-diagnostic",
+        title: "Diagnostic (find weak spots first)",
+        body: "What it does: A short adaptive quiz that probes what you DON'T know. Starts general, narrows in on areas where you struggle. Output is a personalized weakness map.\n\nWhen to use it: Start of a study session when you're not sure what to focus on. Or before a major review — find the gaps before reviewing everything blindly.\n\nThe weak spots it identifies get fed into future quiz generation, so subsequent quizzes weight harder questions toward your weak areas automatically.",
+      },
+      {
+        id: "mode-explain",
+        title: "Explain (structured breakdown)",
+        body: "What it does: A clear, structured explanation of the topic. Sections include definition, key components, common misconceptions, real-world examples, and how it connects to related concepts.\n\nWhen to use it: First time learning something. Or when you read about something and need to make sense of it.\n\nThis mode streams in real-time — you see Claude's writing appear as it's generated. Cancel by navigating away.",
+      },
+      {
+        id: "mode-cheatsheet",
+        title: "Cheatsheet (1-page reference)",
+        body: "What it does: Condenses a topic to a one-page reference card: key formulas, definitions, exceptions, common pitfalls, mnemonics. Dense but scannable.\n\nWhen to use it: Right before a quiz or exam when you want to refresh the essentials quickly.\n\nCheatsheets work best with bounded topics (\"trig identities\" or \"causes of WWI\") rather than huge ones (\"world history\").",
+      },
+      {
+        id: "mode-recall",
+        title: "Recall (active retrieval practice)",
+        body: "What it does: Prompts you to write out everything you know about a topic from memory, no peeking. Then the AI compares your recall against a comprehensive answer and shows what you forgot.\n\nWhy it works: Active recall is the most evidence-backed study technique. Trying to retrieve information strengthens memory more than re-reading does.\n\nHow to use it: Click Recall → write your answer in the textarea → submit → see the gaps.",
+      },
+      {
+        id: "mode-free-response",
+        title: "Free Response (open-ended Q)",
+        body: "What it does: Generates 3-5 essay-style or short-answer questions. You write your responses. AI grades each one against rubrics and points out what's missing.\n\nWhen to use it: Practicing for exams that have written components, not just MCQs. Honing your ability to explain rather than just recognize.",
+      },
+      {
+        id: "mode-error-review",
+        title: "Error Review (target your weak spots)",
+        body: "What it does: Queries the questions you've gotten wrong in recent quizzes and regenerates fresh practice focused on those concepts.\n\nWhen to use it: After a quiz with low score. Instead of redoing the same quiz, error review generates NEW questions on the same concepts so you can't just memorize answers.",
+      },
+      {
+        id: "mode-derive",
+        title: "Derive (step-by-step derivation)",
+        body: "What it does: Walks through a mathematical or logical derivation. Each step shows the rule applied and why.\n\nWhere to find it: Code & STEM tab → Derive a Proof. Or AI Tutor with technical topics.\n\nUse it for: proofs in math, derivations in physics, formal arguments in logic/philosophy.",
+      },
+      {
+        id: "mode-critique",
+        title: "Critique (steelman + counterarguments)",
+        body: "What it does: For arguments, theories, or claims — the AI presents the strongest version of the argument (steelman), then the strongest counterarguments. Both sides treated seriously.\n\nWhen to use it: Studying for debate. Writing argumentative essays. Stress-testing your own beliefs. Understanding contested topics in your field.",
+      },
+      {
+        id: "mode-curriculum",
+        title: "Curriculum (multi-week study plan)",
+        body: "What it does: Builds a realistic study plan for a goal, calibrated to YOUR available time and current level. Output: week-by-week schedule with specific topics per session, recommended modes for each session, milestones.\n\nHow to use it: Set up your context in Settings → Profile (your level, hours/week available, exam date if any). Then go to Curriculum, type the subject, generate. You'll get a plan you can actually follow.\n\nWorks WITHOUT a formal class — the curriculum builder uses your learner context (age/grade, goal) to scope appropriately. You don't need to attach materials.",
+      },
+      {
+        id: "mode-concept-map",
+        title: "Concept Map (knowledge graph)",
+        body: "What it does: Generates a textual concept map: central topic, surrounding concepts, relationships between them (\"X causes Y\", \"X is a type of Y\", \"X depends on Y\").\n\nWhen to use it: Understanding how a topic fits into a bigger picture. Identifying which concepts are foundational vs derivative.",
+      },
+      {
+        id: "mode-audio-overview",
+        title: "Audio Overview (podcast-style script)",
+        body: "What it does: Generates a script for a two-host podcast episode about the topic. Host A and Host B trade lines, ask each other questions, riff on examples. Reads like a real conversation.\n\nWhy it exists: For audio learners. You can read it aloud, paste into a text-to-speech tool, or have someone help record it.\n\nNotebookLM-inspired. Streams in real-time.",
+      },
+      {
+        id: "mode-mind-map",
+        title: "Mind Map (interactive SVG)",
+        body: "What it does: Generates a true SVG mind map — central topic in the middle, branches radiating out to sub-topics, with sub-sub-topics on each branch. Rendered as a clickable, zoomable diagram in the browser.\n\nDownload as SVG or PNG for use in your notes app.",
+      },
+      {
+        id: "mode-briefing",
+        title: "Briefing Document (executive report)",
+        body: "What it does: Generates a 1-2 page formal report on the topic. Headers, sections, bullet points, executive summary at the top. Reads like a McKinsey-style brief.\n\nUse it for: presentations, sharing with non-experts, when you need to communicate a topic to someone else in writing.",
+      },
+      {
+        id: "mode-slide-deck",
+        title: "Slide Deck (presentation outline)",
+        body: "What it does: Generates a slide-by-slide outline for a presentation. Each slide has a title and bullet points. Export to PPTX for use in PowerPoint, Keynote, Google Slides.",
+      },
+      {
+        id: "mode-data-table",
+        title: "Data Table (comparison matrix)",
+        body: "What it does: Generates a structured comparison table — items on rows, attributes on columns. Useful when learning a topic that has many similar items differentiated by specific traits (e.g. amino acids by R-group, planets by orbital parameters, historical figures by ideology).",
+      },
+      {
+        id: "mode-tutor-chat",
+        title: "Tutor Chat (free-form Q&A)",
+        body: "What it does: Open-ended conversation with the AI tutor. You ask questions, it answers, you follow up. No fixed structure.\n\nWhen to use it: When your question isn't \"give me flashcards\" but \"why does this work?\" or \"can you explain why my answer was wrong?\".\n\nThe chat is scoped to your current topic + notebook (if one is active), so the tutor stays grounded in your context.",
+      },
+    ],
+  },
+  {
+    category: "Code & STEM Tools (Deep Dive)",
+    icon: "∑",
+    entries: [
+      {
+        id: "stem-math-solver",
+        title: "Math Solver",
+        body: "Where to find it: Code & STEM tab → Math Solver card → click Open.\n\nWhat it does: Paste an equation, word problem, or LaTeX expression. AI solves step-by-step with explanations of each step. Handles algebra, calculus, statistics, linear algebra.\n\nHonest limit: very long or research-level math may struggle. Not a replacement for Wolfram Alpha for hard symbolic computation. Best for explaining HOW to solve, not just the final answer.",
+      },
+      {
+        id: "stem-whiteboard",
+        title: "Whiteboard",
+        body: "Where to find it: Code & STEM tab → Whiteboard.\n\nWhat it does: A drawing canvas where you can sketch equations, diagrams, anatomy, circuits — anything visual. The AI reads your drawing and explains it.\n\nHow to use it: Draw using your trackpad or stylus. When done, click \"Explain this drawing.\" AI uses vision to interpret your sketch.\n\nGreat for hand-drawn math problems where typing the equation is awkward. Works best with clean, legible drawings on the warm off-white canvas.",
+      },
+      {
+        id: "stem-derive",
+        title: "Derive a Proof",
+        body: "Where to find it: Code & STEM tab → Derive a Proof.\n\nWhat it does: Walks through a formal proof step-by-step. Each step shows the rule applied and why.\n\nHow to use it: Click Derive a Proof → a prompt asks for the theorem (e.g. \"prove the sum of angles in a triangle is 180°\") → submit → AI generates the full derivation.\n\nUse the streaming preview to follow along as the proof unfolds.",
+      },
+      {
+        id: "stem-explain-code",
+        title: "Explain Code",
+        body: "Where to find it: Code & STEM tab → Explain Code.\n\nWhat it does: Paste any code (any language). AI explains it line-by-line, identifies patterns, notes potential bugs.\n\nHow to use it: Click Explain Code → a prompt asks for the code → paste → submit. Output appears inline.\n\nWorks great with: Python, JavaScript, Java, C++, Rust, SQL, Bash, R, MATLAB, and most major languages.",
+      },
+    ],
+  },
+  {
+    category: "Settings (Every Section)",
+    icon: "⚙",
+    entries: [
+      {
+        id: "settings-where",
+        title: "Where to find Settings",
+        body: "Click the gear icon ⚙ in the top-right of the header, on any page. Settings opens as a modal overlay. Close with X or Esc.",
+      },
+      {
+        id: "settings-ai-provider",
+        title: "Settings → AI Provider",
+        body: "Where: Settings → AI Provider section.\n\nWhat it does: Pick which AI runs the show — Cloud AI (paid, world-class) or Local AI (free, weaker).\n\nCloud AI fields:\n• API Key — paste your Anthropic key here. Password-masked. Stored in browser localStorage only.\n• Test connection — verifies the key works.\n• Remove key — clears it from your browser.\n\nLocal AI section:\n• Pick a model (Llama 3.2 1B / 3B, Phi 3.5 mini, Gemma 2 2B, Phi 3.5 vision).\n• Download — first time triggers a ~1-3GB download cached in IndexedDB. Subsequent loads are instant.\n• Unload — frees GPU memory.\n• Quality difference vs Cloud AI is honestly explained inline.",
+      },
+      {
+        id: "settings-profile",
+        title: "Settings → Profile",
+        body: "Where: Settings → Profile section.\n\nFields:\n• Display name — what the greeting calls you (\"Good evening, [name]\").\n• Age or grade — e.g. \"10th grade\", \"undergrad junior\", \"adult, no formal background in CS\". Helps the AI calibrate explanations to your level.\n• Learning goal — short description of what you're working toward. Used by the curriculum builder.\n• Persona — picks the tone the AI uses. Default, Drill Sergeant, Patient Mentor, etc.\n• Preferred style — \"balanced\" / \"concise\" / \"thorough\". Affects output length and depth.\n\nThe Profile context gets injected into every AI prompt so the AI knows who it's talking to.",
+      },
+      {
+        id: "settings-quality-studio",
+        title: "Settings → AI Quality Studio",
+        body: "Where: Settings → AI Quality Studio section.\n\nWhat it does: Trade speed for rigor in every AI generation.\n\nFour presets:\n• Speed (Haiku 4.5, no thinking, no web search, single pass) — drafts, vocab drills.\n• Balanced (Opus 4.7, 8k thinking, 4 web searches, single pass) — default.\n• Quality (Opus 4.7, 16k thinking, 8 web searches, 3-stage multi-agent) — important explanations.\n• Max (Opus 4.8, 24k thinking, 12 web searches, 4-stage with verification) — research-grade output.\n\nOr fine-tune the knobs yourself: model picker, thinking budget slider (0-32k), search budget slider (0-16), multi-agent toggle, verification toggle.\n\nAlso here: Output Language (26 supported) and Per-fact source attribution toggle.",
+      },
+      {
+        id: "settings-per-fact",
+        title: "Settings → Per-fact source attribution",
+        body: "Where: Settings → AI Quality Studio → \"Per-fact source attribution\" checkbox.\n\nWhat it does: When ON, every factual claim in AI output gets a \"→ Source: [Sn]\" or \"→ Source: [Wn]\" line beneath it. [Sn] = notebook source, [Wn] = web search result, \"general knowledge\" = from the AI's training.\n\nWhen to enable: Research notes, fact-checking, source-critical learning.\n\nWhen to disable: Flowing prose, explainers — the citations break narrative flow.\n\nDefault: OFF.",
+      },
+      {
+        id: "settings-account",
+        title: "Settings → Account (Supabase sign-in)",
+        body: "Where: Settings → Account section.\n\nWhat it does: Sign in with your email to enable cross-device sync of your profile + classes + notebooks via Supabase.\n\nHow to use it: Click \"Sign in,\" enter your email, check inbox for a magic link, click it. You're now signed in.\n\nWhat syncs: profile, classes, notebooks, shared notebooks.\n\nWhat doesn't: Vault (saved generations), recent topics, review queue history. Those stay local to each device.\n\nSign out clears your session locally — your data on Supabase stays put, you can sign back in later to recover it.",
+      },
+      {
+        id: "settings-diagnostics",
+        title: "Settings → Diagnostics",
+        body: "Where: Settings → Diagnostics section.\n\nWhat it shows: Real-time technical status. App version, build date, browser + OS, online status, WebGPU support, localStorage usage with % of 5MB quota, AI API usage (session + lifetime calls), error log (last 20 errors), latency of last API call.\n\nHow to use it: Open this when something's broken — the error log usually tells you what went wrong. Or open it just to see what the app knows about your setup.\n\nIncludes \"Clear analytics\" and \"Reset session\" buttons for debugging.",
+      },
+      {
+        id: "settings-data-privacy",
+        title: "Settings → Data & Privacy",
+        body: "Where: Settings → Data & Privacy section.\n\nFeatures:\n• Export Everything — downloads a zip of all your data (profile, notebooks, vault, settings) as JSON files + a Markdown README.\n• Clear all data — nukes everything in localStorage (with a confirmation prompt).\n• Wipe specific categories — clear only flashcard SM-2 states, or only vault, or only review queue.\n\nUse this to back up before clearing, or before sharing your browser with someone.",
+      },
+    ],
+  },
+  {
+    category: "Notebooks (Source-Grounded Learning)",
+    icon: "📔",
+    entries: [
+      {
+        id: "nb-sources-vision",
+        title: "Source types you can add",
+        body: "Text sources: paste textbook excerpts, article text, lecture notes, your own writing. Click \"+ Add source\" → \"Paste text.\"\n\nPDF sources: drag PDFs into the source list. Text is extracted client-side. Scanned PDFs get vision-mode reading.\n\nImage sources: photos of handwritten notes, whiteboard photos, slide screenshots. AI reads them via vision.\n\nWeb URLs: paste a URL → \"Add URL.\" App fetches the page, extracts the article body, adds as a source. Works for most blogs, news articles, Wikipedia. Doesn't work for sites behind paywalls or JavaScript-only rendered content.\n\nGoogle Drive: if you've connected Drive via OAuth (Integrations tab), import Markdown files directly.",
+      },
+      {
+        id: "nb-share",
+        title: "Sharing a notebook with someone",
+        body: "Requires Supabase sign-in (both your end and the recipient's).\n\nWhere: Library tab → click a notebook → \"Share\" button.\n\nHow to use it: Enter the recipient's email → click Send. They get a notification when they next sign in. They can see your sources but not edit them.\n\nUse for: group projects, study buddies, sharing a curated set of readings with a friend studying the same subject.",
+      },
+      {
+        id: "nb-citations-rules",
+        title: "How citations actually work",
+        body: "When a notebook is ACTIVE during AI generation:\n• Sources are numbered [S1], [S2], [S3]... in the order you added them.\n• The AI gets the full text of all sources injected into its prompt.\n• When it states a fact from a source, it cites inline like \"...as Plato argued [S1].\"\n• When per-fact citations are ON (Quality Studio toggle), each fact gets a separate \"→ Source: [S1]\" line.\n\nWhen a notebook is INACTIVE:\n• No [Sn] citations.\n• AI uses training only or web search if enabled.\n• Output is general knowledge, less anchored to specific texts.\n\nTo activate a notebook: click it in Library. The header shows the active notebook name. To deactivate: click \"Exit notebook\" in the active-notebook strip.",
+      },
+      {
+        id: "nb-source-tips",
+        title: "Tips for good source quality",
+        body: "Length: 500-5000 words per source is the sweet spot. Shorter sources don't have enough for the AI to draw on. Longer sources risk the AI missing details buried deep.\n\nFormat: clean text or PDFs work best. Image-only PDFs (scanned old textbooks) work via vision mode but are slower and less accurate.\n\nVariety: 3-7 sources per notebook is ideal. Too few → narrow scope. Too many → noisy, the AI struggles to keep them all straight.\n\nDeduplication: don't add the same content twice. The AI doesn't know you want to emphasize it — it'll just look weird in the [Sn] numbering.",
+      },
+    ],
+  },
+  {
+    category: "Camera Scanner (Capture Pages)",
+    icon: "📷",
+    entries: [
+      {
+        id: "scanner-where",
+        title: "Where to find it",
+        body: "AI Tutor tab → upload area (where Photo/Image/PDF/Doc buttons are) → \"Scan with auto-detect\" button below the grid.",
+      },
+      {
+        id: "scanner-how",
+        title: "How to use the auto-detect scanner",
+        body: "1. Click \"Scan with auto-detect.\" Grant camera permission when prompted.\n2. A full-screen modal opens with live camera view (back camera on mobile).\n3. Point the camera at a piece of paper. Try to:\n   • Hold the camera roughly parallel to the page\n   • Have a darker surface beneath the page (desk, table)\n   • Use even lighting\n4. A gold rectangle appears when the scanner detects a possible page. The rectangle turns green and corner-brackets appear when it's stable.\n5. After ~500ms of stability, auto-capture triggers. You'll see \"Captured!\" and the image is added to your sources.\n6. Or click the white shutter button to capture manually.\n\nClick Cancel to back out without capturing.",
+      },
+      {
+        id: "scanner-honest-limits",
+        title: "Honest limits",
+        body: "What it does: detects an axis-aligned bounding rectangle of bright pixels on a darker background. Auto-crops to that region with a small padding.\n\nWhat it does NOT do: perspective correction (would need OpenCV, ~8MB library). So if you photograph a page at a steep angle, the captured image is still skewed.\n\nDetection works best: white/light paper on darker desk, even lighting, page covers 30-80% of the frame.\n\nDetection struggles: cluttered backgrounds, dim lighting, glossy pages with reflections, multiple papers in frame.\n\nFallback: if auto-detect doesn't lock on, the manual shutter button always works. Or close the scanner and use the regular \"Photo\" button.",
+      },
+    ],
+  },
+  {
+    category: "Edge Functions (Backend Extensions)",
+    icon: "⚡",
+    entries: [
+      {
+        id: "ef-what",
+        title: "What are Edge Functions?",
+        body: "Small server-side functions deployed to your Supabase project. They handle things the browser can't (or shouldn't) do directly: calling external APIs with secret keys, serving calendar feeds, etc.\n\nStudy It uses two:\n• study-search — proxies web search queries to Tavily so your local WebGPU AI can fact-check.\n• study-ics — generates an iCalendar feed of your study schedule for Apple/Google Calendar subscription.",
+      },
+      {
+        id: "ef-web-search",
+        title: "Web search for local AI",
+        body: "Where to find it: Integrations tab → \"Web search for local model\" card.\n\nWhat it does: When you're using Local AI (WebGPU) and have a web search budget set in Quality Studio, the app POSTs your query to your Edge Function. The function calls Tavily's API, returns clean search results, and the app injects them into your local model's prompt as [W1], [W2] citations.\n\nWhy needed: Cloud AI (Claude) has built-in web search via the Anthropic API — no Edge Function needed for that. Local models have no internet access by default; the Edge Function gives them one.\n\nSetup: see the in-app Integrations card or the README in the share pack. Requires a Tavily API key (free 1000 searches/month at tavily.com) and a deployed function in your Supabase.",
+      },
+      {
+        id: "ef-ical",
+        title: "iCal subscription (calendar feed)",
+        body: "Where to find it: Integrations tab → \"iCal subscription\" card.\n\nWhat it does: Generates a unique URL you subscribe to in Apple Calendar / Google Calendar / Outlook. Your Study It schedule (daily 5pm study reminders for each class + exam date if set) appears as live-updating calendar entries.\n\nHow to subscribe:\n• Apple Calendar: File → New Calendar Subscription → paste URL.\n• Google Calendar: Other calendars → Add by URL → paste.\n• Outlook: Add calendar → Subscribe from web → paste.\n\nCalendars poll every ~15 minutes, so changes you make in Study It (adding a class, changing exam date) appear in your calendar within minutes.\n\nRequires: deployed study-ics Edge Function + a generated token (the app generates one for you with a click).",
+      },
+      {
+        id: "ef-deploy-via-dashboard",
+        title: "Deploying Edge Functions without CLI",
+        body: "If you can't get the Supabase CLI working on your machine, the dashboard route is just as good:\n\n1. Go to your Supabase project → Edge Functions in the sidebar.\n2. Click \"Deploy a new function.\"\n3. Pick \"Via Editor\" or \"From scratch.\"\n4. Name it study-search (or study-ics).\n5. Paste the function code (shown in the Integrations panel, or in the README).\n6. Click Deploy.\n7. For study-search, go to Edge Functions → Secrets → add TAVILY_API_KEY with your Tavily key.\n8. Go to the function's Settings → toggle OFF \"Verify JWT.\"\n9. The function URL appears on the function detail page — that's what you paste in the Integrations card.",
+      },
+    ],
+  },
+  {
+    category: "Feedback & Help",
+    icon: "💬",
+    entries: [
+      {
+        id: "fb-where",
+        title: "Where to send feedback",
+        body: "Click the \"Feedback\" button in the header (next to Sign in). A modal opens.\n\nFields:\n• Rating: positive / neutral / negative (optional)\n• Category: Bug / Suggestion / Praise / Other\n• Message: free-form text\n• Include context checkbox: when checked, attaches your current view, topic, and last 3 errors to help debug\n\nWhere it goes:\n• If the app has a Supabase connection: stored in the deployer's feedback table. The deployer reads it via their Supabase dashboard.\n• If no Supabase: saved locally to your browser only (not transmitted).\n\nThe modal tells you which mode you're in.",
+      },
+      {
+        id: "fb-help-center",
+        title: "Help center (this thing you're reading)",
+        body: "Where to find it: question-mark ? icon in the header.\n\nWhat it does: Searchable knowledge base of every feature. Categories on the left, entries in each category, full-text search at the top.\n\nIf you can't find something, send feedback (\"can't find how to do X\") and the deployer can add an entry.",
+      },
+    ],
+  },
 ];
 
 const VALID_MODES = ["flashcards", "practice", "exam", "explain", "cheatsheet", "recall", "freeResponse", "derive", "critique", "curriculum", "conceptMap", "diagnostic", "tutor", "errorReview"];
@@ -397,6 +705,12 @@ const SHARE_OWNER_EMAIL = ""; // e.g. "you@example.com"
 // ============================================================
 const DEFAULT_SUPABASE_URL = "https://nfbzmxuruxqgbeeypsoq.supabase.co";
 const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5mYnpteHVydXhxZ2JlZXlwc29xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTQ0MTUsImV4cCI6MjA5NTU3MDQxNX0.NqQKeIO3pYOk5rbG4YtJApz1lnss_OZvhWuVkIY79-U";
+
+// Edge Function endpoints — baked-in deployment defaults so every visitor of this Vercel deployment
+// gets web search + iCal subscription pre-configured without needing to paste anything. Each user
+// can still override in Settings → Integrations if they want their own backend.
+const DEFAULT_LOCAL_SEARCH_ENDPOINT = "https://nfbzmxuruxqgbeeypsoq.supabase.co/functions/v1/study-search";
+const DEFAULT_ICS_SUBSCRIPTION_ENDPOINT = "https://nfbzmxuruxqgbeeypsoq.supabase.co/functions/v1/study-ics";
 
 // Per-user override resolver. Reads localStorage if set, otherwise falls back to deployer default.
 const _getOverrides = () => {
@@ -1674,10 +1988,18 @@ function AppInner() {
       freezeTokens: 1, // forgiving streak — earn 1 every 5 sessions, max 3
       displayName: "", // what the greeting calls you
       ageOrGrade: "", // e.g. "10th grade", "undergrad junior", "adult, no formal CS background"
+      localSearchEndpoint: DEFAULT_LOCAL_SEARCH_ENDPOINT, // deployment default — overridable in Integrations
+      icsSubscriptionEndpoint: DEFAULT_ICS_SUBSCRIPTION_ENDPOINT, // deployment default — overridable in Integrations
+      perFactCitations: false, // when on, AI emits "→ Source: [Sn]" beneath every factual claim. Off by default to preserve flowing prose for explainer/briefing modes.
     };
     try {
       const saved = JSON.parse(localStorage.getItem("lectern_profile_v1") || "null");
-      return saved ? { ...defaults, ...saved } : defaults;
+      if (!saved) return defaults;
+      // Smart merge: don't let saved empty strings clobber deployment defaults for endpoints
+      const merged = { ...defaults, ...saved };
+      if (!merged.localSearchEndpoint) merged.localSearchEndpoint = DEFAULT_LOCAL_SEARCH_ENDPOINT;
+      if (!merged.icsSubscriptionEndpoint) merged.icsSubscriptionEndpoint = DEFAULT_ICS_SUBSCRIPTION_ENDPOINT;
+      return merged;
     } catch { return defaults; }
   });
   // Persist on every change (debounced via the effect — React batches anyway)
@@ -2578,6 +2900,23 @@ function AppInner() {
 
 
   // ============ CLAUDE API ============
+  /**
+   * Central AI dispatcher. Routes a prompt to either Cloud AI (Anthropic API direct from browser)
+   * or Local AI (WebGPU via WebLLM) based on aiProvider state, applying the user's Quality Studio
+   * settings (model, thinking budget, web search uses, multi-agent, verification).
+   *
+   * @param {string} prompt - The user-facing prompt to send to the model
+   * @param {string} systemPrompt - System instructions (typically built from baseEnd + mode-specific clauses)
+   * @param {boolean} useMaterials - Whether to attach uploaded images/PDFs to the request
+   * @param {object} opts - Per-call overrides
+   * @param {boolean} opts.streaming - Stream tokens back via onTokenCb (used by audio/briefing/explain modes)
+   * @param {function} opts.onTokenCb - Called per-token during streaming
+   * @param {number} opts.thinkingBudget - Override the Quality Studio thinking budget
+   * @param {number} opts.webSearchUses - Override the Quality Studio web search budget
+   * @param {boolean} opts.webSearch - For local model only, gate web search injection
+   * @param {Array<File>} opts.pdfs - PDF files (processed into text or vision images before sending)
+   * @returns {Promise<string>} The model's response text (full content, post-streaming if applicable)
+   */
   const callClaude = async (prompt, systemPrompt, useMaterials = false, opts = {}) => {
     // Provider switch — local WebGPU model handles simpler requests when user opts in.
     if (aiProvider === "webllm") {
@@ -3558,6 +3897,21 @@ Respond ONLY with valid JSON: { "transcript": "full transcription", "uncertainCo
 
 
   // ============ GENERATION ENGINE ============
+  /**
+   * Top-level orchestrator for AI content generation. Called by mode cards (Flashcards, Explain,
+   * Practice, etc.) and the Resume Recent strip. Handles topic resolution, mode dispatch, error
+   * surfacing, loading-state management, and analytics.
+   *
+   * Each `selectedMode` value maps to a different prompt builder + parser. The dispatch table inside
+   * builds the mode-specific user prompt (e.g. "Generate 12 flashcards on X") then calls callClaude
+   * with the appropriate streaming/non-streaming setup.
+   *
+   * @param {string} selectedMode - One of VALID_MODES + extended set: flashcards, practice, exam,
+   *   explain, cheatsheet, recall, freeResponse, derive, critique, curriculum, conceptMap,
+   *   diagnostic, tutor, errorReview, briefing, audioOverview, mindMap, slideDeck, dataTable
+   * @param {string} [overrideTopic] - Optional topic to use instead of the current state. Used by
+   *   the Derive prompt flow (avoids stale-closure bug from earlier rounds)
+   */
   const generateContent = async (selectedMode, overrideTopic) => {
     const effectiveTopic = overrideTopic !== undefined ? overrideTopic : topic;
     if (overrideTopic !== undefined && overrideTopic !== topic) setTopic(overrideTopic);
@@ -3905,7 +4259,11 @@ OUTPUT
         sourcesUsed += text.length;
       }
       const notebookSourcesClause = activeNb && sourceBlocks.length > 0 ? `\n\nNOTEBOOK SOURCES — the user's curated sources for the notebook "${activeNb.name}". Ground your response in these. When you make a factual claim that comes from a source, cite it inline as [S1], [S2], etc., matching the source numbers below. If the user asks about something not in the sources, say so explicitly rather than inventing.\n\n${sourceBlocks.join("\n\n———\n\n")}\n\nEND OF NOTEBOOK SOURCES.` : "";
-      const baseEnd = `${diffClause} ${formattingClause}${expertiseClause}${webClause}${youthSafetyClause}${weaknessClause}${masteryClause}${learnerContextClause}${languageClause}${domainClause}${interleavingClause}${predictionClause}${notebookSourcesClause}${noFakeExamplesClause}${typoToleranceClause}`;
+      // Per-fact citations: when enabled, the AI emits a "→ Source: [Sn]" or "→ Source: [Wn]" line beneath EVERY factual
+      // claim. This makes flowing prose harder to read but is great for fact-checking, research notes, and source-critical
+      // learning. User opts in via Settings → AI Quality Studio.
+      const perFactCitationsClause = persistentProfile.perFactCitations ? `\n\nPER-FACT SOURCE ATTRIBUTION — REQUIRED FORMAT:\nEvery factual claim must be followed on a NEW LINE by "→ Source: [Sn]" (notebook source) or "→ Source: [Wn]" (web search result) or "→ Source: general knowledge" (your training, no specific source). The arrow → and the word "Source:" are mandatory so the user's UI can recognize and style these lines.\n\nExample of the required format:\nMitochondria produce ATP through oxidative phosphorylation.\n→ Source: [S1]\nThe process involves the electron transport chain across the inner membrane.\n→ Source: [S1]\nIn 2024, researchers identified a new ATP synthase regulatory mechanism.\n→ Source: [W2]\n\nGroup consecutive claims from the same source together — don't repeat the source after every sentence if multiple sentences share it (just put it once at the end of the grouping). For non-factual content (questions, instructions, opinions), no source line is needed.` : "";
+      const baseEnd = `${diffClause} ${formattingClause}${expertiseClause}${webClause}${youthSafetyClause}${weaknessClause}${masteryClause}${learnerContextClause}${languageClause}${domainClause}${interleavingClause}${predictionClause}${notebookSourcesClause}${perFactCitationsClause}${noFakeExamplesClause}${typoToleranceClause}`;
       const mcqVerifyClause = ` Before returning, verify EACH question: (1) exactly one option is unambiguously correct and the others are clearly wrong, (2) terminology is precise and the stem is not misleading, (3) correctIndex points to the right option. Silently rewrite any question that fails these checks.`;
 
       if (selectedMode === "flashcards" || selectedMode === "recall") {
@@ -7625,8 +7983,8 @@ END:VCALENDAR\`;
                   <div style={{ marginTop: 8, padding: 12, background: C.paperLight, border: `1px solid ${C.rule}`, borderRadius: 3, fontFamily: fontSerif, fontSize: 12, color: C.ink, lineHeight: 1.55 }}>
                     <strong>Setup steps (~5 minutes):</strong>
                     <ol style={{ margin: "8px 0", paddingLeft: 22, lineHeight: 1.7 }}>
-                      <li>Get a free Brave Search API key at <code style={{ color: C.accent, fontFamily: fontMono, fontSize: 11 }}>api-dashboard.search.brave.com/app/keys</code> (2,000 queries/month free, no credit card required)</li>
-                      <li>In your Supabase project, run <code style={{ fontFamily: fontMono, fontSize: 11, color: C.accent }}>supabase secrets set BRAVE_API_KEY=&lt;your-key&gt;</code></li>
+                      <li>Get a free Tavily API key at <code style={{ color: C.accent, fontFamily: fontMono, fontSize: 11 }}>tavily.com</code> (1,000 searches/month free, no credit card required)</li>
+                      <li>In your Supabase project, run <code style={{ fontFamily: fontMono, fontSize: 11, color: C.accent }}>supabase secrets set TAVILY_API_KEY=&lt;your-key&gt;</code></li>
                       <li>Save the code below as <code style={{ fontFamily: fontMono, fontSize: 11 }}>supabase/functions/study-search/index.ts</code> in your Supabase project</li>
                       <li>Deploy with <code style={{ fontFamily: fontMono, fontSize: 11, color: C.accent }}>supabase functions deploy study-search --no-verify-jwt</code></li>
                       <li>Paste the resulting function URL in the field above</li>
@@ -7634,8 +7992,8 @@ END:VCALENDAR\`;
                   </div>
                   <pre style={{ marginTop: 8, padding: 12, background: C.paperDark, border: `1px solid ${C.rule}`, borderRadius: 3, fontFamily: fontMono, fontSize: 10, color: C.inkSoft, lineHeight: 1.45, overflowX: "auto", maxHeight: 360 }}>{`// supabase/functions/study-search/index.ts
 // Deploy: supabase functions deploy study-search --no-verify-jwt
-// Requires secret: supabase secrets set BRAVE_API_KEY=<your-brave-key>
-// Get a free Brave API key at: api-dashboard.search.brave.com/app/keys
+// Requires secret: supabase secrets set TAVILY_API_KEY=<your-tavily-key>
+// Get a free Tavily API key at: tavily.com (1,000 searches/month, no credit card)
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -7647,8 +8005,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: CORS });
 
-  const apiKey = Deno.env.get("BRAVE_API_KEY");
-  if (!apiKey) return new Response(JSON.stringify({ error: "BRAVE_API_KEY not set" }), {
+  const apiKey = Deno.env.get("TAVILY_API_KEY");
+  if (!apiKey) return new Response(JSON.stringify({ error: "TAVILY_API_KEY not set" }), {
     status: 500, headers: { ...CORS, "Content-Type": "application/json" }
   });
 
@@ -7657,33 +8015,37 @@ Deno.serve(async (req) => {
   catch { return new Response("Invalid JSON", { status: 400, headers: CORS }); }
 
   const query = String(body.query || "").slice(0, 400).trim();
-  const count = Math.max(1, Math.min(20, body.maxResults || 5));
+  const count = Math.max(1, Math.min(10, body.maxResults || 5));
   if (!query) return new Response(JSON.stringify({ error: "Empty query" }), {
     status: 400, headers: { ...CORS, "Content-Type": "application/json" }
   });
 
-  const url = ${'"https://" + "api.search.brave.com/res/v1/web/search"'}
-    + \`?q=\${encodeURIComponent(query)}&count=\${count}&safesearch=moderate\`;
-
   try {
-    const r = await fetch(url, {
+    const r = await fetch("https://api.tavily.com/search", {
+      method: "POST",
       headers: {
-        "Accept": "application/json",
-        "X-Subscription-Token": apiKey,
+        "Content-Type": "application/json",
+        "Authorization": \`Bearer \${apiKey}\`,
       },
+      body: JSON.stringify({
+        query,
+        max_results: count,
+        search_depth: "basic",
+        include_answer: false,
+      }),
     });
     if (!r.ok) {
       const errText = await r.text().catch(() => "");
       return new Response(JSON.stringify({
-        error: \`Brave API \${r.status}: \${errText.slice(0, 200)}\`
+        error: \`Tavily API \${r.status}: \${errText.slice(0, 200)}\`
       }), { status: 500, headers: { ...CORS, "Content-Type": "application/json" } });
     }
     const data = await r.json();
-    // Brave's response: data.web.results[] with { title, url, description, ... }
-    const results = (data?.web?.results || []).slice(0, count).map((item: any) => ({
+    // Tavily's response: data.results[] with { title, url, content, ... }
+    const results = (data?.results || []).slice(0, count).map((item: any) => ({
       title: item.title || "",
       url: item.url || "",
-      snippet: item.description || "",
+      snippet: item.content || "",
     }));
     return new Response(JSON.stringify({ results }), {
       headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "max-age=300" }
@@ -8642,6 +9004,135 @@ Deno.serve(async (req) => {
         .topic-field:focus { border-bottom-color: ${C.accent} !important; box-shadow: 0 1px 0 ${C.accent} !important; }
         .chip-btn:hover { border-color: ${C.ink} !important; color: ${C.ink} !important; background: ${C.paper} !important; transform: translateY(-1px); box-shadow: 0 2px 6px -3px rgba(0,0,0,0.15); }
         .chip-btn:active { transform: translateY(0); }
+
+        /* ========== PROFESSIONAL POLISH ==========
+         * Global refinements applied to every interactive element. Each rule:
+         *   1. Improves accessibility (visible focus rings on keyboard nav)
+         *   2. Adds tactile feedback (subtle hover/active states)
+         *   3. Smooths transitions (consistent easing curves)
+         * Doesn't override any custom inline styles (specificity is mindful).
+         */
+
+        /* Focus-visible: shown only on keyboard navigation, not mouse clicks.
+           Replaces the harsh default browser blue outline with a subtle accent ring. */
+        input:focus-visible, textarea:focus-visible, select:focus-visible {
+          border-color: ${C.accent} !important;
+          box-shadow: 0 0 0 2px ${C.accent}33 !important;
+        }
+        button:focus-visible {
+          outline: 2px solid ${C.accent} !important;
+          outline-offset: 2px;
+          border-radius: 2px;
+        }
+
+        /* Smooth transitions on form elements — consistent easing */
+        input, textarea, select {
+          transition: border-color 0.15s ease-out, box-shadow 0.15s ease-out, background 0.15s ease-out;
+        }
+
+        /* Buttons: tactile press feedback (translate down 1px on active) — feels responsive */
+        button:not(:disabled):active {
+          transform: translateY(1px);
+        }
+        button {
+          transition: transform 0.08s ease-out, background 0.15s ease-out, border-color 0.15s ease-out, opacity 0.15s ease-out;
+        }
+        button:disabled {
+          opacity: 0.55;
+          cursor: not-allowed !important;
+        }
+
+        /* Subtle hover lift on input fields — confirms interactivity */
+        input:not(:disabled):hover, textarea:not(:disabled):hover, select:not(:disabled):hover {
+          border-color: ${C.inkMuted} !important;
+        }
+
+        /* Selection highlight — matches accent color for brand consistency */
+        ::selection {
+          background: ${C.accent}33;
+          color: ${C.ink};
+        }
+
+        /* Scrollbar refinement — keeps editorial feel even on overflow */
+        ::-webkit-scrollbar {
+          width: 10px;
+          height: 10px;
+        }
+        ::-webkit-scrollbar-track {
+          background: ${C.paperLight};
+        }
+        ::-webkit-scrollbar-thumb {
+          background: ${C.rule};
+          border-radius: 5px;
+          border: 2px solid ${C.paperLight};
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: ${C.inkMuted};
+        }
+
+        /* Typography rhythm — better small-cap and uppercase letter-spacing */
+        h1, h2, h3, h4, h5, h6 {
+          font-feature-settings: "kern", "liga", "calt";
+          text-rendering: optimizeLegibility;
+        }
+
+        /* Links — restrained, with refined underline */
+        a {
+          color: ${C.accent};
+          text-decoration: underline;
+          text-decoration-thickness: 1px;
+          text-underline-offset: 2px;
+          transition: text-decoration-color 0.15s, color 0.15s;
+        }
+        a:hover {
+          color: ${C.ink};
+          text-decoration-thickness: 1.5px;
+        }
+
+        /* Code blocks — refined monospace presentation */
+        code, pre, .mono {
+          font-feature-settings: "tnum", "zero", "ss01";
+        }
+
+        /* Refined details/summary disclosure widget */
+        details > summary {
+          transition: color 0.15s;
+          list-style: none;
+        }
+        details > summary::-webkit-details-marker {
+          display: none;
+        }
+        details > summary::before {
+          content: "▸";
+          display: inline-block;
+          margin-right: 6px;
+          transition: transform 0.18s;
+          font-size: 0.85em;
+        }
+        details[open] > summary::before {
+          transform: rotate(90deg);
+        }
+        details > summary:hover {
+          color: ${C.ink};
+        }
+
+        /* Tab indicator — subtle underline pulse on hover */
+        .tab-btn { position: relative; }
+        .tab-btn::after {
+          content: "";
+          position: absolute;
+          left: 50%;
+          bottom: -2px;
+          width: 0;
+          height: 1px;
+          background: ${C.accent};
+          transition: width 0.2s ease-out, left 0.2s ease-out;
+        }
+        .tab-btn:hover::after {
+          width: 60%;
+          left: 20%;
+        }
+
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
         }
@@ -9588,6 +10079,23 @@ Deno.serve(async (req) => {
                     <option key={lang} value={lang}>{lang}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Per-fact source attribution toggle — requested by users for source-critical learning */}
+              <div style={{ marginTop: 4, marginBottom: 18, padding: 14, background: C.paperLight, borderRadius: 3 }}>
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
+                  <input type="checkbox" checked={persistentProfile.perFactCitations} onChange={(e) => setPersistentProfile((p) => ({ ...p, perFactCitations: e.target.checked }))}
+                    style={{ marginTop: 3, cursor: "pointer" }} />
+                  <div style={{ flex: 1 }}>
+                    <SectionLabel style={{ marginBottom: 4 }}>Per-fact source attribution</SectionLabel>
+                    <p style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, fontStyle: "italic", margin: "0 0 6px", lineHeight: 1.5 }}>
+                      AI emits a <code style={{ fontFamily: fontMono, fontSize: 11, background: C.paper, padding: "1px 5px", borderRadius: 2 }}>→ Source: [S1]</code> line beneath every factual claim. Best for fact-checking, research notes, and source-critical learning. Makes flowing prose denser — turn off for narrative explainers if it gets in the way.
+                    </p>
+                    <p style={{ fontFamily: fontSerif, fontSize: 11, color: C.inkMuted, fontStyle: "italic", margin: 0, lineHeight: 1.5 }}>
+                      Citation types: <code style={{ fontFamily: fontMono, fontSize: 10 }}>[Sn]</code> = notebook source, <code style={{ fontFamily: fontMono, fontSize: 10 }}>[Wn]</code> = web search result, <em>general knowledge</em> = the model's training (no specific source).
+                    </p>
+                  </div>
+                </label>
               </div>
               <p style={{ fontFamily: fontSerif, fontSize: 13, color: C.inkSoft, fontStyle: "italic", margin: "4px 0 14px" }}>
                 Trade speed for rigor. Pick a preset or dial each knob yourself.
