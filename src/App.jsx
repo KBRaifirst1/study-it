@@ -115,7 +115,7 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.20.0";
+const APP_VERSION = "1.21.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
