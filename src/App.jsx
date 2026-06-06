@@ -129,7 +129,7 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.30.0";
+const APP_VERSION = "1.31.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
@@ -661,6 +661,37 @@ const HELP_CONTENT = [
         id: "ef-deploy-via-dashboard",
         title: "Deploying Edge Functions without CLI",
         body: "If you can't get the Supabase CLI working on your machine, the dashboard route is just as good:\n\n1. Go to your Supabase project → Edge Functions in the sidebar.\n2. Click \"Deploy a new function.\"\n3. Pick \"Via Editor\" or \"From scratch.\"\n4. Name it study-search (or study-ics).\n5. Paste the function code (shown in the Integrations panel, or in the README).\n6. Click Deploy.\n7. For study-search, go to Edge Functions → Secrets → add TAVILY_API_KEY with your Tavily key.\n8. Go to the function's Settings → toggle OFF \"Verify JWT.\"\n9. The function URL appears on the function detail page — that's what you paste in the Integrations card.",
+      },
+    ],
+  },
+  {
+    category: "Reading Images Locally (SmolVLM)",
+    icon: "👁",
+    entries: [
+      {
+        id: "smolvlm-what",
+        title: "What is SmolVLM?",
+        body: "SmolVLM is a small vision-language model (~500 MB) that runs entirely in your browser via WebGPU. It reads images and produces text descriptions. Study It uses it as an optional add-on for Local AI users who want to upload images but can't use Cloud AI.\n\nWhy it exists: WebLLM only ships ONE vision model (Phi-3.5 Vision, ~3 GB) which crashes Safari. SmolVLM is small enough to work on Safari's tighter WebGPU memory limits.\n\nQuality honest take: SmolVLM is significantly weaker than Claude vision. It's good for basic image descriptions and reading printed text. It struggles with handwriting, complex diagrams, math notation, and subtle context. If quality matters, use Cloud AI instead.",
+      },
+      {
+        id: "smolvlm-how",
+        title: "How to use SmolVLM",
+        body: "Where to find it: AI Tutor tab. Upload an image while on Local AI with a non-vision model loaded (e.g. Llama 3.2 1B, Phi 3.5 Mini, Gemma 2 2B). The blue IMAGE READING hint banner will appear.\n\nSteps:\n1. Click \"Load SmolVLM (~500 MB, offline)\" in the hint banner.\n2. Wait for the download (~500 MB, cached after first load).\n3. When loaded, the banner turns green: \"SMOLVLM ACTIVE.\"\n4. Type your topic, click any generation mode (Flashcards, Explain, etc.).\n5. App describes the image with SmolVLM first, then feeds the description to your text model as context.\n6. You see a toast: \"Describing images with SmolVLM…\" during the first step.\n\nTotal time: ~10-30 seconds depending on hardware. Two-stage inference is slower than single-model vision.",
+      },
+      {
+        id: "smolvlm-vs-cloud",
+        title: "SmolVLM vs Cloud AI for images — which to pick",
+        body: "Cloud AI (Claude) wins on quality:\n• Reads handwriting accurately\n• Understands diagrams, charts, math notation\n• Handles foreign-language text\n• Catches subtle visual details\n• Fast (one API call, no model download)\n\nSmolVLM wins on:\n• Offline operation (no internet needed after model is cached)\n• Privacy (images never leave your device)\n• Free (no API costs)\n• Works on Safari (the local vision alternative crashes Safari)\n\nMy recommendation: use Cloud AI when you can (it's that much better for vision), use SmolVLM when you genuinely need offline or absolute privacy.",
+      },
+      {
+        id: "smolvlm-pipeline",
+        title: "How the two-stage pipeline works",
+        body: "When SmolVLM is loaded AND you have images uploaded AND you're on Local AI with a non-vision text model:\n\nStage 1 (SmolVLM via Transformers.js): The app feeds your image to SmolVLM-500M-Instruct, which generates a text description. Format: \"[Image 1]: A handwritten page showing a math problem with the equation 2x + 5 = 13...\"\n\nStage 2 (WebLLM): The description is injected into your text model's system prompt as context. Your text model (Llama / Phi / Gemma / etc.) then generates flashcards / explanations / quizzes / whatever based on that description.\n\nNet effect: your text-only local model can now \"see\" images, through the SmolVLM translator. Quality is bounded by SmolVLM's description accuracy, which is much worse than direct image-reading by Claude.",
+      },
+      {
+        id: "smolvlm-troubleshooting",
+        title: "Troubleshooting SmolVLM",
+        body: "If SmolVLM fails to load:\n• WebGPU requirement: must be Chrome 113+, Edge 113+, Firefox 141+, Safari 17+, Opera 99+. Try the WebGPU report at webgpureport.org.\n• Memory: SmolVLM uses ~500 MB RAM + your text model. If total exceeds available GPU memory, the load will fail. Try Llama 3.2 1B as the smallest text model.\n• Network: First load downloads ~500 MB from HuggingFace's CDN. Subsequent loads are instant from IndexedDB cache.\n\nIf SmolVLM generates garbage descriptions:\n• Image quality: very dark, blurry, or low-contrast images confuse it.\n• Handwriting: SmolVLM struggles with cursive or messy handwriting. Type the text out instead, or use Cloud AI.\n• Complex content: math equations, diagrams, charts — SmolVLM often misreads these. Cloud AI handles them well.\n\nWhen in doubt: switch to Cloud AI from the hint banner — it's one click.",
       },
     ],
   },
@@ -1250,6 +1281,19 @@ function AppInner() {
   const [webllmProgress, setWebllmProgress] = useState(0); // 0-1
   const [webllmLoading, setWebllmLoading] = useState(false);
   const [webgpuSupported, setWebgpuSupported] = useState(null); // null = checking, true/false
+
+  // Mobile detection — used to override inline styles where CSS media queries can't reach.
+  // 640px is our standard "phone" breakpoint, matching the modal-fullscreen breakpoint.
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth < 640;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onResize = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   // ============ SMOLVLM (Transformers.js vision encoder) ============
   // Separate from WebLLM: this is a vision-language model loaded via HuggingFace Transformers.js.
@@ -6046,7 +6090,7 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
                 <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, lineHeight: 1.5, marginBottom: 8 }}>
                   Your current local AI model{webllmLoadedModel ? ` (${LOCAL_MODELS[webllmLoadedModel]?.label})` : ""} can't read images. Pick one:
                 </div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6, flexDirection: isMobile ? "column" : "row" }}>
                   {anthropicApiKey ? (
                     <Btn variant="primary" onClick={() => { setAiProvider("anthropic"); showToast("Switched to Cloud AI — images will be read by Claude"); }}>
                       Switch to Cloud AI (best quality)
@@ -6059,7 +6103,7 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
                   <Btn variant="ghost" onClick={() => { initSmolVLM().catch(() => {}); track("action", "smolvlm_init_from_hint"); }} disabled={smolVLMLoading}>
                     {smolVLMLoading ? <><Loader2 size={11} className="spin" /> Loading…</> : <>Load SmolVLM (~500 MB, offline)</>}
                   </Btn>
-                  <button onClick={() => setImages([])} style={{ background: "transparent", border: "none", color: C.inkMuted, fontFamily: fontSans, fontSize: 11, cursor: "pointer", textDecoration: "underline" }}>
+                  <button onClick={() => setImages([])} style={{ background: "transparent", border: "none", color: C.inkMuted, fontFamily: fontSans, fontSize: 11, cursor: "pointer", textDecoration: "underline", padding: isMobile ? "8px 0" : 0, textAlign: isMobile ? "center" : "left" }}>
                     Remove images
                   </button>
                 </div>
@@ -9262,6 +9306,26 @@ Deno.serve(async (req) => {
           .stat-strip { grid-template-columns: 1fr !important; }
         }
 
+        /* ============ MOBILE FIXES FOR RECENT ADDITIONS ============
+         * Persona grid, change-password modal, class form etc. need mobile-friendly
+         * layouts. These rules apply on screens narrower than 480px (phones).
+         */
+        @media (max-width: 480px) {
+          /* Persona button grid (Settings → Tutor persona) — 2 cols cramped on phone */
+          div[style*="gridTemplateColumns: \"1fr 1fr\""] {
+            grid-template-columns: 1fr !important;
+          }
+          /* Class draft form gap reduction (was 6px → 8px for thumb spacing) */
+          /* Soft, image-related banners stack their button rows vertically (handled via isMobile in JSX) */
+          /* Inputs inside modals: 16px font-size already enforced above to prevent iOS zoom */
+
+          /* Modals get tighter inner padding on phones */
+          .modal-body, .modal-content { padding: 14px !important; }
+
+          /* Settings sections — reduce label margins so density holds */
+          .settings-section { padding: 12px !important; }
+        }
+
         /* Settings / Help / Diagnostics — wide modals reflow */
         @media (max-width: 640px) {
           .settings-twocol { grid-template-columns: 1fr !important; }
@@ -10393,7 +10457,7 @@ Deno.serve(async (req) => {
                               <span style={{ display: "block" }}>• Open this site in Chrome / Arc to use bigger models</span>
                               <span style={{ display: "block" }}>• Use Cloud AI (Anthropic API key) — faster and higher quality anyway</span>
                             </div>
-                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", flexDirection: isMobile ? "column" : "row" }}>
                               <Btn variant="primary" onClick={() => setLocalModel("Llama-3.2-1B-Instruct-q4f16_1-MLC")}>
                                 Switch to Llama 3.2 1B
                               </Btn>
@@ -10401,7 +10465,7 @@ Deno.serve(async (req) => {
                                 if (confirm(`This will probably crash Safari and you'll see "a problem occurred repeatedly". You'll need to close the tab and start over. Are you sure you want to try downloading ${LOCAL_MODELS[localModel]?.label} (${selectedSize}) on Safari anyway?`)) {
                                   initWebllm().catch(() => {});
                                 }
-                              }} style={{ background: "transparent", border: "none", color: C.inkMuted, fontFamily: fontSans, fontSize: 11, cursor: "pointer", textDecoration: "underline" }}>
+                              }} style={{ background: "transparent", border: "none", color: C.inkMuted, fontFamily: fontSans, fontSize: 11, cursor: "pointer", textDecoration: "underline", padding: isMobile ? "8px 0" : 0 }}>
                                 Try anyway (likely to crash)
                               </button>
                             </div>
