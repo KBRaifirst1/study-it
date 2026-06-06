@@ -129,7 +129,7 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.31.0";
+const APP_VERSION = "1.33.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
@@ -9258,15 +9258,34 @@ Deno.serve(async (req) => {
 
         /* Nav tabs — horizontal scroll on phones instead of wrap (avoids 2-row tab bar) */
         @media (max-width: 720px) {
-          .nav-strip { overflow-x: auto !important; flex-wrap: nowrap !important; scrollbar-width: none; -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity; }
+          .nav-strip {
+            overflow-x: auto !important;
+            flex-wrap: nowrap !important;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x proximity;
+            /* Visual scroll hint: a subtle right-edge gradient fade tells users they can scroll more */
+            mask-image: linear-gradient(to right, black 0, black calc(100% - 24px), transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 24px), transparent 100%);
+            /* Mobile header is shorter (~62px), so sticky offset matches */
+            top: 62px !important;
+          }
           .nav-strip::-webkit-scrollbar { display: none; }
           .nav-strip > * { scroll-snap-align: start; flex-shrink: 0; }
+          /* Tabs themselves: tighter horizontal padding on mobile, more density */
+          .navtab { padding: 11px 12px !important; gap: 5px !important; }
           /* Show only icons on very narrow screens, keep label on tablet */
-          .navtab span.nav-label { display: inline; }
+          .navtab span.nav-label { display: inline; font-size: 12px !important; }
+        }
+        @media (max-width: 480px) {
+          /* Phone header is even more compact (~56px tall), so nudge nav up further */
+          .nav-strip { top: 56px !important; }
         }
         @media (max-width: 380px) {
           .navtab span.nav-label { display: none !important; }
-          .navtab { padding: 10px 14px !important; }
+          .navtab { padding: 11px 14px !important; }
+          /* Very narrow phones: title is hidden, header is ~52px */
+          .nav-strip { top: 52px !important; }
         }
 
         /* Modals — go full-screen on phones for actual usability */
@@ -9294,6 +9313,29 @@ Deno.serve(async (req) => {
           }
           /* Slightly bigger gap between adjacent tappable items to reduce fat-finger mis-taps */
           .btn-row > * + * { margin-left: 8px; }
+        }
+
+        /* ============ HEADER (top bar) MOBILE LAYOUT ============
+         * The header has the masthead on the left + a stack of icon buttons on the right.
+         * On narrow phones, ALL of these compete for space. Tighten relentlessly:
+         */
+        @media (max-width: 480px) {
+          /* "Study It" title slightly smaller on phones */
+          .masthead-in > div:first-child > div:last-child > div:first-child {
+            font-size: 18px !important;
+          }
+          /* Tighten icon-button padding so more fit per row */
+          .masthead-in .icon-btn { padding: 6px !important; }
+          /* Avatar circle shrinks slightly */
+          .masthead-in > div:last-child > div:last-child {
+            width: 28px !important; height: 28px !important; font-size: 12px !important; margin-left: 2px !important;
+          }
+        }
+        @media (max-width: 380px) {
+          /* On VERY narrow phones, hide the "Study It" text — keep only the gold S logo */
+          .masthead-in > div:first-child > div:last-child {
+            display: none !important;
+          }
         }
 
         /* Notebook grid → 1 column on phones */
@@ -9884,27 +9926,27 @@ Deno.serve(async (req) => {
           {SUPABASE_URL ? (
             user ? (
               <button onClick={() => setShowSettings(true)} title={`Signed in as ${user.email}${syncStatus === "syncing" ? " · syncing…" : syncStatus === "error" ? " · sync error" : " · synced"}`} style={{
-                fontFamily: fontSans, fontSize: 11, padding: "4px 10px", background: C.mossSoft, color: C.moss, border: `1px solid ${C.moss}`, borderRadius: 2, marginRight: 6,
+                fontFamily: fontSans, fontSize: 11, padding: isMobile ? "4px 8px" : "4px 10px", background: C.mossSoft, color: C.moss, border: `1px solid ${C.moss}`, borderRadius: 2, marginRight: isMobile ? 4 : 6,
                 cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6,
               }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: syncStatus === "error" ? C.accent : syncStatus === "syncing" ? C.gold : C.moss }} />
-                {user.email.length > 22 ? user.email.slice(0, 20) + "…" : user.email}
+                {isMobile ? user.email[0].toUpperCase() : (user.email.length > 22 ? user.email.slice(0, 20) + "…" : user.email)}
               </button>
             ) : (
               <button onClick={() => setShowAuthModal(true)} style={{
-                fontFamily: fontSans, fontSize: 11, padding: "4px 12px", background: C.ink, color: C.paper, border: "none", borderRadius: 2, marginRight: 6,
+                fontFamily: fontSans, fontSize: 11, padding: "4px 12px", background: C.ink, color: C.paper, border: "none", borderRadius: 2, marginRight: isMobile ? 4 : 6,
                 cursor: "pointer", fontWeight: 600, letterSpacing: "0.02em",
               }}>Sign in</button>
             )
           ) : null}
           {/* Feedback button — replaces the old floating FAB. Sits next to Sign in for visibility. */}
           <button onClick={() => setShowFeedback(true)} title="Send feedback" aria-label="Send feedback" style={{
-            fontFamily: fontSans, fontSize: 11, padding: "4px 10px", background: "transparent", color: C.inkSoft,
-            border: `1px solid ${C.rule}`, borderRadius: 2, marginRight: 6,
+            fontFamily: fontSans, fontSize: 11, padding: isMobile ? "6px 8px" : "4px 10px", background: "transparent", color: C.inkSoft,
+            border: `1px solid ${C.rule}`, borderRadius: 2, marginRight: isMobile ? 4 : 6,
             cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 500,
           }}>
             <MessageCircle size={12} />
-            Feedback
+            {!isMobile && "Feedback"}
           </button>
           <button className="icon-btn" onClick={() => setShowExamPlanner(true)} title="Exam planner" style={iconBtnStyle}>
             <Calendar size={16} color={C.inkSoft} />
@@ -9928,9 +9970,11 @@ Deno.serve(async (req) => {
       </header>
 
       {/* Nav strip */}
-      <nav className="nav-in shell-pad no-bar nav-strip" style={{ borderBottom: `1px solid ${C.rule}`, display: "flex", gap: 2, background: `${C.paperLight}F2`, backdropFilter: "blur(8px)", overflowX: "auto", position: "sticky", top: 75, zIndex: 29 }}>
+      <nav className="nav-in shell-pad no-bar nav-strip" style={{ borderBottom: `1px solid ${C.rule}`, display: "flex", gap: 2, background: `${C.paperLight}F2`, backdropFilter: "blur(8px)", overflowX: "auto", position: "sticky", top: 75, zIndex: 29, scrollBehavior: "smooth" }}>
         {navItems.map((item) => (
-          <div key={item.id} className="navtab" onClick={() => { setView(item.id); }} title={item.label} style={{
+          <div key={item.id}
+            ref={(el) => { if (el && view === item.id && isMobile) { try { el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }); } catch {} } }}
+            className="navtab" onClick={() => { setView(item.id); }} title={item.label} style={{
             padding: "12px 16px", fontFamily: fontSans, fontSize: 13, letterSpacing: "0.04em",
             color: view === item.id ? C.ink : C.inkMuted, fontWeight: view === item.id ? 600 : 500,
             borderBottom: view === item.id ? `2px solid ${C.accent}` : "2px solid transparent",
