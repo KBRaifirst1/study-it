@@ -129,7 +129,7 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.33.0";
+const APP_VERSION = "1.34.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
@@ -1371,6 +1371,31 @@ function AppInner() {
       logError(e, "webllm init");
       throw e;
     }
+  };
+
+  // ============ CANCEL WEBLLM LOAD ============
+  // WebLLM's CreateMLCEngine doesn't expose an abort signal — once it's downloading, there's no
+  // clean way to cancel mid-flight. The cleanest approximation: reset our state (UI unblocks),
+  // null the engine ref (no partial engine sitting around), and optionally clear the cached shards
+  // (if the user wants to start fresh). The background fetch continues but is now harmless.
+  const cancelWebllmLoad = async (options = {}) => {
+    const { clearCache = false } = options;
+    // Unblock UI immediately
+    setWebllmLoading(false);
+    setWebllmStatus("");
+    setWebllmProgress(0);
+    // Null the engine so any partial state doesn't get reused
+    if (webllmEngineRef.current && webllmEngineRef.current.unload) {
+      try { await webllmEngineRef.current.unload(); } catch {}
+    }
+    webllmEngineRef.current = null;
+    setWebllmLoadedModel("");
+    // Optionally clear the cached shards (deleteCachedModel exists later in the file)
+    if (clearCache && localModel) {
+      try { await deleteCachedModel(localModel); } catch (e) { logError(e, "cancelWebllmLoad clearCache"); }
+    }
+    showToast(clearCache ? "Load cancelled + cache cleared. Try a different model." : "Load cancelled. You can pick a different model.");
+    track("action", "webllm_load_cancelled", { clearCache });
   };
 
   // ============ SMOLVLM LAZY-LOAD + IMAGE DESCRIBE ============
@@ -10445,6 +10470,30 @@ Deno.serve(async (req) => {
                       {webllmLoading && webllmProgress > 0 && webllmProgress < 1 && (
                         <div style={{ height: 3, background: C.rule, borderRadius: 99, marginTop: 6, overflow: "hidden" }}>
                           <div style={{ height: "100%", background: C.moss, width: `${(webllmProgress * 100).toFixed(0)}%`, transition: "width 0.3s" }} />
+                        </div>
+                      )}
+                      {/* Cancel button — only shown while loading. Lets user escape a stuck/hung load. */}
+                      {webllmLoading && (
+                        <div style={{ display: "flex", gap: 8, marginTop: 10, flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "stretch" : "center" }}>
+                          <button onClick={() => cancelWebllmLoad({ clearCache: false })} style={{
+                            padding: "6px 12px", background: "transparent", color: C.inkSoft, border: `1px solid ${C.rule}`, borderRadius: 2,
+                            fontFamily: fontSans, fontSize: 11, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+                          }}>
+                            <X size={11} /> Cancel loading
+                          </button>
+                          <button onClick={() => {
+                            if (confirm("This cancels the load AND deletes any partially-downloaded shards from your browser cache. The next attempt starts fresh. Continue?")) {
+                              cancelWebllmLoad({ clearCache: true });
+                            }
+                          }} style={{
+                            padding: "6px 12px", background: "transparent", color: C.accent, border: `1px solid ${C.accent}`, borderRadius: 2,
+                            fontFamily: fontSans, fontSize: 11, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
+                          }}>
+                            <Trash2 size={11} /> Cancel + clear cache
+                          </button>
+                          <span style={{ fontFamily: fontSerif, fontSize: 11, color: C.inkMuted, fontStyle: "italic", marginLeft: isMobile ? 0 : 4 }}>
+                            Stuck? Cancel to unblock — clear cache if a previous load corrupted the shards.
+                          </span>
                         </div>
                       )}
                     </div>
