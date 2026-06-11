@@ -129,7 +129,7 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.35.0";
+const APP_VERSION = "1.36.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
@@ -2599,7 +2599,7 @@ function AppInner() {
   const [myClasses, setMyClasses] = useState(() => {
     try { return JSON.parse(localStorage.getItem("lectern_classes_v1") || "[]"); } catch { return []; }
   });
-  const [classDraft, setClassDraft] = useState({ name: "", term: "", color: "blue", selfStudy: false, generateCurriculum: false });
+  const [classDraft, setClassDraft] = useState({ name: "", term: "", color: "blue", selfStudy: false, generateCurriculum: false, notes: "" });
   const [editingClassId, setEditingClassId] = useState(null);
   const [showAddClassLibrary, setShowAddClassLibrary] = useState(false);
   useEffect(() => { try { if (!user) localStorage.setItem("lectern_classes_v1", JSON.stringify(myClasses)); } catch {} }, [myClasses, user]);
@@ -3013,19 +3013,20 @@ function AppInner() {
   const saveClass = () => {
     const name = classDraft.name.trim();
     if (!name) { showToast("Class needs a name"); return; }
+    const notes = (classDraft.notes || "").trim();
     if (editingClassId) {
-      setMyClasses((cs) => cs.map((c) => c.id === editingClassId ? { ...c, name, term: classDraft.term.trim(), color: classDraft.color, selfStudy: !!classDraft.selfStudy } : c));
+      setMyClasses((cs) => cs.map((c) => c.id === editingClassId ? { ...c, name, term: classDraft.term.trim(), color: classDraft.color, selfStudy: !!classDraft.selfStudy, notes } : c));
       showToast("Class updated");
     } else {
-      setMyClasses((cs) => [...cs, { id: Date.now().toString(), name, term: classDraft.term.trim(), color: classDraft.color, selfStudy: !!classDraft.selfStudy }]);
+      setMyClasses((cs) => [...cs, { id: Date.now().toString(), name, term: classDraft.term.trim(), color: classDraft.color, selfStudy: !!classDraft.selfStudy, notes }]);
       showToast(classDraft.generateCurriculum ? "Class added — building study plan…" : "Class added");
     }
     // If the user asked to auto-generate a curriculum, jump to Tutor and dispatch curriculum mode.
     // This pre-fills the topic with the class name so they don't have to retype it.
     const shouldGenerate = classDraft.generateCurriculum && !editingClassId;
-    setClassDraft({ name: "", term: "", color: "blue", selfStudy: false, generateCurriculum: false });
+    setClassDraft({ name: "", term: "", color: "blue", selfStudy: false, generateCurriculum: false, notes: "" });
     setEditingClassId(null);
-    track("action", editingClassId ? "class_updated" : "class_added", { generateCurriculum: shouldGenerate, selfStudy: classDraft.selfStudy });
+    track("action", editingClassId ? "class_updated" : "class_added", { generateCurriculum: shouldGenerate, selfStudy: classDraft.selfStudy, hasNotes: !!notes });
     if (shouldGenerate) {
       setTopic(name);
       setView("tutor");
@@ -3038,7 +3039,7 @@ function AppInner() {
     setMyClasses((cs) => cs.filter((c) => c.id !== id));
     track("action", "class_deleted");
   };
-  const editClass = (c) => { setEditingClassId(c.id); setClassDraft({ name: c.name, term: c.term || "", color: c.color || "blue", selfStudy: !!c.selfStudy, generateCurriculum: false }); };
+  const editClass = (c) => { setEditingClassId(c.id); setClassDraft({ name: c.name, term: c.term || "", color: c.color || "blue", selfStudy: !!c.selfStudy, generateCurriculum: false, notes: c.notes || "" }); };
 
   const analyticsRef = useRef(analytics);
   analyticsRef.current = analytics;
@@ -4406,10 +4407,17 @@ OUTPUT
 
     // LEARNER CONTEXT: classes, age/grade level, related fields — used for curriculum and personalization
     const enrolledClasses = (myClasses || []).map((c) => c.name).filter(Boolean).slice(0, 12);
+    // Per-class freeform notes — anything the user told us about each specific class (weak spots,
+    // exam format, learning accommodations, professor style, etc.). Merged into the context so the
+    // AI tailors output to each class's specific quirks.
+    const classNotes = (myClasses || [])
+      .filter((c) => c.name && (c.notes || "").trim())
+      .slice(0, 12)
+      .map((c) => `  • ${c.name}: ${c.notes.trim().slice(0, 800)}`);
     const ageOrGrade = (persistentProfile.ageOrGrade || "").trim();
     const longTermGoal = (persistentProfile.goal || "").trim();
-    const learnerContextClause = (enrolledClasses.length || ageOrGrade || longTermGoal)
-      ? `\n\nLEARNER CONTEXT (use this to calibrate depth, vocabulary, prerequisites, and to draw cross-class connections wherever genuinely useful — but do NOT require that the user have a relevant class to ask about this topic):${ageOrGrade ? `\n• Level: ${ageOrGrade}.` : ""}${longTermGoal ? `\n• Long-term goal: ${longTermGoal}.` : ""}${enrolledClasses.length ? `\n• Currently/recently enrolled in: ${enrolledClasses.join("; ")}. Where useful, anchor new material to concepts they likely encountered there.` : ""}`
+    const learnerContextClause = (enrolledClasses.length || ageOrGrade || longTermGoal || classNotes.length)
+      ? `\n\nLEARNER CONTEXT (use this to calibrate depth, vocabulary, prerequisites, and to draw cross-class connections wherever genuinely useful — but do NOT require that the user have a relevant class to ask about this topic):${ageOrGrade ? `\n• Level: ${ageOrGrade}.` : ""}${longTermGoal ? `\n• Long-term goal: ${longTermGoal}.` : ""}${enrolledClasses.length ? `\n• Currently/recently enrolled in: ${enrolledClasses.join("; ")}. Where useful, anchor new material to concepts they likely encountered there.` : ""}${classNotes.length ? `\n• Class-specific notes (honor these — they're learner-supplied context per class):\n${classNotes.join("\n")}` : ""}`
       : "";
 
     // SMARTER: works for ANY domain, not just STEM — pick the right representation
@@ -5987,11 +5995,23 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
               </label>
             )}
           </div>
+          {/* Freeform notes — anything else the AI should know about this class. Injected into
+              the system prompt whenever this class is part of the learner context. */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontFamily: fontMono, fontSize: 10, color: C.inkMuted, letterSpacing: "0.08em", marginBottom: 4 }}>SOMETHING ELSE? (optional)</div>
+            <textarea value={classDraft.notes || ""} onChange={(e) => setClassDraft({ ...classDraft, notes: e.target.value })}
+              placeholder="Anything else the AI should know about this class — your weak spots, exam format, professor's style, learning preferences, accommodations, prerequisites you're missing… The AI uses this whenever it generates content for this class."
+              rows={3} maxLength={1000}
+              style={{ width: "100%", padding: "8px 10px", background: C.paper, border: `1px solid ${C.rule}`, borderRadius: 2, fontFamily: fontSans, fontSize: 12, lineHeight: 1.5, outline: "none", boxSizing: "border-box", resize: "vertical", minHeight: 60 }} />
+            <div style={{ fontFamily: fontSerif, fontSize: 11, color: C.inkMuted, fontStyle: "italic", marginTop: 4 }}>
+              Example: "I have ADHD, keep explanations short and visual. The exam is all multiple choice. I'm strong on theory but weak on calculations."
+            </div>
+          </div>
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             <Btn variant="primary" onClick={() => { saveClass(); setShowAddClassLibrary(false); }}>
               {editingClassId ? "Save" : (classDraft.generateCurriculum ? "Add class + build plan" : "Add class")}
             </Btn>
-            <button onClick={() => { setEditingClassId(null); setClassDraft({ name: "", term: "", color: "blue", selfStudy: false, generateCurriculum: false }); setShowAddClassLibrary(false); }} style={{ background: "transparent", border: "none", color: C.inkMuted, fontFamily: fontSans, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+            <button onClick={() => { setEditingClassId(null); setClassDraft({ name: "", term: "", color: "blue", selfStudy: false, generateCurriculum: false, notes: "" }); setShowAddClassLibrary(false); }} style={{ background: "transparent", border: "none", color: C.inkMuted, fontFamily: fontSans, fontSize: 12, cursor: "pointer" }}>Cancel</button>
           </div>
         </div>
       )}
