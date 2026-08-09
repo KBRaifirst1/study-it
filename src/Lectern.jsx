@@ -3734,6 +3734,57 @@ export function routeFromHash(hash) {
   return "hub";
 }
 
+/* The way back. Study It is a whole app with its own header, and editing that
+   header would mean touching App.jsx — 13,000 lines Kabir would have to repaste
+   by hand. So the door back is rendered here instead, over the top of Study It,
+   and App.jsx stays untouched.
+
+   Deliberate choices:
+   - Bottom LEFT. Study It's own floating things (toasts, the scroll-to-top
+     button) sit bottom-centre at left:50%, so this can't collide with them.
+   - z-index 190. Above Study It's page content, but BELOW its toasts (200) and
+     its modals (260-270), so an open dialog covers this rather than having a
+     stray button floating on top of it.
+   - No theme colours. Study It has a light and a dark palette and swaps them
+     live; a pill that read the saved theme would go stale the moment someone
+     toggled it. This is a self-contained high-contrast pill instead, legible on
+     both papers, with nothing to keep in sync.
+   - A real <button>. It changes route in this same app, so it isn't a link. */
+const HUB_RETURN_CSS = `
+.lec-hubreturn{
+  position:fixed; z-index:190;
+  left:max(14px, env(safe-area-inset-left));
+  bottom:max(14px, env(safe-area-inset-bottom));
+  display:inline-flex; align-items:center; gap:7px;
+  margin:0; padding:9px 15px 9px 12px;
+  border:1px solid rgba(255,255,255,.22); border-radius:999px;
+  background:#20232e; color:#f2f4fa;
+  font:600 13px/1 ui-rounded,"SF Pro Rounded","Segoe UI",Nunito,Roboto,-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+  letter-spacing:.01em; cursor:pointer; white-space:nowrap;
+  box-shadow:0 6px 20px rgba(10,12,20,.34);
+  -webkit-appearance:none; appearance:none;
+  transition:transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.lec-hubreturn:hover{background:#2b2f3d; transform:translateY(-1px); box-shadow:0 10px 26px rgba(10,12,20,.42)}
+.lec-hubreturn:active{transform:translateY(0)}
+.lec-hubreturn:focus-visible{outline:2px solid #8fb4ff; outline-offset:3px}
+.lec-hubreturn .lec-hubreturn-caret{font-size:15px; line-height:1; opacity:.85}
+@media (prefers-reduced-motion:reduce){.lec-hubreturn{transition:none}.lec-hubreturn:hover{transform:none}}
+`;
+
+function HubReturn({ onBack }) {
+  return (
+    <>
+      <style>{HUB_RETURN_CSS}</style>
+      <button className="lec-hubreturn" type="button" onClick={onBack}
+        aria-label="Back to Lectern" title="Back to Lectern">
+        <span className="lec-hubreturn-caret" aria-hidden="true">{"\u2039"}</span>
+        Lectern
+      </button>
+    </>
+  );
+}
+
 export default function Lectern() {
   const read = () => routeFromHash(typeof window !== "undefined" ? window.location.hash : "");
   const [route, setRoute] = useState(read);
@@ -3758,6 +3809,13 @@ export default function Lectern() {
     document.title = route === "study" ? "Study It" : "Lectern";
   }, [route]);
 
-  if (route === "study") return <StudyIt />;
+  if (route === "study") {
+    return (
+      <>
+        <StudyIt />
+        <HubReturn onBack={() => go("hub")} />
+      </>
+    );
+  }
   return <LecternApp onOpenStudyIt={() => go("study")} />;
 }
