@@ -129,7 +129,7 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.39.0";
+const APP_VERSION = "1.40.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
@@ -1379,8 +1379,16 @@ function AppInner() {
   // "anthropic" → call api.anthropic.com (needs key). Full quality, paid, online.
   // "gemini" → call generativelanguage.googleapis.com (needs key). Frontier quality, free tier available.
   // "webllm" → load a model into IndexedDB once, run inference locally via WebGPU. Free, offline, weaker quality.
+  // "shared" is the default: AI works as soon as you're signed in, with no key
+  // to find or paste. It routes through a Supabase Edge Function that holds one
+  // Gemini key as a server secret — the key never reaches the browser, because
+  // a key shipped in front-end JavaScript is public by definition.
+  //
+  // Anyone who already picked a provider keeps it; only a fresh install lands
+  // on "shared". The anthropic / gemini / webllm routes all still work for
+  // anyone who prefers their own key or wants to run locally.
   const [aiProvider, setAiProvider] = useState(() => {
-    try { return localStorage.getItem("lectern_ai_provider") || "anthropic"; } catch { return "anthropic"; }
+    try { return localStorage.getItem("lectern_ai_provider") || "shared"; } catch { return "shared"; }
   });
   const [localModel, setLocalModel] = useState(() => {
     try { return localStorage.getItem("lectern_local_model") || "Llama-3.2-3B-Instruct-q4f16_1-MLC"; } catch { return "Llama-3.2-3B-Instruct-q4f16_1-MLC"; }
@@ -3340,8 +3348,48 @@ function AppInner() {
    * @param {Array<File>} opts.pdfs - PDF files (processed into text or vision images before sending)
    * @returns {Promise<string>} The model's response text (full content, post-streaming if applicable)
    */
+  /**
+   * The shared AI route — no API key required.
+   *
+   * Calls a Supabase Edge Function ("ai") which holds one Gemini key as a
+   * server secret, verifies the caller's session, meters usage per account per
+   * day, and returns plain text. Signing in is the whole requirement.
+   *
+   * Study It, Lectern and CodeQuest all call the same function with the same
+   * account, so a learner sets nothing up in any of them.
+   *
+   * Two honest limits, deliberately not hidden:
+   *  - It does NOT stream. The function returns a finished answer, so callers
+   *    that would have streamed just get the whole thing at once.
+   *  - It does NOT send images or PDFs. Materials still need a personal key
+   *    (Settings → AI Provider), and this says so rather than silently
+   *    dropping them from the prompt.
+   */
+  const callShared = async (prompt, systemPrompt, opts = {}) => {
+    if (!supabase) throw new Error("Cloud sync is still loading. Try again in a moment.");
+    if (!user) throw new Error("Sign in to use AI — no API key needed. Click Sign in at the top.");
+    const { data, error } = await supabase.functions.invoke("ai", {
+      body: {
+        prompt,
+        system: systemPrompt || undefined,
+        model: opts.model || undefined,
+      },
+    });
+    // A non-2xx surfaces as `error`, but the readable message is in the body
+    // the function sent, so that wins when both are present.
+    const said = data && data.error;
+    if (said) throw new Error(said);
+    if (error) throw new Error(error.message || "The AI request failed.");
+    if (!data || !data.text) throw new Error("The AI returned nothing. Try rephrasing.");
+    return data.text;
+  };
+
   const callClaude = async (prompt, systemPrompt, useMaterials = false, opts = {}) => {
-    // Provider switch — Gemini and local WebGPU dispatch off here; everything below is Anthropic-shaped.
+    // Provider switch — shared proxy, Gemini and local WebGPU dispatch off here;
+    // everything below is Anthropic-shaped.
+    if (aiProvider === "shared") {
+      return await callShared(prompt, systemPrompt, opts);
+    }
     if (aiProvider === "gemini") {
       return await callGemini(prompt, systemPrompt, useMaterials, opts);
     }
@@ -6435,6 +6483,21 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
               1) Switch to Cloud AI (best quality, instant if API key configured)
               2) Use SmolVLM (free, offline, ~500 MB, works on Safari, much weaker than Claude)
               3) Remove images and proceed text-only */}
+          {/* The built-in AI route sends text only. Attached images would be
+              silently ignored, which would look like the AI missing something
+              obvious rather than never having seen it — so it says so, and
+              points at the two providers that can actually read them. */}
+          {images.length > 0 && aiProvider === "shared" && (
+            <div style={{ marginTop: 10, padding: "10px 12px", background: C.blueSoft, border: `1px solid ${C.blue}`, borderRadius: 2, display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <Lightbulb size={14} color={C.blue} style={{ marginTop: 2, flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: fontMono, fontSize: 10, color: C.blue, letterSpacing: "0.08em", marginBottom: 4 }}>IMAGE READING</div>
+                <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
+                  The built-in AI reads text only — your {images.length === 1 ? "image" : "images"} won't be sent. To have {images.length === 1 ? "it" : "them"} read, switch to Claude or Gemini in Settings → AI Provider with your own key.
+                </div>
+              </div>
+            </div>
+          )}
           {images.length > 0 && aiProvider === "webllm" && LOCAL_MODELS[webllmLoadedModel]?.tier !== "vision" && !smolVLMLoaded && (
             <div style={{ marginTop: 10, padding: "10px 12px", background: C.blueSoft, border: `1px solid ${C.blue}`, borderRadius: 2, display: "flex", alignItems: "flex-start", gap: 10 }}>
               <Lightbulb size={14} color={C.blue} style={{ marginTop: 2, flexShrink: 0 }} />
@@ -9512,7 +9575,8 @@ Deno.serve(async (req) => {
     if (showStreamingPreview) {
       const providerLabel = aiProvider === "webllm"
         ? (LOCAL_MODELS[webllmLoadedModel]?.label || "Local model")
-        : aiProvider === "gemini" ? `Gemini (${geminiModel})` : "Cloud AI";
+        : aiProvider === "gemini" ? `Gemini (${geminiModel})`
+        : aiProvider === "shared" ? "Built-in AI" : "Cloud AI";
       const modeLabel = ({
         explain: "Explainer", briefing: "Briefing", audioOverview: "Audio overview",
         flashcards: "Flashcards", recall: "Recall cards", practice: "Practice MCQs", exam: "Exam",
@@ -10855,10 +10919,27 @@ Deno.serve(async (req) => {
             <div style={{ marginTop: 36, paddingTop: 24, borderTop: `2px solid ${C.ink}` }}>
               <SectionLabel>AI Provider</SectionLabel>
               <p style={{ fontFamily: fontSerif, fontSize: 13, color: C.inkSoft, fontStyle: "italic", margin: "4px 0 12px" }}>
-                Choose where the AI work happens. Cloud AI (paid) is world-class. Local WebGPU AI is free and offline, but dramatically less capable.
+                Choose where the AI work happens. The built-in option needs no key and works as soon as you sign in. The rest use your own key, or your own machine.
               </p>
 
-              {/* Provider switcher — three options: Anthropic, Gemini, WebLLM. Responsive grid. */}
+              {/* Provider switcher — four options. "Included" is first and is the
+                  default on a fresh install: it needs no key at all, so it is the
+                  only one most people should ever touch. The other three remain
+                  for anyone who wants their own key, their own quota, or offline. */}
+              <button onClick={() => setAiProvider("shared")}
+                style={{ display: "block", width: "100%", padding: 14, marginBottom: 8, background: aiProvider === "shared" ? C.moss : C.paperLight, color: aiProvider === "shared" ? C.paper : C.ink, border: `2px solid ${aiProvider === "shared" ? C.moss : C.rule}`, borderRadius: 3, cursor: "pointer", textAlign: "left" }}>
+                <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: "0.1em", opacity: 0.7, marginBottom: 4 }}>INCLUDED · NO KEY NEEDED</div>
+                <div style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Use the built-in AI</div>
+                <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.85 }}>
+                  {user
+                    ? "Works now — you're signed in. Gemini, running through this app's own server so no key ever touches your browser. Same account in Lectern and CodeQuest."
+                    : "Sign in and AI works immediately, with no key to find or paste. Gemini, running through this app's own server."}
+                </div>
+                <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.7, marginTop: 6 }}>
+                  Doesn't stream, and can't read images or PDFs — for those, pick a provider below and use your own key.
+                </div>
+              </button>
+
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
                 <button onClick={() => setAiProvider("anthropic")}
                   style={{ padding: 14, background: aiProvider === "anthropic" ? C.ink : C.paperLight, color: aiProvider === "anthropic" ? C.paper : C.ink, border: `2px solid ${aiProvider === "anthropic" ? C.ink : C.rule}`, borderRadius: 3, cursor: "pointer", textAlign: "left" }}>
