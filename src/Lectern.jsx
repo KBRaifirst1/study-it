@@ -1221,6 +1221,21 @@ const CSS = `
     display:flex;align-items:center;justify-content:center;font-size:19px;flex:0 0 auto}
   .appbar .ti{font-size:18px;font-weight:800}
   .appbar .rt{margin-left:auto;display:flex;align-items:center}
+  /* Cross-app switcher. Compact in the header (icon only under 560px so it can
+     never squeeze the title), full width with labels on the sign-in screen. */
+  .appswitch{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+  .appswitch .aswbtn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;
+    border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);
+    font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;text-decoration:none;
+    white-space:nowrap;transition:.15s}
+  .appswitch .aswbtn:hover{border-color:var(--a);color:var(--ink);background:var(--a-tint)}
+  .appswitch .aswbtn:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+  .appswitch .aswic{font-size:14px;line-height:1}
+  .obswitch{display:flex;justify-content:center;padding:14px 12px 0}
+  @media (max-width:560px){
+    .appswitch.compact .aswlb{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+    .appswitch.compact .aswbtn{padding:0 9px}
+  }
   .avatar{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;flex:0 0 auto;box-shadow:var(--shadow)}
   .avatar.tap{cursor:pointer}
   .avatar.tap:active{transform:scale(.94)}
@@ -2150,11 +2165,15 @@ const ICON_ART =
   '<path d="M286 166c40-27 94-40 146-38v184c-52-2-106 12-146 38Z" fill="url(#pgr)"/>' +
   '<path d="M248 344h16v84l-8-22-8 22Z" fill="#e64980"/>';
 const ICON_OPEN = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">';
-const APP_ICON = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
-  ICON_OPEN + ICON_DEFS + '<rect width="512" height="512" rx="116" fill="url(#bg)"/>' + ICON_ART + '</svg>');
-const APP_ICON_MASKABLE = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
-  ICON_OPEN + ICON_DEFS + '<rect width="512" height="512" fill="url(#bg)"/>' +
-  '<g transform="translate(256 256) scale(.76) translate(-256 -256)">' + ICON_ART + '</g></svg>');
+/* Served as real files from /public rather than inlined as data: URIs.
+   Safari's support for a data: URI SVG favicon is unreliable — it will happily
+   accept the <link> and then paint nothing, which is precisely the "favicon
+   doesn't work" symptom. A real path is also cacheable and you can open it in a
+   tab to check it rendered. The two SVGs must exist in the repo's public/
+   folder; if they are missing the tab simply keeps whatever index.html set,
+   rather than showing a broken image. */
+const APP_ICON = "/lectern-icon.svg";
+const APP_ICON_MASKABLE = "/lectern-icon-maskable.svg";
 
 /* Study It's mark.
 
@@ -3854,6 +3873,7 @@ function LecternApp({ onOpenStudyIt } = {}) {
               <div className="tiwhere">{locationLabel(app)}</div>
             </div>
             <div className="rt">
+              <AppSwitch app={app} compact />
               {cur && <button className="iconbtn" aria-label="Search everything" title="Search (⌘K)" onClick={() => { haptic(5); setPalette(true); }}><Icon name="learn" size={18} /></button>}
               {cur && <button className="avatar tap" style={{ background: avatarColor(cur.name) }} aria-label="Your account" onClick={() => openSheet({ title: cur.name, body: cur.guest ? "Signed in as a guest on this device." : "Signed in on this device.", items: [
               { icon: "progress", label: "Your progress", on: () => go({ tab: "progress" }) },
@@ -4113,6 +4133,44 @@ function Dashboard({ app }) {
    a real link that leaves the site in a new tab. They are deliberately
    different elements so the browser treats each correctly, and they carry
    different arrows so the difference is visible: › goes further in, ↗ leaves. */
+/* Cross-app switcher, always on screen.
+
+   The doors on the Home dashboard are the browsable version — icon, blurb,
+   tags. This is the persistent one: it sits in the header on every tab and on
+   the sign-in screen, so there is never a state where you can see Lectern but
+   can't reach the other two apps.
+
+   Same rules as the doors: an internal app is a <button> (it changes route in
+   this deploy), an external one is a real <a target="_blank"> so long-press and
+   cmd-click work. A door with nowhere to go is dropped, not shown greyed out. */
+function AppSwitch({ app, compact }) {
+  const handlers = { studyit: app && app.onOpenStudyIt };
+  const doors = openDoors(handlers);
+  if (doors.length === 0) return null;
+  return (
+    <div className={"appswitch" + (compact ? " compact" : "")}>
+      {doors.map(d => d.internal ? (
+        <button className="aswbtn" key={d.id} type="button"
+          style={{ "--a": d.accent, "--a-tint": d.tint }}
+          aria-label={"Open " + d.name} title={"Open " + d.name}
+          onClick={() => { haptic(6); handlers[d.id](); }}>
+          <span className="aswic" aria-hidden="true">{d.icon}</span>
+          <span className="aswlb">{d.name}</span>
+        </button>
+      ) : (
+        <a className="aswbtn" key={d.id} href={d.url} target="_blank" rel="noopener noreferrer"
+          style={{ "--a": d.accent, "--a-tint": d.tint }}
+          aria-label={"Open " + d.name + " — opens in a new tab"}
+          title={"Open " + d.name + " in a new tab"}
+          onClick={() => haptic(6)}>
+          <span className="aswic" aria-hidden="true">{d.icon}</span>
+          <span className="aswlb">{d.name}</span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function AppDoors({ app }) {
   const handlers = { studyit: app.onOpenStudyIt };
   const doors = openDoors(handlers);
@@ -5114,7 +5172,7 @@ function SettingsScreen({ app }) {
         <div className="setdesc" style={{ margin: "4px 0 12px" }}>{app.aiAvailable() ? ((typeof window !== "undefined" && window.claude) ? "Connected through the Claude preview — no key needed." : "Using your saved API key.") : "Not connected. Open inside the Claude app, or add a key below."}</div>
         <p className="lbl">Anthropic API key — optional, for use outside the preview</p>
         <input className="ans" type="password" autoComplete="off" placeholder="sk-ant-…" style={{ width: "100%" }} value={app.settings.aiKey} onChange={e => set({ aiKey: e.target.value.trim() })} />
-        <div className="setdesc" style={{ marginTop: 7 }}>Stored only on this device, never sent anywhere except the AI provider. Leave blank when using the Claude preview.</div>
+        <div className="setdesc" style={{ marginTop: 7 }}>Optional. You don't need a key — signing in under Cloud sync gives you AI with no key at all. If you do set one, it's kept on this device, and it's included in your cloud backup if Cloud sync is on.</div>
       </div>
       <div className="card">
         <span className="kicker">Your profile</span>
@@ -5463,7 +5521,7 @@ function Generate({ app }) {
         <button className="btn go big" disabled={busy} onClick={gen}>{into ? "Add more chapters" : "Generate chapters"}</button>
         {busy && <div className="spin"><div className="spinner" /><div className="spintext">Writing your lessons… this can take a few seconds.</div></div>}
       </div>
-      {!app.aiAvailable() && <div className="card" style={{ borderColor: "var(--a)" }}><div className="settitle">AI isn't connected here</div><div className="setdesc" style={{ marginTop: 4 }}>This is running outside the Claude preview, so there's no AI to call. Open it inside the Claude app, or add an API key under Settings to generate here.</div></div>}
+      {!app.aiAvailable() && <div className="card" style={{ borderColor: "var(--a)" }}><div className="settitle">AI isn't connected here</div><div className="setdesc" style={{ marginTop: 4 }}>Sign in under Settings → Cloud sync to generate lessons here. No API key needed.</div></div>}
       {error && <div className="fb no">{error}</div>}
     </div>
   );
@@ -5511,6 +5569,7 @@ function Auth({ app }) {
   );
   return (
     <div className="ob" id="auth">
+      <div className="obswitch"><AppSwitch app={app} /></div>
       <div className="obtop"><div className="obmk"><Icon name="lectern" size={44} /></div>
         {mode === "login" ? (
           <>
