@@ -1,4 +1,3 @@
-// HI 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -130,7 +129,7 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.36.0";
+const APP_VERSION = "1.39.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
@@ -661,7 +660,12 @@ const HELP_CONTENT = [
       {
         id: "ef-deploy-via-dashboard",
         title: "Deploying Edge Functions without CLI",
-        body: "If you can't get the Supabase CLI working on your machine, the dashboard route is just as good:\n\n1. Go to your Supabase project → Edge Functions in the sidebar.\n2. Click \"Deploy a new function.\"\n3. Pick \"Via Editor\" or \"From scratch.\"\n4. Name it study-search (or study-ics).\n5. Paste the function code (shown in the Integrations panel, or in the README).\n6. Click Deploy.\n7. For study-search, go to Edge Functions → Secrets → add TAVILY_API_KEY with your Tavily key.\n8. Go to the function's Settings → toggle OFF \"Verify JWT.\"\n9. The function URL appears on the function detail page — that's what you paste in the Integrations card.",
+        body: "If you can't get the Supabase CLI working on your machine, the dashboard route is just as good:\n\n1. Go to your Supabase project → Edge Functions in the sidebar.\n2. Click \"Deploy a new function.\"\n3. Pick \"Via Editor\" or \"From scratch.\"\n4. Name it study-search (or study-ics, or study-feedback-email).\n5. Paste the function code (shown in the Integrations panel, or in the README).\n6. Click Deploy.\n7. For study-search, go to Edge Functions → Secrets → add TAVILY_API_KEY with your Tavily key.\n8. For study-feedback-email, add RESEND_API_KEY and OWNER_EMAIL secrets.\n9. Go to the function's Settings → toggle OFF \"Verify JWT.\"\n10. The function URL appears on the function detail page — that's what you paste in the Integrations card.",
+      },
+      {
+        id: "ef-feedback-email",
+        title: "Instant email when someone submits feedback",
+        body: "What it does: When a user clicks Feedback and submits, the deployer's inbox gets an email immediately — no need to check the Supabase dashboard. Replaces the old mailto: behavior that opened the user's email client.\n\nHow it works (technical):\n• Edge Function study-feedback-email accepts POST with feedback JSON\n• Function calls Resend's REST API (server-side, key never leaves Supabase)\n• Resend delivers to OWNER_EMAIL secret\n• Owner gets formatted HTML email with rating, message, context\n\nSetup: see Integrations tab → \"Feedback email\" card. ~5 minutes if you already have a Resend account.\n\nFallback chain (most robust → least):\n1. Edge Function → instant email (if endpoint set)\n2. Supabase feedback table (always written when Supabase connected)\n3. mailto: fallback (only fires if both above fail AND ownerEmail constant is set)\n\nGmail caveat: Resend's free shared-sender (onboarding@resend.dev) often gets filtered by Gmail. If you don't see the test email, check spam. Long-term fix: verify your own domain in Resend.\n\nAlternative: paste a Discord/Slack webhook URL in the endpoint field instead. The function payload is plain JSON — any webhook receiver accepts it. Skips email entirely.",
       },
     ],
   },
@@ -845,6 +849,7 @@ const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3Mi
 // can still override in Settings → Integrations if they want their own backend.
 const DEFAULT_LOCAL_SEARCH_ENDPOINT = "https://nfbzmxuruxqgbeeypsoq.supabase.co/functions/v1/study-search";
 const DEFAULT_ICS_SUBSCRIPTION_ENDPOINT = "https://nfbzmxuruxqgbeeypsoq.supabase.co/functions/v1/study-ics";
+const DEFAULT_FEEDBACK_EMAIL_ENDPOINT = "https://nfbzmxuruxqgbeeypsoq.supabase.co/functions/v1/study-feedback-email";
 
 // Per-user override resolver. Reads localStorage if set, otherwise falls back to deployer default.
 const _getOverrides = () => {
@@ -1355,9 +1360,25 @@ function AppInner() {
     return h;
   };
 
-  // ============ AI PROVIDER (Anthropic Claude vs. Local WebGPU AI via WebLLM) ============
-  // "anthropic" → call api.anthropic.com (needs key or Artifact proxy). Full quality, paid, online.
-  // "webllm" → load a model into IndexedDB once, run inference locally via WebGPU. Free, offline, much weaker quality.
+  // ============ GOOGLE GEMINI (alternate cloud provider) ============
+  // Google's Gemini API is a viable alternative to Anthropic — has a genuine free tier
+  // (Gemini 2.5 Flash: 15 req/min, 1500 req/day free) so users without an Anthropic Console
+  // account can still get frontier-quality output. Different API format so it needs its own
+  // call function (callGemini) rather than sharing callClaude's Anthropic-shaped body.
+  const [geminiApiKey, setGeminiApiKey] = useState(() => {
+    try { return localStorage.getItem("lectern_gemini_api_key") || ""; } catch { return ""; }
+  });
+  const [geminiApiKeyDraft, setGeminiApiKeyDraft] = useState("");
+  useEffect(() => { try { localStorage.setItem("lectern_gemini_api_key", geminiApiKey); } catch {} }, [geminiApiKey]);
+  const [geminiModel, setGeminiModel] = useState(() => {
+    try { return localStorage.getItem("lectern_gemini_model") || "gemini-2.5-flash"; } catch { return "gemini-2.5-flash"; }
+  });
+  useEffect(() => { try { localStorage.setItem("lectern_gemini_model", geminiModel); } catch {} }, [geminiModel]);
+
+  // ============ AI PROVIDER (Anthropic Claude / Google Gemini / Local WebGPU AI) ============
+  // "anthropic" → call api.anthropic.com (needs key). Full quality, paid, online.
+  // "gemini" → call generativelanguage.googleapis.com (needs key). Frontier quality, free tier available.
+  // "webllm" → load a model into IndexedDB once, run inference locally via WebGPU. Free, offline, weaker quality.
   const [aiProvider, setAiProvider] = useState(() => {
     try { return localStorage.getItem("lectern_ai_provider") || "anthropic"; } catch { return "anthropic"; }
   });
@@ -2279,6 +2300,7 @@ function AppInner() {
       ageOrGrade: "", // e.g. "10th grade", "undergrad junior", "adult, no formal CS background"
       localSearchEndpoint: DEFAULT_LOCAL_SEARCH_ENDPOINT, // deployment default — overridable in Integrations
       icsSubscriptionEndpoint: DEFAULT_ICS_SUBSCRIPTION_ENDPOINT, // deployment default — overridable in Integrations
+      feedbackEmailEndpoint: DEFAULT_FEEDBACK_EMAIL_ENDPOINT, // deployment default — Edge Function that emails owner directly
       perFactCitations: false, // when on, AI emits "→ Source: [Sn]" beneath every factual claim. Off by default to preserve flowing prose for explainer/briefing modes.
     };
     try {
@@ -2288,6 +2310,7 @@ function AppInner() {
       const merged = { ...defaults, ...saved };
       if (!merged.localSearchEndpoint) merged.localSearchEndpoint = DEFAULT_LOCAL_SEARCH_ENDPOINT;
       if (!merged.icsSubscriptionEndpoint) merged.icsSubscriptionEndpoint = DEFAULT_ICS_SUBSCRIPTION_ENDPOINT;
+      if (!merged.feedbackEmailEndpoint) merged.feedbackEmailEndpoint = DEFAULT_FEEDBACK_EMAIL_ENDPOINT;
       return merged;
     } catch { return defaults; }
   });
@@ -3075,6 +3098,37 @@ function AppInner() {
     return () => { window.removeEventListener("error", onErr); window.removeEventListener("unhandledrejection", onRej); };
   }, []);
 
+  // Send feedback to owner via Edge Function (server-side email send via Resend).
+  // Replaces the older mailto: behavior which opened the user's email client.
+  // The function is configured by the deployer; if no endpoint is set, this is a no-op.
+  const sendFeedbackViaEmailEndpoint = async (entry) => {
+    const endpoint = (persistentProfile.feedbackEmailEndpoint || "").trim();
+    if (!endpoint) return { ok: false, reason: "no endpoint" };
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rating: entry.rating === 1 ? "positive" : entry.rating === -1 ? "negative" : entry.rating === 0 ? "neutral" : null,
+          category: entry.category,
+          message: entry.text || "",
+          context: entry.context || null,
+          user_email: user?.email || null,
+          app_version: APP_VERSION,
+          submitted_at: new Date(entry.ts || Date.now()).toISOString(),
+        }),
+      });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        return { ok: false, reason: `HTTP ${res.status}: ${txt.slice(0, 200)}` };
+      }
+      return { ok: true };
+    } catch (e) {
+      logError(e, "feedback email endpoint");
+      return { ok: false, reason: e.message || "network error" };
+    }
+  };
+
   const submitFeedback = async () => {
     const d = feedbackDraft;
     if (!d.text.trim() && d.rating === null) { showToast("Add a rating or a message"); return; }
@@ -3112,14 +3166,25 @@ function AppInner() {
       }
     }
 
-    if (supabaseWrote) {
+    // Try the Edge Function email send IN PARALLEL with showing the toast. Doesn't block UI.
+    // Goal: owner gets an instant email notification regardless of whether Supabase wrote.
+    const emailResult = await sendFeedbackViaEmailEndpoint(entry);
+
+    // Toast logic: prefer the most positive outcome.
+    if (emailResult.ok && supabaseWrote) {
+      showToast("Thanks — feedback sent + emailed");
+    } else if (emailResult.ok) {
+      showToast("Thanks — feedback emailed to owner");
+    } else if (supabaseWrote) {
       showToast("Thanks — feedback sent");
     } else if (ownerEmail) {
+      // Final fallback: open the user's email client (old mailto: behavior).
+      // Only fires when both Edge Function AND Supabase failed AND owner email is configured.
       sendFeedbackByEmail(entry); showToast(`Saved + opened email to ${ownerEmail}`);
     } else {
-      showToast("Thanks — feedback saved locally (no Supabase connection)");
+      showToast("Thanks — feedback saved locally");
     }
-    track("action", "feedback_submitted", { sent_to_supabase: supabaseWrote });
+    track("action", "feedback_submitted", { sent_to_supabase: supabaseWrote, emailed: emailResult.ok });
   };
 
   const rateGeneration = (verdict) => {
@@ -3276,7 +3341,10 @@ function AppInner() {
    * @returns {Promise<string>} The model's response text (full content, post-streaming if applicable)
    */
   const callClaude = async (prompt, systemPrompt, useMaterials = false, opts = {}) => {
-    // Provider switch — local WebGPU model handles simpler requests when user opts in.
+    // Provider switch — Gemini and local WebGPU dispatch off here; everything below is Anthropic-shaped.
+    if (aiProvider === "gemini") {
+      return await callGemini(prompt, systemPrompt, useMaterials, opts);
+    }
     if (aiProvider === "webllm") {
       // Auto-detect structured-output intent — if the prompt asks for JSON, enable JSON mode
       // so the local model produces parseable output instead of prose-with-an-attempt-at-JSON.
@@ -3517,6 +3585,149 @@ function AppInner() {
     const text = (finalData.content || []).filter(b => b.type === "text").map(b => b.text || "").join("\n");
     // Log the successful call with latency + estimated tokens
     logApiCall({ inputChars: inputCharsEstimate, outputChars: text.length, latencyMs: Date.now() - callStart, model: body.model });
+    return text.replace(/```json|```/g, "").trim();
+  };
+
+  /**
+   * callGemini — Google Gemini API integration
+   *
+   * Mirrors callClaude's signature so the rest of the app can call callClaude uniformly and
+   * dispatch here transparently. Uses Gemini's REST API (generativelanguage.googleapis.com)
+   * with either streaming or non-streaming per opts.stream.
+   *
+   * Free tier as of 2026: Gemini 2.5 Flash ~ 15 req/min, 1500 req/day; Gemini 2.5 Pro lower limits.
+   * Key from: aistudio.google.com/apikey
+   *
+   * IMPORTANT differences from Anthropic:
+   *  - Body uses "contents" (not "messages") with role/parts structure
+   *  - System prompt goes in "systemInstruction" not as a top-level field
+   *  - Images use inlineData { mimeType, data } inside parts, not the Anthropic image block
+   *  - No first-class "tool_use" for web search — Gemini has google_search grounding but different shape
+   *  - No PDF-document protocol either; PDFs must be pre-extracted to text (same as Anthropic in practice)
+   */
+  const callGemini = async (prompt, systemPrompt, useMaterials = false, opts = {}) => {
+    const callStart = Date.now();
+    if (!geminiApiKey || !geminiApiKey.trim()) {
+      throw new Error("Google API key missing. Open Settings → AI Provider and paste a Gemini key.");
+    }
+    const model = opts.model || geminiModel || "gemini-2.5-flash";
+    const shouldStream = opts.stream !== false; // default streaming on
+    const temperature = typeof opts.temperature === "number" ? opts.temperature : 0.7;
+    const maxTokens = opts.maxTokens || opts.max_tokens || 4096;
+
+    // Build the user message parts — text always, plus images if provided.
+    const userParts = [{ text: prompt }];
+    if (useMaterials && images && images.length > 0) {
+      for (const img of images) {
+        try {
+          userParts.push({
+            inlineData: {
+              mimeType: img.mediaType || "image/jpeg",
+              data: img.data, // already base64-encoded in our image state
+            },
+          });
+        } catch (e) {
+          logError(e, "gemini image encode");
+        }
+      }
+    }
+    // Text extracted from PDFs (if any) — Gemini can't read PDF binary natively via this endpoint,
+    // so we append any pre-extracted PDF text to the prompt (same fallback strategy as WebLLM path).
+    // The main callClaude flow does the extraction; here we assume prompt already includes it.
+
+    const body = {
+      contents: [{ role: "user", parts: userParts }],
+      generationConfig: {
+        temperature,
+        maxOutputTokens: maxTokens,
+        // Gemini's JSON mode via responseMimeType when the prompt clearly wants JSON
+        ...(/Respond ONLY with valid JSON|response_format.*json/i.test(prompt + systemPrompt) ? { responseMimeType: "application/json" } : {}),
+      },
+    };
+    if (systemPrompt && systemPrompt.trim()) {
+      body.systemInstruction = { parts: [{ text: systemPrompt }] };
+    }
+
+    const inputCharsEstimate = (systemPrompt || "").length + prompt.length;
+    const base = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}`;
+    const authQ = `?key=${encodeURIComponent(geminiApiKey.trim())}`;
+
+    // Streaming path — Gemini uses Server-Sent Events via :streamGenerateContent?alt=sse
+    if (shouldStream) {
+      const url = `${base}:streamGenerateContent${authQ}&alt=sse`;
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (response.status === 401 || response.status === 403) {
+          logApiCall({ inputChars: inputCharsEstimate, latencyMs: Date.now() - callStart, model, error: "auth" });
+          throw new Error("Google API key missing or invalid. Open Settings → AI Provider and paste a valid Gemini key.");
+        }
+        if (!response.ok) {
+          const errText = await response.text().catch(() => "");
+          logApiCall({ inputChars: inputCharsEstimate, latencyMs: Date.now() - callStart, model, error: `HTTP ${response.status}` });
+          throw new Error(`Gemini API returned ${response.status}: ${errText.slice(0, 200)}`);
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let fullText = "";
+        let buffer = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          // Parse SSE events — each event is "data: {...}\n\n"
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || ""; // keep incomplete line for next iteration
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data:")) continue;
+            const jsonStr = trimmed.slice(5).trim();
+            if (!jsonStr) continue;
+            try {
+              const chunk = JSON.parse(jsonStr);
+              const parts = chunk?.candidates?.[0]?.content?.parts || [];
+              for (const p of parts) {
+                if (typeof p.text === "string") {
+                  fullText += p.text;
+                  if (opts.onStreamChunk) opts.onStreamChunk(p.text);
+                }
+              }
+            } catch (e) {
+              // Non-JSON line — skip (Gemini sometimes emits keep-alives)
+            }
+          }
+        }
+        logApiCall({ inputChars: inputCharsEstimate, outputChars: fullText.length, latencyMs: Date.now() - callStart, model });
+        return fullText.replace(/```json|```/g, "").trim();
+      } catch (e) {
+        logError(e, "stream callGemini");
+        throw e;
+      }
+    }
+
+    // Non-streaming path
+    const url = `${base}:generateContent${authQ}`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (response.status === 401 || response.status === 403) {
+      logApiCall({ inputChars: inputCharsEstimate, latencyMs: Date.now() - callStart, model, error: "auth" });
+      throw new Error("Google API key missing or invalid. Open Settings → AI Provider and paste a valid Gemini key.");
+    }
+    if (!response.ok) {
+      const errText = await response.text().catch(() => "");
+      logApiCall({ inputChars: inputCharsEstimate, latencyMs: Date.now() - callStart, model, error: `HTTP ${response.status}` });
+      throw new Error(`Gemini API returned ${response.status}: ${errText.slice(0, 200)}`);
+    }
+    const data = await response.json();
+    const parts = data?.candidates?.[0]?.content?.parts || [];
+    const text = parts.map((p) => p.text || "").join("\n");
+    logApiCall({ inputChars: inputCharsEstimate, outputChars: text.length, latencyMs: Date.now() - callStart, model });
     return text.replace(/```json|```/g, "").trim();
   };
 
@@ -5094,9 +5305,13 @@ OUTPUT
 
   const solveMath = async () => {
     if (!mathInput.trim()) return;
-    // Honest preflight: if user is on Anthropic but no API key, tell them clearly instead of generic fail
+    // Honest preflight: if user is on a cloud provider but no API key, tell them clearly instead of generic fail
     if (aiProvider === "anthropic" && !anthropicApiKey) {
       setMathSolution({ error: "No Cloud AI API key set. Add one in Settings → AI Provider, or switch to Local AI." });
+      return;
+    }
+    if (aiProvider === "gemini" && !geminiApiKey) {
+      setMathSolution({ error: "No Gemini API key set. Add one in Settings → AI Provider (free tier available), or switch to Local AI." });
       return;
     }
     if (aiProvider === "webllm" && !webllmEngineRef.current) {
@@ -5131,6 +5346,10 @@ OUTPUT
     // Honest preflight: catch missing-key / unloaded-model up front
     if (aiProvider === "anthropic" && !anthropicApiKey) {
       setCodeExplainResult({ error: "No Cloud AI API key set. Add one in Settings → AI Provider, or switch to Local AI." });
+      return;
+    }
+    if (aiProvider === "gemini" && !geminiApiKey) {
+      setCodeExplainResult({ error: "No Gemini API key set. Add one in Settings → AI Provider (free tier available), or switch to Local AI." });
       return;
     }
     if (aiProvider === "webllm" && !webllmEngineRef.current) {
@@ -6226,12 +6445,16 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
                 </div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6, flexDirection: isMobile ? "column" : "row" }}>
                   {anthropicApiKey ? (
-                    <Btn variant="primary" onClick={() => { setAiProvider("anthropic"); showToast("Switched to Cloud AI — images will be read by Claude"); }}>
-                      Switch to Cloud AI (best quality)
+                    <Btn variant="primary" onClick={() => { setAiProvider("anthropic"); showToast("Switched to Claude — images will be read by Claude"); }}>
+                      Switch to Claude
+                    </Btn>
+                  ) : geminiApiKey ? (
+                    <Btn variant="primary" onClick={() => { setAiProvider("gemini"); showToast("Switched to Gemini — images will be read by Gemini"); }}>
+                      Switch to Gemini (free)
                     </Btn>
                   ) : (
                     <Btn variant="primary" onClick={() => { setShowSettings(true); track("action", "image_hint_open_settings"); }}>
-                      Set up Cloud AI (best quality)
+                      Set up Cloud AI (Claude or Gemini)
                     </Btn>
                   )}
                   <Btn variant="ghost" onClick={() => { initSmolVLM().catch(() => {}); track("action", "smolvlm_init_from_hint"); }} disabled={smolVLMLoading}>
@@ -8537,6 +8760,151 @@ Deno.serve(async (req) => {
           })()}
         </div>
 
+        {/* Feedback Email — Edge Function that emails the owner instantly when feedback is submitted.
+            Replaces the older mailto: behavior that opened the user's email client. */}
+        <div style={cardWrap}>
+          <div style={cardHead}><MessageCircle size={20} color={C.blue} /><SectionLabel style={cardLabel}>Feedback email · Edge Function</SectionLabel></div>
+          <div style={cardBody}>
+            When a user submits feedback, this Edge Function calls Resend's REST API to email the owner directly. <strong>You get an instant email in your inbox</strong> instead of relying on the user's email client (mailto:) or having to check the Supabase dashboard manually.
+          </div>
+          {(() => {
+            const endpoint = persistentProfile.feedbackEmailEndpoint;
+            return (
+              <div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div>
+                    <SectionLabel style={{ marginBottom: 4 }}>Your Edge Function URL</SectionLabel>
+                    <input type="text" value={endpoint || ""} onChange={(e) => setPersistentProfile((p) => ({ ...p, feedbackEmailEndpoint: e.target.value.trim() }))}
+                      placeholder="https://YOUR-PROJECT.supabase.co/functions/v1/study-feedback-email"
+                      style={{ width: "100%", padding: "8px 12px", background: C.paperLight, border: `1px solid ${C.rule}`, borderRadius: 2, fontFamily: fontMono, fontSize: 12, outline: "none", color: C.ink, boxSizing: "border-box" }} />
+                  </div>
+                  {endpoint && (
+                    <Btn variant="ghost" onClick={async () => {
+                      showToast("Sending test feedback email…");
+                      const testEntry = { ts: Date.now(), rating: 1, category: "Test", text: "This is a test feedback email triggered from the Integrations panel. If you see this in your inbox, the Edge Function is working.", context: { test: true } };
+                      const r = await sendFeedbackViaEmailEndpoint(testEntry);
+                      if (r.ok) showToast("✓ Test sent — check your inbox");
+                      else showToast(`Failed: ${r.reason || "unknown error"}`);
+                    }}>
+                      <Sparkles size={11} /> Test endpoint
+                    </Btn>
+                  )}
+                </div>
+                <details style={{ marginTop: 14 }}>
+                  <summary style={{ cursor: "pointer", fontFamily: fontMono, fontSize: 11, color: C.inkSoft, letterSpacing: "0.06em", textTransform: "uppercase" }}>Show Edge Function code · deploy this once to your Supabase</summary>
+                  <div style={{ marginTop: 8, padding: 12, background: C.paperLight, border: `1px solid ${C.rule}`, borderRadius: 3, fontFamily: fontSerif, fontSize: 12, color: C.ink, lineHeight: 1.55 }}>
+                    <strong>Setup steps (~5 minutes):</strong>
+                    <ol style={{ margin: "8px 0", paddingLeft: 22, lineHeight: 1.7 }}>
+                      <li>Get a free Resend API key at <code style={{ color: C.accent, fontFamily: fontMono, fontSize: 11 }}>resend.com</code> (3,000 emails/month free)</li>
+                      <li>In your Supabase dashboard → Edge Functions → Secrets, add <code style={{ fontFamily: fontMono, fontSize: 11, color: C.accent }}>RESEND_API_KEY</code> with your key, and <code style={{ fontFamily: fontMono, fontSize: 11, color: C.accent }}>OWNER_EMAIL</code> with your inbox address</li>
+                      <li>Save the code below as <code style={{ fontFamily: fontMono, fontSize: 11 }}>supabase/functions/study-feedback-email/index.ts</code> (or paste it in the Supabase dashboard's Edge Function editor)</li>
+                      <li>Deploy: <code style={{ fontFamily: fontMono, fontSize: 11, color: C.accent }}>supabase functions deploy study-feedback-email --no-verify-jwt</code> (or use the dashboard's Deploy button)</li>
+                      <li>Paste the function URL in the field above. Test it.</li>
+                    </ol>
+                    <p style={{ marginTop: 10, fontStyle: "italic", color: C.inkMuted }}>
+                      Note: if you use Gmail, sender <code style={{ fontFamily: fontMono, fontSize: 11 }}>onboarding@resend.dev</code> may get filtered. Either whitelist it in Gmail, or verify your own domain in Resend (long-term fix). For instant reliable delivery to Gmail, consider using a Discord/Telegram webhook URL here instead — the same function format works for any webhook receiver.
+                    </p>
+                  </div>
+                  <pre style={{ marginTop: 8, padding: 12, background: C.paperDark, border: `1px solid ${C.rule}`, borderRadius: 3, fontFamily: fontMono, fontSize: 10, color: C.inkSoft, lineHeight: 1.45, overflowX: "auto", maxHeight: 360 }}>{`// supabase/functions/study-feedback-email/index.ts
+// Deploy: supabase functions deploy study-feedback-email --no-verify-jwt
+// Requires secrets:
+//   supabase secrets set RESEND_API_KEY=<your-resend-key>
+//   supabase secrets set OWNER_EMAIL=<your-inbox@example.com>
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+const escapeHtml = (s: string) =>
+  String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: CORS });
+
+  const apiKey = Deno.env.get("RESEND_API_KEY");
+  const ownerEmail = Deno.env.get("OWNER_EMAIL");
+  if (!apiKey) return new Response(JSON.stringify({ error: "RESEND_API_KEY not set" }), {
+    status: 500, headers: { ...CORS, "Content-Type": "application/json" }
+  });
+  if (!ownerEmail) return new Response(JSON.stringify({ error: "OWNER_EMAIL not set" }), {
+    status: 500, headers: { ...CORS, "Content-Type": "application/json" }
+  });
+
+  let body: any;
+  try { body = await req.json(); }
+  catch { return new Response("Invalid JSON", { status: 400, headers: CORS }); }
+
+  const rating = String(body.rating || "—");
+  const category = String(body.category || "Feedback").slice(0, 50);
+  const message = String(body.message || "").slice(0, 5000);
+  const userEmail = body.user_email ? String(body.user_email).slice(0, 200) : "(anonymous)";
+  const appVersion = String(body.app_version || "?").slice(0, 20);
+  const submittedAt = String(body.submitted_at || new Date().toISOString());
+  const context = body.context ? JSON.stringify(body.context, null, 2).slice(0, 1500) : "";
+
+  const ratingEmoji = rating === "positive" ? "👍" : rating === "negative" ? "👎" : rating === "neutral" ? "○" : "—";
+  const subject = \`[Study It] \${ratingEmoji} \${category}\${message ? ": " + message.slice(0, 60).replace(/\\s+/g, " ") : ""}\`;
+
+  const html = \`
+    <div style="font-family: system-ui, -apple-system, Helvetica, Arial, sans-serif; max-width: 600px; padding: 24px; color: #222;">
+      <h2 style="margin: 0 0 16px; color: #444; font-size: 20px;">New Study It Feedback</h2>
+      <table style="border-collapse: collapse; width: 100%; margin-bottom: 16px;">
+        <tr><td style="padding: 6px 0; color: #888; font-size: 13px; width: 110px;">Rating</td><td style="padding: 6px 0;">\${ratingEmoji} \${escapeHtml(rating)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #888; font-size: 13px;">Category</td><td style="padding: 6px 0;">\${escapeHtml(category)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #888; font-size: 13px;">From</td><td style="padding: 6px 0;">\${escapeHtml(userEmail)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #888; font-size: 13px;">When</td><td style="padding: 6px 0;">\${escapeHtml(submittedAt)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #888; font-size: 13px;">App version</td><td style="padding: 6px 0;">\${escapeHtml(appVersion)}</td></tr>
+      </table>
+      \${message ? \`<div style="background: #f6f4ef; padding: 16px; border-left: 3px solid #b43a2c; margin-bottom: 16px; white-space: pre-wrap; line-height: 1.5;">\${escapeHtml(message)}</div>\` : ""}
+      \${context ? \`<details style="margin-top: 12px;"><summary style="cursor: pointer; color: #888; font-size: 12px;">Show context</summary><pre style="background: #f0eee8; padding: 10px; font-size: 11px; overflow-x: auto; margin-top: 6px;">\${escapeHtml(context)}</pre></details>\` : ""}
+    </div>
+  \`;
+
+  try {
+    const r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": \`Bearer \${apiKey}\`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Study It <onboarding@resend.dev>",
+        to: [ownerEmail],
+        reply_to: body.user_email && body.user_email !== "(anonymous)" ? body.user_email : undefined,
+        subject,
+        html,
+      }),
+    });
+    if (!r.ok) {
+      const errText = await r.text().catch(() => "");
+      return new Response(JSON.stringify({
+        error: \`Resend API \${r.status}: \${errText.slice(0, 300)}\`
+      }), { status: 500, headers: { ...CORS, "Content-Type": "application/json" } });
+    }
+    const data = await r.json();
+    return new Response(JSON.stringify({ ok: true, id: data?.id }), {
+      headers: { ...CORS, "Content-Type": "application/json" }
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: String(e) }), {
+      status: 500, headers: { ...CORS, "Content-Type": "application/json" }
+    });
+  }
+});`}</pre>
+                </details>
+                {endpoint && (
+                  <div style={{ marginTop: 10, padding: 10, background: C.blueSoft, border: `1px solid ${C.blue}`, borderRadius: 3, fontFamily: fontSerif, fontSize: 12, color: C.ink, lineHeight: 1.55 }}>
+                    ✓ Configured. Every feedback submission now triggers an instant email to the owner's inbox via this endpoint. The mailto: fallback only fires if both this AND Supabase fail.
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+
         {/* 2. EXPORT EVERYTHING — full backup zip */}
         <div style={cardWrap}>
           <div style={cardHead}><Download size={20} color={C.gold} /><SectionLabel style={{ ...cardLabel, color: C.gold }}>Full backup · Working</SectionLabel></div>
@@ -8632,7 +9000,7 @@ Deno.serve(async (req) => {
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, padding: "8px 10px", background: C.paperLight, borderRadius: 2 }}>
                 <span style={{ fontFamily: fontMono, fontSize: 11, color: C.inkSoft, flex: 1 }}>API key: {googleApiKey.slice(0, 8)}…{googleApiKey.slice(-4)}</span>
-                <button onClick={() => { setGoogleApiKey(""); setDriveStatus(""); showToast("API key removed"); }} style={{ background: "transparent", border: "none", color: C.inkMuted, fontFamily: fontSans, fontSize: 11, cursor: "pointer" }}>Remove</button>
+                <button onClick={() => { setGeminiApiKey(""); setDriveStatus(""); showToast("API key removed"); }} style={{ background: "transparent", border: "none", color: C.inkMuted, fontFamily: fontSans, fontSize: 11, cursor: "pointer" }}>Remove</button>
               </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
                 <input type="text" value={driveUrlDraft} onChange={(e) => setDriveUrlDraft(e.target.value)} placeholder="Paste a Drive share link (or file ID)"
@@ -9138,13 +9506,13 @@ Deno.serve(async (req) => {
     //     to see progress or they'll assume the app froze. Includes live tokens/sec readout.
     const isCloudStreamingMode = mode === "explain" || mode === "briefing" || mode === "audioOverview";
     const showStreamingPreview = loading && streamPartial && (
-      (aiProvider === "anthropic" && isCloudStreamingMode) ||
+      ((aiProvider === "anthropic" || aiProvider === "gemini") && isCloudStreamingMode) ||
       (aiProvider === "webllm") // ALL modes for local
     );
     if (showStreamingPreview) {
       const providerLabel = aiProvider === "webllm"
         ? (LOCAL_MODELS[webllmLoadedModel]?.label || "Local model")
-        : "Cloud AI";
+        : aiProvider === "gemini" ? `Gemini (${geminiModel})` : "Cloud AI";
       const modeLabel = ({
         explain: "Explainer", briefing: "Briefing", audioOverview: "Audio overview",
         flashcards: "Flashcards", recall: "Recall cards", practice: "Practice MCQs", exam: "Exam",
@@ -10073,6 +10441,19 @@ Deno.serve(async (req) => {
               }}>Sign in</button>
             )
           ) : null}
+          {/* CodeQuest — cross-app gateway. A separate deploy, so a real link in a
+              new tab. Lectern (the hub) is reachable via the floating pill it
+              renders over this app, so there is no second back-button here. */}
+          <a href="https://code-quest-tau-puce.vercel.app" target="_blank" rel="noopener noreferrer"
+            title="Open CodeQuest — learn to code" aria-label="Open CodeQuest — opens in a new tab" style={{
+            fontFamily: fontSans, fontSize: 11, padding: isMobile ? "6px 8px" : "4px 10px", background: C.goldSoft, color: C.gold,
+            border: `1px solid ${C.gold}`, borderRadius: 2, marginRight: isMobile ? 4 : 6,
+            cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 600,
+            textDecoration: "none", letterSpacing: "0.02em", whiteSpace: "nowrap",
+          }}>
+            <Code size={12} />
+            {!isMobile && "CodeQuest"}
+          </a>
           {/* Feedback button — replaces the old floating FAB. Sits next to Sign in for visibility. */}
           <button onClick={() => setShowFeedback(true)} title="Send feedback" aria-label="Send feedback" style={{
             fontFamily: fontSans, fontSize: 11, padding: isMobile ? "6px 8px" : "4px 10px", background: "transparent", color: C.inkSoft,
@@ -10477,21 +10858,83 @@ Deno.serve(async (req) => {
                 Choose where the AI work happens. Cloud AI (paid) is world-class. Local WebGPU AI is free and offline, but dramatically less capable.
               </p>
 
-              {/* Provider switcher */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
+              {/* Provider switcher — three options: Anthropic, Gemini, WebLLM. Responsive grid. */}
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
                 <button onClick={() => setAiProvider("anthropic")}
                   style={{ padding: 14, background: aiProvider === "anthropic" ? C.ink : C.paperLight, color: aiProvider === "anthropic" ? C.paper : C.ink, border: `2px solid ${aiProvider === "anthropic" ? C.ink : C.rule}`, borderRadius: 3, cursor: "pointer", textAlign: "left" }}>
-                  <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: "0.1em", opacity: 0.7, marginBottom: 4 }}>CLOUD · PAID</div>
-                  <div style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Cloud AI</div>
-                  <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.85 }}>Frontier quality. Thinking, web search, vision, multi-agent. Needs API key.</div>
+                  <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: "0.1em", opacity: 0.7, marginBottom: 4 }}>CLOUD · CLAUDE</div>
+                  <div style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Claude (Anthropic)</div>
+                  <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.85 }}>Frontier quality. Thinking, web search, vision, multi-agent. Paid API key.</div>
+                </button>
+                <button onClick={() => setAiProvider("gemini")}
+                  style={{ padding: 14, background: aiProvider === "gemini" ? C.blue : C.paperLight, color: aiProvider === "gemini" ? C.paper : C.ink, border: `2px solid ${aiProvider === "gemini" ? C.blue : C.rule}`, borderRadius: 3, cursor: "pointer", textAlign: "left" }}>
+                  <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: "0.1em", opacity: 0.7, marginBottom: 4 }}>CLOUD · GEMINI</div>
+                  <div style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Gemini (Google)</div>
+                  <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.85 }}>Frontier quality with a genuine free tier (2.5 Flash: 15/min, 1,500/day). Free API key.</div>
                 </button>
                 <button onClick={() => setAiProvider("webllm")} disabled={webgpuSupported === false}
                   style={{ padding: 14, background: aiProvider === "webllm" ? C.moss : C.paperLight, color: aiProvider === "webllm" ? C.paper : C.ink, border: `2px solid ${aiProvider === "webllm" ? C.moss : C.rule}`, borderRadius: 3, cursor: webgpuSupported === false ? "not-allowed" : "pointer", textAlign: "left", opacity: webgpuSupported === false ? 0.5 : 1 }}>
                   <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: "0.1em", opacity: 0.7, marginBottom: 4 }}>LOCAL · FREE · WEBGPU</div>
                   <div style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Local AI</div>
-                  <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.85 }}>{webgpuSupported === false ? "Not available — your browser doesn't expose WebGPU." : webgpuSupported === null ? "Detecting WebGPU…" : "Runs Llama / Phi / Gemma in your browser. Free, offline. Much weaker than cloud AI."}</div>
+                  <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.85 }}>{webgpuSupported === false ? "Not available — your browser doesn't expose WebGPU." : webgpuSupported === null ? "Detecting WebGPU…" : "Runs Llama / Phi / Gemma in your browser. Free, offline. Weaker than cloud."}</div>
                 </button>
               </div>
+
+              {aiProvider === "gemini" && (
+                <div style={{ padding: 14, background: C.paperLight, borderRadius: 3, marginBottom: 18 }}>
+                  <SectionLabel style={{ marginBottom: 8 }}>Google Gemini API key</SectionLabel>
+                  <p style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, fontStyle: "italic", margin: "0 0 8px" }}>
+                    Free at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style={{ color: C.accent }}>aistudio.google.com/apikey</a> — sign in with your Google account, click "Create API key." No credit card. Stored only on this device's localStorage. Sent directly to <code style={{ fontFamily: fontMono, fontSize: 11 }}>generativelanguage.googleapis.com</code>.
+                  </p>
+                  {geminiApiKey ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.blueSoft, border: `1px solid ${C.blue}`, borderRadius: 3, marginBottom: 12 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.blue }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: fontMono, fontSize: 10, color: C.blue, letterSpacing: "0.1em" }}>GEMINI CONNECTED</div>
+                        <div style={{ fontFamily: fontMono, fontSize: 12, color: C.ink }}>Key: …{geminiApiKey.slice(-6)} · Model: {geminiModel}</div>
+                      </div>
+                      <button onClick={() => { setGeminiApiKey(""); showToast("Gemini key removed"); }} style={{ background: "transparent", border: `1px solid ${C.rule}`, padding: "6px 12px", cursor: "pointer", fontFamily: fontSans, fontSize: 12, borderRadius: 2 }}>Remove key</button>
+                    </div>
+                  ) : (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                        <input
+                          type="password"
+                          value={geminiApiKeyDraft}
+                          onChange={(e) => setGeminiApiKeyDraft(e.target.value)}
+                          placeholder="AIzaSy…"
+                          autoComplete="off"
+                          style={{ flex: 1, minWidth: 200, padding: "9px 12px", background: C.paper, border: `1px solid ${C.rule}`, borderRadius: 2, fontFamily: fontMono, fontSize: 12, outline: "none", color: C.ink }}
+                        />
+                        <Btn variant="primary" onClick={() => {
+                          const k = geminiApiKeyDraft.trim();
+                          if (!k) { showToast("Paste a key first"); return; }
+                          if (!k.startsWith("AIza")) { showToast("Gemini keys usually start with AIza"); }
+                          setGeminiApiKey(k); setGeminiApiKeyDraft(""); showToast("Gemini key saved");
+                        }}>Save key</Btn>
+                      </div>
+                    </div>
+                  )}
+                  {/* Model picker for Gemini */}
+                  <div>
+                    <SectionLabel style={{ marginBottom: 6 }}>Gemini model</SectionLabel>
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 6 }}>
+                      {[
+                        { id: "gemini-2.5-flash", label: "2.5 Flash", desc: "Fast + free tier. Default." },
+                        { id: "gemini-2.5-flash-lite", label: "2.5 Flash-Lite", desc: "Fastest, cheapest, lower quality." },
+                        { id: "gemini-2.5-pro", label: "2.5 Pro", desc: "Highest quality, slower, lower free-tier limits." },
+                      ].map((m) => (
+                        <button key={m.id} onClick={() => setGeminiModel(m.id)}
+                          style={{ padding: "8px 10px", background: geminiModel === m.id ? C.blueSoft : C.paper, color: C.ink, border: `1px solid ${geminiModel === m.id ? C.blue : C.rule}`, borderRadius: 2, cursor: "pointer", textAlign: "left" }}>
+                          <div style={{ fontFamily: fontMono, fontSize: 10, color: C.inkMuted, letterSpacing: "0.06em" }}>{m.id}</div>
+                          <div style={{ fontFamily: fontSans, fontSize: 12, fontWeight: 600, marginTop: 2 }}>{m.label}</div>
+                          <div style={{ fontFamily: fontSerif, fontSize: 11, color: C.inkSoft, fontStyle: "italic", marginTop: 2 }}>{m.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {aiProvider === "anthropic" ? (
                 <div style={{ padding: 14, background: C.paperLight, borderRadius: 3, marginBottom: 18 }}>
