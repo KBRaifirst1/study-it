@@ -1293,7 +1293,7 @@ const CSS = `
 
   /* subject grid */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
-  .subj{text-align:left;cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:var(--shadow);transition:transform .12s}
+  .subj{text-align:left;cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:var(--shadow);transition:transform var(--t-fast) var(--ease)}
   .subj:hover{transform:translateY(-3px)}
   .subj .ic{margin-bottom:11px;width:50px;height:50px;font-size:26px;border-radius:15px}
   .subj .nm{font-size:18px;font-weight:800}
@@ -1301,15 +1301,13 @@ const CSS = `
   .subj .ct{font-size:12.5px;color:var(--ink-faint);margin-top:11px;font-weight:600}
   .tick{font-size:15px;margin-left:7px;font-weight:900}
   .pbar{height:6px;border-radius:999px;background:var(--line);margin-top:9px;overflow:hidden}
-  .pbar>i{display:block;height:100%;border-radius:999px;transition:width .4s}
+  .pbar>i{display:block;height:100%;border-radius:999px;transition:width var(--t-slow) var(--ease)}
 
   /* level path */
-  .levwrap{margin-top:16px}
-  .levttl{font-size:13px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--a);margin:20px 4px 6px}
   .path{position:relative;padding-left:6px}
   .path::before{content:"";position:absolute;left:24px;top:14px;bottom:14px;width:3px;background:var(--line);border-radius:2px}
   .stop{position:relative;display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);
-    border-radius:16px;padding:13px 15px;margin:10px 0;cursor:pointer;box-shadow:var(--shadow);z-index:1;transition:transform .1s}
+    border-radius:16px;padding:13px 15px;margin:10px 0;cursor:pointer;box-shadow:var(--shadow);z-index:1;transition:transform var(--t-fast) var(--ease)}
   .stop:hover{transform:translateY(-2px)}
   .node{width:38px;height:38px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
     font-weight:800;background:var(--card-2);color:var(--ink-soft);border:3px solid var(--line);font-size:15px}
@@ -1340,7 +1338,7 @@ const CSS = `
   .ask{font-size:19px;font-weight:750;margin:2px 0 16px}
   .opts{display:flex;flex-direction:column;gap:11px}
   .opt{text-align:left;background:var(--card-2);border:2px solid var(--line);border-radius:14px;padding:13px 16px;
-    font-size:16px;color:var(--ink);cursor:pointer;min-height:50px;transition:.12s;font-weight:600}
+    font-size:16px;color:var(--ink);cursor:pointer;min-height:50px;transition:all var(--t-fast) var(--ease);font-weight:600}
   .opt:hover:not(:disabled){border-color:var(--a)}
   .opt:disabled{cursor:default}
   .opt.right{border-color:var(--ok);background:var(--ok-bg)}
@@ -1351,6 +1349,30 @@ const CSS = `
   input.ans{flex:1;min-width:150px;font-size:18px;padding:13px 15px;border-radius:14px;border:2px solid var(--line);
     background:var(--card-2);color:var(--ink);font-family:inherit;font-weight:600}
   input.ans:focus{outline:none;border-color:var(--a);background:#fff}
+  input.ans.cloudin{width:100%;flex:none;min-width:0;font-size:16px;font-weight:600}
+  /* Cloud sign-in modal. Centred rather than a bottom sheet, matching the shape
+     of Study It's own auth modal so the two read as one product. It sits above
+     the tab bar but below nothing else — there is no other layer it could hide. */
+  .cloudmodal{position:fixed;z-index:80;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:min(420px,calc(100vw - 32px));max-height:calc(100vh - 48px);overflow:auto;
+    background:var(--card);border:1px solid var(--line);border-radius:20px;
+    padding:22px 20px 18px;box-shadow:var(--shadow)}
+  .cloudmodal .cmhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .cloudmodal .cmx{background:transparent;border:none;font-size:16px;line-height:1;
+    color:var(--ink-faint);cursor:pointer;padding:4px 6px;border-radius:8px}
+  .cloudmodal .cmx:hover{background:var(--card-2);color:var(--ink)}
+  .cloudmodal .cmtitle{font-size:27px;font-weight:800;letter-spacing:-.4px;margin:8px 0 4px}
+  .cloudmodal .cmsub{font-size:13.5px;line-height:1.5;color:var(--ink-soft);margin:0 0 16px}
+  .cloudmodal .cmprimary{width:100%;justify-content:center;margin-top:14px}
+  .cloudmodal .cmsecondary{width:100%;justify-content:center;margin-top:8px;font-size:13px}
+  .cloudmodal .cmquiet{display:block;width:100%;margin-top:8px;padding:6px;background:transparent;
+    border:none;color:var(--ink-faint);font-size:12px;font-family:inherit;cursor:pointer}
+  .cloudmodal .cmquiet:hover{color:var(--ink-soft)}
+  .cloudmodal .cmfoot{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);text-align:center}
+  .cloudmodal .cmlink{background:transparent;border:none;color:var(--a);font-size:12.5px;
+    font-family:inherit;font-weight:700;cursor:pointer;padding:4px}
+  @media (max-width:400px){.cloudmodal{padding:18px 15px 15px}.cloudmodal .cmtitle{font-size:23px}}
+
   .fb{margin-top:15px;border-radius:14px;padding:13px 15px;font-size:15px;animation:sin .25s}
   .fb.ok{background:var(--ok-bg);color:#1f6b4c;border:1px solid #bfe6cf}
   .fb.no{background:var(--no-bg);color:#a2432e;border:1px solid #f0c9bd}
@@ -1383,9 +1405,9 @@ const CSS = `
   .setmid{flex:1;min-width:0}
   .settitle{font-weight:750}
   .setdesc{font-size:12.5px;color:var(--ink-faint)}
-  .switch{width:54px;height:32px;border-radius:999px;background:var(--line);border:none;position:relative;cursor:pointer;flex:0 0 auto;transition:background .2s;padding:0}
+  .switch{width:54px;height:32px;border-radius:999px;background:var(--line);border:none;position:relative;cursor:pointer;flex:0 0 auto;transition:background var(--t) var(--ease);padding:0}
   .switch.on{background:var(--a)}
-  .switch .knob{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 2px 4px rgba(0,0,0,.25)}
+  .switch .knob{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:left var(--t) var(--ease);box-shadow:0 2px 4px rgba(0,0,0,.25)}
   .switch.on .knob{left:25px}
   /* hear-it (pronunciation) */
   .hearbtn{display:inline-flex;align-items:center;gap:6px;background:var(--a-tint);color:var(--a);border:none;border-radius:999px;
@@ -1438,12 +1460,12 @@ const CSS = `
   [data-theme="dark"] .wk{background:linear-gradient(#f2ece0,#ded5c4);border-color:#b7ac97;color:#6f6455}
   .foot{margin-top:26px;color:var(--ink-faint);font-size:12px;text-align:center;line-height:1.7;white-space:pre-line}
   /* launch splash */
-  #splash{position:fixed;inset:0;z-index:200;background:linear-gradient(160deg,#6d5cf5,#e64980);display:flex;align-items:center;justify-content:center;pointer-events:none;animation:splashout 1.15s forwards}
+  #splash{position:fixed;inset:0;z-index:200;background:linear-gradient(160deg,#6d5cf5,#e64980);display:flex;align-items:center;justify-content:center;pointer-events:none;animation:splashout .42s forwards}
   .splashinner{text-align:center;color:#fff;animation:splashpop .55s cubic-bezier(.2,.8,.3,1.5)}
   .splashmk{width:92px;height:92px;border-radius:27px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:48px;margin:0 auto 16px}
   .splashname{font-size:25px;font-weight:800;letter-spacing:.3px}
   @keyframes splashpop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
-  @keyframes splashout{0%,55%{opacity:1}100%{opacity:0;visibility:hidden}}
+  @keyframes splashout{0%,40%{opacity:1}100%{opacity:0;visibility:hidden}}
   /* onboarding */
   .ob{position:fixed;inset:0;z-index:150;background:var(--paper);display:flex;flex-direction:column;padding:30px 22px calc(env(safe-area-inset-bottom) + 24px)}
   .obtop{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:16px}
@@ -1479,14 +1501,14 @@ const CSS = `
   .appbar{padding-top:calc(12px + env(safe-area-inset-top))}
   .ob{padding-top:calc(30px + env(safe-area-inset-top))}
   /* tab bar: active pill */
-  .tab{transition:color .18s}
+  .tab{transition:color var(--t) var(--ease)}
   .tab .tic{display:flex;align-items:center;justify-content:center;width:46px;height:28px;border-radius:14px;
-    transition:background .2s,transform .18s}
+    transition:background var(--t) var(--ease),transform var(--t) var(--ease)}
   .tab.on .tic{background:var(--a-tint);transform:translateY(-1px)}
   /* interactive swipe-back */
   .screen{will-change:transform}
   .dragging .screen{animation:none!important}
-  .snapback .screen{transition:transform .22s cubic-bezier(.2,.7,.3,1),opacity .22s ease}
+  .snapback .screen{transition:transform var(--t) var(--ease),opacity var(--t) var(--ease)}
   /* sticky action bar inside practice cards */
   .actionbar{position:sticky;bottom:calc(var(--tabh) + env(safe-area-inset-bottom) + 6px);z-index:12;
     display:flex;gap:10px;align-items:center;margin:16px -18px -4px;padding:11px 18px;
@@ -1539,7 +1561,6 @@ const CSS = `
     -webkit-tap-highlight-color:transparent;min-height:52px}
   .stprow:active{background:var(--card-2)}
   .stprow.done .stpttl{color:var(--ink-soft)}
-  .stprow.next{background:var(--a-tint)}
   .stpic{width:28px;height:28px;border-radius:9px;background:var(--card-2);flex:0 0 auto;
     display:flex;align-items:center;justify-content:center;font-size:14px}
   .stprow.done .stpic{background:var(--ok);color:#fff;font-size:13px}
@@ -1551,6 +1572,161 @@ const CSS = `
   .stephd{margin:6px 0 14px}
   .stepchap{font-size:12.5px;font-weight:850;color:var(--a);text-transform:uppercase;letter-spacing:.7px;margin-bottom:9px}
   .steprow{display:flex;align-items:center;gap:10px;margin-top:14px}
+  /* ===================== professional pass =====================
+     Line icons on the baseline, a tighter type scale, calmer weights, less
+     rounding and softer shadow. Nothing here changes behaviour. */
+  .ico{display:block;flex:0 0 auto}
+  .intro{gap:0}
+  .introdots{display:flex;gap:7px;justify-content:center;margin:20px 0 6px}
+  .introdots span{width:7px;height:7px;border-radius:50%;background:var(--line);transition:all var(--t) var(--ease)}
+  .introdots span.on{background:var(--a);width:20px;border-radius:4px}
+  .introbtns{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:14px}
+  .introbtns .btn{min-width:220px;justify-content:center;text-align:center}
+  /* ---------- motion ----------
+     Three durations and two curves, used everywhere. Interfaces feel unfinished
+     when every element eases differently; the eye reads the inconsistency even
+     when it can't name it. */
+  :root{
+    --ease:cubic-bezier(.2,.7,.3,1);
+    --ease-out:cubic-bezier(.16,1,.3,1);
+    --t-fast:.13s;
+    --t:.2s;
+    --t-slow:.32s;
+  }
+  .btn,.opt,.subj,.cont,.stop,.chaphd,.stprow,.sheetitem,.noterow,.tab,.seg,.savebtn,.iconbtn,.hintbtn,.palitem{
+    transition:transform var(--t-fast) var(--ease),background var(--t) var(--ease),
+      border-color var(--t) var(--ease),color var(--t) var(--ease),box-shadow var(--t) var(--ease)}
+  .btn:active,.opt:active,.subj:active,.cont:active,.stop:active,.chaphd:active,
+  .stprow:active,.sheetitem:active,.noterow:active,.savebtn:active,.iconbtn:active,.hintbtn:active{transform:scale(.977)}
+  .btn:disabled:active{transform:none}
+  .progbar i,.pbar i,.sbtrack i{transition:width var(--t-slow) var(--ease)}
+  .screen.nav-fwd{animation:pushIn var(--t-slow) var(--ease-out)}
+  .screen.nav-back{animation:popIn var(--t-slow) var(--ease-out)}
+  .screen.nav-fade{animation:fadeIn var(--t) ease}
+  /* content settles in rather than snapping */
+  .card,.cont,.subj{animation:riseIn var(--t) var(--ease-out) both}
+  @keyframes riseIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  /* every tappable thing is reachable with a thumb */
+  .btn,.opt,.tab,.seg,.chaphd,.stprow,.sheetitem,.noterow,.hintbtn,.linkbtn{min-height:44px}
+  .savebtn,.iconbtn,.searchclear,.hearbtn{min-width:36px;min-height:36px}
+  @media (prefers-reduced-motion:reduce){
+    .card,.cont,.subj{animation:none}
+  }
+  .aboutrows{margin:2px 0 4px}
+  .aboutrow{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:8px 0;
+    border-bottom:1px solid var(--line);font-size:13.5px}
+  .aboutrow:last-child{border-bottom:none}
+  .aboutrow span{color:var(--ink-faint)}
+  .aboutrow b{font-weight:640;text-align:right}
+  .tic{position:relative}
+  .tbadge{position:absolute;top:-5px;left:calc(50% + 5px);min-width:16px;height:16px;padding:0 4px;
+    border-radius:8px;background:var(--no);color:#fff;font-size:10px;font-weight:750;line-height:16px;
+    text-align:center;font-variant-numeric:tabular-nums;box-shadow:0 0 0 2px var(--card)}
+  .tiwrap{display:flex;flex-direction:column;justify-content:center;min-width:0;line-height:1.15}
+  .tiwhere{font-size:11.5px;color:var(--ink-faint);font-weight:600;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap;max-width:46vw}
+  .stepchaprow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+  .savebtn{width:32px;height:32px;border-radius:9px;border:1px solid var(--line);background:var(--card);
+    color:var(--ink-faint);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;
+    -webkit-tap-highlight-color:transparent}
+  .savebtn.on{background:var(--a-tint);border-color:var(--a);color:var(--a)}
+  .savebtn:active{transform:scale(.93)}
+  .chart{margin:6px 0 10px}
+  .chart svg{display:block;overflow:visible}
+  .chartx{display:flex;margin-top:5px}
+  .chartx span{flex:1;text-align:center;font-size:10px;color:var(--ink-faint);font-weight:640}
+  .chartx span.on{color:var(--a);font-weight:750}
+  .donut{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1}
+  .donuttext{font-size:17px;font-weight:680;fill:var(--ink);font-variant-numeric:tabular-nums}
+  .donutcap{font-size:11.5px;color:var(--ink-faint);text-align:center;line-height:1.35;max-width:120px}
+  .reccols{display:flex;gap:14px;margin:4px 0 14px}
+  .subjchart{display:flex;flex-direction:column;gap:9px}
+  .sbrow{display:flex;align-items:center;gap:10px}
+  .sbname{flex:0 0 40%;font-size:13.5px;font-weight:640;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sbtrack{flex:1;height:8px;border-radius:5px;background:var(--line);overflow:hidden}
+  .sbtrack i{display:block;height:100%;border-radius:5px}
+  .sbpct{flex:0 0 34px;text-align:right;font-size:12px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+  .summary .sumrow{display:flex;gap:10px;margin:2px 0 12px}
+  .sumstat{flex:1;background:var(--card-2);border-radius:12px;padding:12px 8px;text-align:center}
+  .sumbig{font-size:22px;font-weight:680;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .sumlab{font-size:11.5px;color:var(--ink-faint);margin-top:2px}
+  .summiss{margin:10px 0 0;padding-left:18px}
+  .summiss li{font-size:13.5px;line-height:1.55;color:var(--ink-soft);margin-bottom:4px}
+  .nextup{margin-bottom:18px}
+  .cont.rec{align-items:flex-start;padding-top:14px;padding-bottom:14px}
+  .cont.rec.lead{border-color:var(--a)}
+  .recmid{flex:1;min-width:0}
+  .recwhy{font-size:12.5px;line-height:1.5;color:var(--ink-faint);margin-top:4px}
+  .clsest{font-size:12.5px;color:var(--ink-faint);text-align:center;margin:-2px 0 16px;font-variant-numeric:tabular-nums}
+  /* app-bar icon button */
+  .rt{display:flex;align-items:center;gap:8px}
+  .iconbtn{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--card);
+    color:var(--ink-soft);display:flex;align-items:center;justify-content:center;cursor:pointer;
+    -webkit-tap-highlight-color:transparent}
+  .iconbtn:active{transform:scale(.94)}
+  /* offline notice */
+  .offbar{background:#fff6e5;color:#7a5210;border-bottom:1px solid #f3d08a;font-size:12.5px;font-weight:640;
+    padding:8px 16px;text-align:center}
+  [data-theme="dark"] .offbar{background:#3a2f14;color:#f2d79a;border-bottom-color:#6b5520}
+  /* crash card */
+  .crash{padding:18px}
+  .crashdet{margin-top:12px;background:var(--card-2);border-radius:10px;padding:10px 12px;
+    font-size:12px;overflow-x:auto;color:var(--ink-soft)}
+  .crashdet code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  /* command palette */
+  .palette{position:fixed;left:50%;top:8vh;transform:translateX(-50%);z-index:170;width:min(620px,92vw);
+    background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    box-shadow:0 24px 60px rgba(15,20,40,.28);animation:palin .16s ease-out}
+  @keyframes palin{from{opacity:0;transform:translateX(-50%) translateY(-6px)}to{opacity:1;transform:translateX(-50%)}}
+  .palrow{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);color:var(--ink-faint)}
+  .palinput{flex:1;border:none;background:none;font:inherit;font-size:16px;color:var(--ink);outline:none}
+  .kbd{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line);
+    border-radius:6px;padding:2px 6px;color:var(--ink-faint)}
+  .pallist{max-height:56vh;overflow-y:auto;padding:6px}
+  .palgroup{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-faint);
+    padding:10px 10px 5px}
+  .palitem{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;border:none;
+    padding:9px 10px;border-radius:9px;font:inherit;font-size:14.5px;color:var(--ink);cursor:pointer}
+  .palitem.on{background:var(--a-tint);color:var(--a)}
+  .palic{width:22px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-size:15px}
+  .pallabel{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .palsub{color:var(--ink-faint)}
+  .palempty{padding:18px 12px;color:var(--ink-soft);font-size:14px;text-align:center}
+  .hearbtn,.hintbtn{display:inline-flex;align-items:center;gap:7px}
+  .seticon,.si{display:flex;align-items:center;justify-content:center;color:var(--a)}
+  .mk .ico,.obmk .ico,.tic .ico{display:block}
+  /* type scale: fewer sizes, and headings that stop shouting */
+  h1{letter-spacing:-.021em;font-weight:680}
+  .shead h1{letter-spacing:-.018em}
+  .sub{font-size:14.5px;line-height:1.6;color:var(--ink-soft)}
+  .kicker{font-size:11px;font-weight:700;letter-spacing:.075em;text-transform:uppercase;
+    background:none;color:var(--ink-faint);padding:0;border-radius:0;margin-bottom:10px;display:block}
+  .lesson p{font-size:16.5px;line-height:1.72;color:var(--ink)}
+  .ask{font-weight:640;letter-spacing:-.012em}
+  /* weights: 800s everywhere reads as shouting; 600–680 reads as considered */
+  .btn,.opt,.seg,.tab,.settitle,.cl,.nm,.st,.pn,.notettl,.sheetitem{font-weight:640}
+  .btn.go{font-weight:680}
+  .badge,.chip{font-weight:700;letter-spacing:.04em}
+  /* geometry: slightly squarer, and shadows that suggest depth rather than announce it */
+  .card,.cont,.subj,.stop,.famrow,.sheet{border-radius:14px}
+  .btn,.opt,.ans,.obinput,.searchbox,.seg{border-radius:10px}
+  .card{box-shadow:0 1px 2px rgba(20,24,40,.05),0 1px 1px rgba(20,24,40,.03)}
+  .cont,.subj{box-shadow:0 1px 2px rgba(20,24,40,.05)}
+  [data-theme="dark"] .card,[data-theme="dark"] .cont,[data-theme="dark"] .subj{box-shadow:none;border:1px solid var(--line)}
+  /* the app bar: a hairline instead of a heavy edge */
+  .appbar{border-bottom:1px solid var(--line);box-shadow:none}
+  .mk{background:var(--a-tint);color:var(--a);display:flex;align-items:center;justify-content:center}
+  .ti{font-weight:680;letter-spacing:-.01em}
+  /* tab bar: icons carry it, labels stay quiet */
+  .tabbar{border-top:1px solid var(--line)}
+  .tab{font-size:10.5px;letter-spacing:.01em;color:var(--ink-faint);gap:3px}
+  .tab.on{color:var(--a)}
+  .tab .tic{opacity:1;width:auto;height:auto;background:none;transform:none}
+  .tab.on .tic{background:none;transform:none}
+  /* the sign-in mark: a quiet monogram, not a gradient badge */
+  .obmk{background:var(--a-tint);color:var(--a);box-shadow:none;border-radius:22px;
+    width:76px;height:76px}
+  .splashmk{border-radius:22px}
   /* a caution, not an error: something to read before acting, not a failure */
   .warnnote{background:#fff6e5;border:1px solid #f3d08a;color:#7a5210;border-radius:12px;
     padding:11px 13px;font-size:13.5px;line-height:1.55;font-weight:600;margin-bottom:12px}
@@ -1614,7 +1790,7 @@ const CSS = `
   .progwrap{display:flex;align-items:center;gap:11px;margin-bottom:12px}
   .progbar{flex:1;height:7px;border-radius:4px;background:var(--line);overflow:hidden}
   .progbar i{display:block;height:100%;border-radius:4px;background:var(--a);
-    transition:width .32s cubic-bezier(.2,.7,.3,1)}
+    transition:width var(--t-slow) var(--ease)}
   .progwrap .prog{margin:0;white-space:nowrap;font-variant-numeric:tabular-nums}
   /* password field with a Show/Hide control */
   .pwwrap{position:relative;width:100%;max-width:360px;margin:0 auto}
@@ -1680,13 +1856,176 @@ function openDoors(handlers) {
     return typeof a.url === "string" && a.url.indexOf("https://") === 0;
   });
 }
+/* ===========================================================================
+   CLOUD SYNC
+
+   Lectern keeps working exactly as it did with no account and no network: every
+   store below is still written to localStorage first, and that is still the
+   source of truth on the device. Cloud sync is ADDITIVE and OPTIONAL — signing
+   in adds a copy in Supabase so progress follows you to another device.
+
+   It uses the SAME Supabase project as Study It and CodeQuest, so one email and
+   password signs you in to all three. Lectern's own on-device profiles (the
+   name-and-password list on the welcome screen) are untouched and still work
+   offline; a cloud account is a separate, optional thing layered on top.
+
+   The client is imported from esm.sh at the moment it's first needed, matching
+   how App.jsx in this same repo does it. That means no package.json change and
+   nothing extra in the bundle for anyone who never signs in.
+
+   The anon key is meant to be public — Row Level Security is what protects the
+   data, and the policy on lectern_state scopes every row to its owner. The
+   service_role key must never appear in front-end code.
+   =========================================================================== */
+const SB_URL = "https://nfbzmxuruxqgbeeypsoq.supabase.co";
+const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5mYnpteHVydXhxZ2JlZXlwc29xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5OTQ0MTUsImV4cCI6MjA5NTU3MDQxNX0.NqQKeIO3pYOk5rbG4YtJApz1lnss_OZvhWuVkIY79-U";
+const CLOUD_TABLE = "lectern_state";
+
+let _sbPromise = null;
+// Resolves to a Supabase client, or null if the module can't be fetched (no
+// network, blocked CDN). Null is returned rather than thrown so every caller
+// degrades to local-only instead of the app breaking.
+function getSupabase() {
+  if (_sbPromise) return _sbPromise;
+  _sbPromise = (async () => {
+    try {
+      const mod = await import(/* @vite-ignore */ "https://esm.sh/@supabase/supabase-js@2");
+      return mod.createClient(SB_URL, SB_ANON, {
+        auth: { persistSession: true, autoRefreshToken: true, storageKey: "lectern.sb.auth" },
+      });
+    } catch (e) { return null; }
+  })();
+  return _sbPromise;
+}
+
 const pkey = id => "lectern.progress.v3." + (id || "none");
 const lkey = id => "lectern.last.v3." + (id || "none");
 const skey = id => "lectern.srs.v1." + (id || "none");
 const dkey = id => "lectern.deck.v1." + (id || "none");
 const nkey = id => "lectern.notes.v1." + (id || "none");
 const xkey = id => "lectern.added.v1." + (id || "none");
+const akey = id => "lectern.activity.v1." + (id || "none");
+const mkey = id => "lectern.saved.v1." + (id || "none");
+const dayStamp = d => { const x = d || new Date(); const m = x.getMonth() + 1, day = x.getDate(); return x.getFullYear() + "-" + (m < 10 ? "0" : "") + m + "-" + (day < 10 ? "0" : "") + day; };
 const tkey = id => "lectern.steps.v1." + (id || "none");
+
+/* THE ONE LIST OF WHAT SYNCS.
+
+   Every per-account store is named here once. Reset, Backup and now Cloud sync
+   all read from this list, so a store added later can't be silently left out of
+   one of them — the store-audit test enumerates this list from source and fails
+   if a `lectern.` key exists that isn't in it. */
+const CLOUD_STORES = [
+  { field: "progress", key: pkey, empty: {} },
+  { field: "schedule", key: skey, empty: {} },
+  { field: "last", key: lkey, empty: null },
+  { field: "notes", key: nkey, empty: {} },
+  { field: "added", key: xkey, empty: {} },
+  { field: "steps", key: tkey, empty: {} },
+  { field: "deck", key: dkey, empty: {} },
+  { field: "activity", key: akey, empty: {} },
+  { field: "saved", key: mkey, empty: {} },
+];
+
+/* WHAT LEAVES THE DEVICE.
+
+   Everything a learner would be upset to lose, and nothing they'd be upset to
+   have stored:
+
+   - the seven per-account stores above (progress, schedule, last opened, notes,
+     generated lessons, finished steps, flashcard decks)
+   - settings, which INCLUDES the AI API key and model — so a key entered on one
+     device is there on the next. See the warning below.
+   - topics
+   - the profile itself: display name, per-subject levels, and the "about me"
+     text, so a new device shows your name rather than a blank profile.
+
+   ⚠️ THE AI KEY. It rides along inside `settings`, in plain text in the
+   `lectern_state.data` column. Row Level Security means only that account can
+   read the row, and the key never appears in a URL or in any log — but it is
+   readable by anyone who can get into the Supabase project, which is Kabir.
+   That is the honest trade for "type your key once, not on every device". The
+   Cloud sync panel says so plainly rather than leaving it to be discovered.
+
+   ⚠️ WHAT DOES NOT SYNC: the local profile's password `hash`. Deliberate. It's
+   a djb2 hash from hashPw() — a device-level lock to stop a sibling opening
+   your profile, not a real credential — and putting weak password hashes in a
+   database is how they end up cracked. The cloud account has its own proper
+   Supabase password; the on-device lock stays on the device. A restored profile
+   arrives unlocked on the new device, which is the same access the cloud
+   password already granted. */
+const ACCOUNT_FIELDS = ["name", "levels", "profile"];
+
+// Gather one local profile's stores into the shape that goes to the server.
+function collectLocal(uid) {
+  const out = {};
+  for (const st of CLOUD_STORES) out[st.field] = jget(st.key(uid), st.empty);
+  out.settings = jget(SKEY, {});
+  out.topics = jget(TKEY, []);
+  const a = jget(AKEY, { users: [], current: null });
+  const u = (a.users || []).find(x => x.id === uid);
+  if (u) {
+    out.account = {};
+    for (const f of ACCOUNT_FIELDS) if (f in u) out.account[f] = u[f];
+  }
+  return out;
+}
+
+// Write a downloaded snapshot back over one local profile.
+function applyLocal(uid, data) {
+  if (!data) return;
+  for (const st of CLOUD_STORES) {
+    if (st.field in data) jset(st.key(uid), data[st.field]);
+  }
+  if (data.settings) jset(SKEY, data.settings);
+  if (data.topics) jset(TKEY, data.topics);
+  if (data.account) {
+    const a = jget(AKEY, { users: [], current: null });
+    let touched = false;
+    a.users = (a.users || []).map(u => {
+      if (u.id !== uid) return u;
+      touched = true;
+      const next = { ...u };
+      // Only the named fields are copied. `hash` and `guest` stay exactly as
+      // they are on this device — a downloaded snapshot can never unlock or
+      // lock a local profile.
+      for (const f of ACCOUNT_FIELDS) if (f in data.account) next[f] = data.account[f];
+      return next;
+    });
+    if (touched) jset(AKEY, a);
+  }
+}
+
+// Is there anything here worth protecting? Used to decide whether a first sync
+// can proceed silently or has to ask. Deliberately conservative: a single
+// finished step counts as "has data".
+function hasData(d) {
+  if (!d) return false;
+  const big = k => d[k] && typeof d[k] === "object" && Object.keys(d[k]).length > 0;
+  return !!(big("progress") || big("steps") || big("notes") || big("added") ||
+            big("deck") || big("schedule") || big("activity") || big("saved") || d.last);
+}
+
+// Compare two snapshots on the parts that represent real work.
+function sameData(a, b) {
+  try {
+    const pick = d => JSON.stringify(CLOUD_STORES.map(st => (d && d[st.field]) || st.empty));
+    return pick(a) === pick(b);
+  } catch (e) { return false; }
+}
+
+async function cloudLoad(sb, userId) {
+  const { data, error } = await sb.from(CLOUD_TABLE).select("data").eq("user_id", userId).maybeSingle();
+  if (error) throw error;
+  return data && data.data ? data.data : null;
+}
+
+async function cloudSave(sb, userId, snapshot) {
+  const { error } = await sb.from(CLOUD_TABLE)
+    .upsert({ user_id: userId, data: snapshot, updated_at: new Date().toISOString() },
+            { onConflict: "user_id" });
+  if (error) throw error;
+}
 /* The app used to be called Bright Academy. Anyone who used it then keeps their
    accounts, progress and topics: copy the old keys across once, and leave the
    originals alone so nothing is destroyed if this runs somewhere unexpected. */
@@ -1770,7 +2109,7 @@ function speak(text, lang) {
 /* ---------------- native shell: viewport, icon, manifest ---------------- */
 /* Lectern's mark: an open book on a deep-ink tile.
 
-   Drawn to survive a browser tab. At 16px it measures 26% ink and — the bit
+   Drawn to survive a browser tab. At 16px it measures ~26% ink and — the bit
    that actually matters — the gutter between the two pages stays open, so it
    still reads as a book rather than a white blob. The fine rules dissolve
    cleanly at small sizes instead of smearing into grey.
@@ -1778,8 +2117,9 @@ function speak(text, lang) {
    Three layers of paper, deliberately: a plain white block underneath, crisp
    rules along its bottom edge where the sheets stack, leaves fanned along the
    top edge, then the shaded top sheet over everything. Thickness reads from
-   both directions. The previous version used grey underlayers for this and
-   they blurred into the white at anything under 64px.
+   both directions. The mark this replaced used thin strokes and two
+   near-transparent bars; measured at 16px it came out at half this ink and the
+   stem fell below one pixel.
 
    Two variants, because they do different jobs:
    - APP_ICON has rounded corners, for the favicon and the iOS home screen,
@@ -1797,23 +2137,17 @@ const ICON_DEFS =
   '<linearGradient id="pgr" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c8ccdd"/><stop offset=".16" stop-color="#f4f5fa"/><stop offset="1" stop-color="#ffffff"/></linearGradient>' +
   '</defs>';
 const ICON_ART =
-  // the cover, splayed open
   '<path d="M256 148c-50-34-116-50-188-48-15 0-27 12-27 26v218c0 14 12 26 27 26 72-2 138 14 188 48 50-34 116-50 188-48 15 0 27-12 27-26V124c0-14-12-26-27-26-72-2-138 14-188 48Z" fill="url(#cov)"/>' +
-  // the page block beneath the top sheet
   '<path d="M222 182c-42-28-98-42-152-40v182c54-2 110 12 152 40Z" fill="#ffffff"/>' +
   '<path d="M290 182c42-28 98-42 152-40v182c-54-2-110 12-152 40Z" fill="#ffffff"/>' +
-  // sheet edges along the bottom
   '<g stroke="#9aa0bd" stroke-width="5" fill="none" stroke-linecap="round">' +
   '<path d="M70 324c54-2 110 12 152 40"/><path d="M74 312c53-2 108 12 149 39"/>' +
   '<path d="M442 324c-54-2-110 12-152 40"/><path d="M438 312c-53-2-108 12-149 39"/></g>' +
-  // leaves fanned along the top
   '<g stroke="#aab0c9" stroke-width="4.5" fill="none" stroke-linecap="round">' +
   '<path d="M80 146c50 2 98 14 138 36"/><path d="M80 164c50 2 98 14 138 36"/>' +
   '<path d="M432 146c-50 2-98 14-138 36"/><path d="M432 164c-50 2-98 14-138 36"/></g>' +
-  // the top sheet, shaded toward the gutter so the pages look curved
   '<path d="M226 166c-40-27-94-40-146-38v184c52-2 106 12 146 38Z" fill="url(#pgl)"/>' +
   '<path d="M286 166c40-27 94-40 146-38v184c-52-2-106 12-146 38Z" fill="url(#pgr)"/>' +
-  // ribbon bookmark at the spine
   '<path d="M248 344h16v84l-8-22-8 22Z" fill="#e64980"/>';
 const ICON_OPEN = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">';
 const APP_ICON = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
@@ -1821,6 +2155,67 @@ const APP_ICON = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
 const APP_ICON_MASKABLE = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
   ICON_OPEN + ICON_DEFS + '<rect width="512" height="512" fill="url(#bg)"/>' +
   '<g transform="translate(256 256) scale(.76) translate(-256 -256)">' + ICON_ART + '</g></svg>');
+
+/* Study It's mark.
+
+   The repo already ships one — index.html has a <link rel="icon"> pointing at
+   favicon.svg — so the right icon for the Study It route is that file, not
+   something invented here. Rather than hardcode a path that could be renamed
+   out from under this file, the href sitting in the document at boot is
+   captured BEFORE anything touches it.
+
+   This has to be read at module load: installShell() and the router both
+   rewrite that link, so by the time a component renders the original is gone.
+   If index.html ever ships without an icon, the fallback is a bookmark in Study
+   It's own editorial palette (App.jsx PALETTE_DARK — paper #1A1D22, gold
+   #C9A56B), a different shape from Lectern's so the two can't be confused. */
+const STUDY_ICON_FALLBACK = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">' +
+  '<rect width="512" height="512" rx="116" fill="#1A1D22"/>' +
+  '<path d="M146 72h220a30 30 0 0 1 30 30v338l-140-96-140 96V102a30 30 0 0 1 30-30Z" fill="#C9A56B"/></svg>');
+const STUDY_ICON = (() => {
+  try {
+    if (typeof document === "undefined") return STUDY_ICON_FALLBACK;
+    const l = document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
+    const href = l && l.getAttribute("href");
+    return href ? href : STUDY_ICON_FALLBACK;
+  } catch (e) { return STUDY_ICON_FALLBACK; }
+})();
+
+/* Point the tab icon at one of the two marks.
+
+   The href is NOT mutated in place. Browsers differ on whether changing the
+   href of an existing <link rel="icon"> makes them repaint the tab, and Safari
+   is the least willing of them. Removing every icon link and appending a fresh
+   node is the version that works in the most places.
+
+   It also find-or-CREATES, which matters: installShell() bails if an icon link
+   already exists — and index.html ships one — so Lectern's own icon would never
+   have been installed. And installShell() only runs inside the Lectern app, so
+   opening /#/study cold never reaches it at all. */
+function setFavicon(href) {
+  try {
+    if (typeof document === "undefined") return;
+    const head = document.head;
+    if (!head) return;
+    const links = head.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]');
+    // Already showing this exact icon and nothing stale alongside it: leave it
+    // alone. Re-appending on every render would make the tab flicker.
+    if (links.length === 1 && links[0].getAttribute("href") === href) return;
+    for (let i = 0; i < links.length; i++) {
+      try { links[i].parentNode.removeChild(links[i]); } catch (e) {}
+    }
+    const l = document.createElement("link");
+    l.setAttribute("rel", "icon");
+    // A data-URI mark is SVG; a repo file might be .svg, .png or .ico, so the
+    // type attribute is only asserted when it's actually known to be right.
+    if (href.indexOf("data:image/svg+xml") === 0 || /\.svg(\?|$)/i.test(href)) {
+      l.setAttribute("type", "image/svg+xml");
+    }
+    l.setAttribute("href", href);
+    head.appendChild(l);
+  } catch (e) {}
+}
 /* Every step here is decoration: it makes the app installable and lets it use the
    full screen. In a sandboxed preview these calls can be refused outright, so no
    single failure is ever allowed to stop the app from rendering. */
@@ -1880,16 +2275,60 @@ const MUSIC_UNITS = [
 
 /* ================= small components ================= */
 function Hear({ target }) {
-  return <button className="hearbtn" aria-label="Hear it pronounced" onClick={e => { e.stopPropagation(); haptic(5); speak(target.text, target.lang); }}>🔊 <span>Hear it</span></button>;
+  return <button className="hearbtn" aria-label="Hear it pronounced" onClick={e => { e.stopPropagation(); haptic(5); speak(target.text, target.lang); }}><Icon name="sound" size={16} /><span>Hear it</span></button>;
 }
 
+/* Keys that belong to whichever step is on screen. Kept in its own component
+   so the handler is torn down with the step rather than leaking across them. */
+function StepKeys({ app, subj, index, canAdvance, onPrev, onNext }) {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onKey = ev => {
+      if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+      const t = ev.target;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      if (ev.key === "ArrowLeft" && index > 0) { ev.preventDefault(); haptic(4); if (onPrev) onPrev(); return; }
+      if (ev.key === "ArrowRight") {
+        // only forward when the step is genuinely finished — the arrow must not
+        // become a way to skip past questions
+        if (!canAdvance) return;
+        ev.preventDefault(); haptic(4); if (onNext) onNext(); return;
+      }
+      if (ev.key === "s" || ev.key === "S") {
+        ev.preventDefault();
+        haptic(5);
+        const now = !app.isSaved(subj, index);
+        app.toggleSaved(subj, index);
+        app.showToast(now ? "Saved. Find it under Progress." : "Removed from Saved.");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [subj, index, app, canAdvance, onPrev, onNext]);
+  return null;
+}
 function Hints({ ex }) {
   const rungs = useMemo(() => A.HINTS.build(ex), [ex]);
   const [shown, setShown] = useState(0);
+  useEffect(() => { setShown(0); }, [ex]);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onKey = ev => {
+      if (ev.key !== "h" && ev.key !== "H") return;
+      if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+      const t = ev.target;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      ev.preventDefault();
+      haptic(5);
+      setShown(v => Math.min(rungs.length, v + 1));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [rungs.length]);
   return (
     <div className="hints">
       <button className="hintbtn" disabled={shown >= rungs.length} onClick={() => setShown(s => Math.min(rungs.length, s + 1))}>
-        {shown === 0 ? "💡 Stuck? Show a hint" : shown >= rungs.length ? "That's every hint" : "Need more help?"}
+        {shown === 0 ? <><Icon name="hint" size={16} /><span>Stuck? Show a hint</span></> : shown >= rungs.length ? "That's every hint" : "Need more help?"}
       </button>
       <div className="hintlist">
         {rungs.slice(0, shown).map((r, i) => (
@@ -1939,6 +2378,24 @@ function buildSteps(lessons) {
   });
   return { steps: steps, chapters: chapters };
 }
+/* Roughly how long a run of steps takes. Reading time comes from the actual
+   word count at an unhurried 180 words a minute, and a question is costed at the
+   time it takes to read it, think, and answer. Rounded to something a person can
+   act on — never presented as more precise than it is. */
+function estimateMinutes(steps) {
+  let seconds = 0;
+  (steps || []).forEach(st => {
+    if (st.type === "concept") {
+      const words = String(st.teach || "").split(/\s+/).filter(Boolean).length;
+      seconds += Math.max(20, (words / 180) * 60);
+    } else {
+      const words = String(st.q || "").split(/\s+/).filter(Boolean).length;
+      seconds += 20 + (words / 180) * 60;
+    }
+  });
+  return Math.max(1, Math.round(seconds / 60));
+}
+function minutesLabel(mins) { return mins === 1 ? "about a minute" : "about " + mins + " min"; }
 const STEP_LOOK = {
   concept: { icon: "\u{1F4D6}", label: "Read" },
   puzzle:  { icon: "\u{2753}",  label: "Choose" },
@@ -1946,7 +2403,215 @@ const STEP_LOOK = {
 };
 
 /* bottom sheet — replaces browser confirm()/menus with a native-feeling panel */
-function Sheet({ sheet, close }) {
+/* A small set of line icons. Stroke-drawn, inherit the current colour, and
+   sized in ems so they sit on the text baseline wherever they're used. */
+function Icon({ name, size = 20 }) {
+  const p = {
+    home: "M3 10.5 12 3l9 7.5M5.5 9.5V20h13V9.5",
+    learn: "M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v16h5.5A1.5 1.5 0 0 0 20 18.5z",
+    progress: "M4 19.5h16M7 16V9.5M12 16V5M17 16v-7",
+    settings: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 13.5a1.7 1.7 0 0 0 .35 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.35 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.9 19.3a1.7 1.7 0 0 0-1.87.35l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .35-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 4.7 8.9a1.7 1.7 0 0 0-.35-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.35H9.1A1.7 1.7 0 0 0 10.13 3V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.35l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.35 1.87v.08a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1.03z",
+    lectern: "M4 7.5 12 5l8 2.5v2L12 7 4 9.5zM12 8.5V19M8 19h8",
+    review: "M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5",
+    target: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 13.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4z",
+    spark: "M12 3v5M12 16v5M3 12h5M16 12h5M6.2 6.2l3 3M14.8 14.8l3 3M17.8 6.2l-3 3M9.2 14.8l-3 3",
+    install: "M12 3v11M8 10.5l4 4 4-4M4.5 17.5V20h15v-2.5",
+    lock: "M6.5 10.5V8a5.5 5.5 0 0 1 11 0v2.5M5.5 10.5h13V20h-13z",
+    sound: "M4 9.5h3.5L12 6v12l-4.5-3.5H4zM16 9.5a4 4 0 0 1 0 5M18.6 7a7.5 7.5 0 0 1 0 10",
+    vibrate: "M8 5.5h8v13H8zM4.5 9v6M19.5 9v6",
+    moon: "M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z",
+    text: "M5 7V5.5h14V7M12 5.5V19M9 19h6",
+    hint: "M9.5 18h5M10 21h4M12 3a6 6 0 0 1 3.5 10.9c-.6.5-.9 1-.9 1.6v.5h-5.2v-.5c0-.6-.3-1.1-.9-1.6A6 6 0 0 1 12 3z",
+    note: "M5 4.5h9L19 9v10.5H5zM14 4.5V9h5",
+    back: "M14.5 5.5 8 12l6.5 6.5",
+    forward: "M9.5 5.5 16 12l-6.5 6.5",
+    check: "M5 12.5 10 17.5 19 7",
+    close: "M6 6l12 12M18 6 6 18",
+    person: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4.5 20.5a7.5 7.5 0 0 1 15 0",
+    exit: "M15 4.5h4.5v15H15M11 8l-4 4 4 4M7 12h9",
+    switchuser: "M4 8h12l-3-3M20 16H8l3 3"
+  }[name];
+  if (!p) return null;
+  return (
+    <svg className="ico" width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"
+      stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d={p} />
+    </svg>
+  );
+}
+/* A crash in one screen shouldn't take the whole app with it, and it should
+   never leave a blank page. This catches it, says so plainly, and offers a way
+   back — the learner's saved work is untouched either way. */
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err: err }; }
+  componentDidCatch(err, info) { try { console.error("Lectern caught:", err, info); } catch (e) {} }
+  render() {
+    if (!this.state.err) return this.props.children;
+    return (
+      <div className="crash">
+        <div className="card">
+          <span className="kicker">Something broke</span>
+          <h1>This screen hit a problem.</h1>
+          <div className="sub">Your account and everything you've finished are saved and untouched. Going back usually clears it.</div>
+          <div className="crashdet"><code>{String(this.state.err && this.state.err.message || this.state.err)}</code></div>
+          <div className="row" style={{ marginTop: 14, gap: 10 }}>
+            <button className="btn go" onClick={() => { this.setState({ err: null }); if (this.props.onReset) this.props.onReset(); }}>Back to Home</button>
+            <button className="btn" onClick={() => { try { location.reload(); } catch (e) {} }}>Reload</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+/* ---------------- command palette ----------------
+   Ctrl/Cmd-K anywhere. Jumps to a subject, a chapter, a screen or a setting. */
+function CommandPalette({ app, close }) {
+  const [q, setQ] = useState("");
+  const [sel, setSel] = useState(0);
+  const inputRef = useRef(null);
+  useEffect(() => { if (inputRef.current) inputRef.current.focus(); }, []);
+  const all = useMemo(() => {
+    const out = [];
+    out.push({ group: "Go to", label: "Home", icon: "home", on: () => app.go({ tab: "home" }) });
+    out.push({ group: "Go to", label: "Learn", icon: "learn", on: () => app.go({ tab: "learn", scr: "grid" }) });
+    out.push({ group: "Go to", label: "Your progress", icon: "progress", on: () => app.go({ tab: "progress" }) });
+    out.push({ group: "Go to", label: "Settings", icon: "settings", on: () => app.go({ tab: "settings" }) });
+    if (app.dueIds.length) out.push({ group: "Go to", label: "Daily review (" + app.dueIds.length + " due)", icon: "review", on: () => app.go({ tab: "learn", scr: "srs" }) });
+    if (app.weakIds.length) out.push({ group: "Go to", label: "Trouble spots", icon: "target", on: () => app.go({ tab: "learn", scr: "weak" }) });
+    // pick up exactly where the last session stopped
+    const rec = recommendNext(app).filter(r => r.id === "continue")[0];
+    if (rec) out.unshift({ group: "Go to", label: rec.title, icon: "forward", on: rec.on });
+    app.trackedSubjects.forEach(sub => {
+      out.push({ group: "Subjects", label: sub.name, hint: sub.icon, on: () => app.go({ tab: "learn", scr: "subject", subj: sub.id }) });
+    });
+    (app.savedList() || []).forEach(x => {
+      out.push({
+        group: "Saved", hint: x.sub.icon,
+        label: (x.step.item && x.step.item.ask) || x.step.title,
+        sub: x.sub.name,
+        on: () => app.openStep(x.sub.id, x.i)
+      });
+    });
+    (app.noteList() || []).forEach(nt => {
+      out.push({ group: "Notes", hint: nt.sub.icon, label: nt.title, sub: nt.sub.name, on: () => app.openLesson(nt.sub.id, nt.unit) });
+    });
+    app.trackedSubjects.forEach(sub => {
+      (app.courseLessons(sub.id) || []).forEach((L, i) => {
+        out.push({ group: "Lessons", label: L.title, sub: sub.name, hint: sub.icon, on: () => app.openLesson(sub.id, i) });
+      });
+    });
+    out.push({ group: "Settings", label: (app.settings.dark ? "Turn off" : "Turn on") + " dark mode", icon: "moon", on: () => app.setSettings(x => ({ ...x, dark: !x.dark })) });
+    out.push({ group: "Settings", label: (app.settings.textBig ? "Turn off" : "Turn on") + " larger text", icon: "text", on: () => app.setSettings(x => ({ ...x, textBig: !x.textBig })) });
+    out.push({ group: "Settings", label: (app.settings.sound ? "Turn off" : "Turn on") + " sound effects", icon: "sound", on: () => app.setSettings(x => ({ ...x, sound: !x.sound })) });
+    return out;
+  }, [app.trackedSubjects, app.settings, app.dueIds.length, app.weakIds.length, app.savedList, app.noteList]);
+
+  const hits = useMemo(() => {
+    const nq = A.norm(q);
+    if (!nq) return all.filter(x => x.group === "Go to").concat(all.filter(x => x.group === "Subjects")).slice(0, 12);
+    return all.filter(x => A.norm(x.label + " " + (x.sub || "")).indexOf(nq) >= 0).slice(0, 20);
+  }, [q, all]);
+  useEffect(() => { setSel(0); }, [q]);
+
+  const run = item => { close(); haptic(6); item.on(); };
+  const hitsRef = useRef(hits); hitsRef.current = hits;
+  const selRef = useRef(sel); selRef.current = sel;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onKey = e => {
+      const list = hitsRef.current;
+      if (e.key === "ArrowDown") { e.preventDefault(); setSel(v => Math.min(v + 1, list.length - 1)); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); setSel(v => Math.max(v - 1, 0)); }
+      else if (e.key === "Enter") { e.preventDefault(); const item = list[selRef.current]; if (item) run(item); }
+      else if (e.key === "Escape") { e.preventDefault(); close(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  let lastGroup = null;
+  return (
+    <>
+      <div className="scrim" onClick={close} />
+      <div className="palette" role="dialog" aria-modal="true" aria-label="Command palette">
+        <div className="palrow">
+          <Icon name="learn" size={18} />
+          <input ref={inputRef} className="palinput" value={q} onChange={e => setQ(e.target.value)}
+            placeholder="Search subjects, lessons and settings…" aria-label="Search everything" autoComplete="off" spellCheck={false} />
+          <kbd className="kbd">esc</kbd>
+        </div>
+        <div className="pallist">
+          {hits.length === 0 && <div className="palempty">Nothing matches “{q}”.</div>}
+          {hits.map((h, i) => {
+            const head = h.group !== lastGroup ? h.group : null; lastGroup = h.group;
+            return (
+              <div key={h.group + h.label + i}>
+                {head && <div className="palgroup">{head}</div>}
+                <button className={"palitem" + (i === sel ? " on" : "")} onMouseEnter={() => setSel(i)} onClick={() => run(h)}>
+                  <span className="palic">{h.icon ? <Icon name={h.icon} size={17} /> : h.hint}</span>
+                  <span className="pallabel">{h.label}{h.sub ? <span className="palsub"> · {h.sub}</span> : null}</span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+/* How this app works, said once, plainly. Three cards, skippable, and
+   available again from Settings. It explains the parts a learner can't infer —
+   especially that being wrong costs nothing and that review is scheduled. */
+const APP_VERSION = "1.0";
+const INTRO = [
+  {
+    icon: "lectern",
+    title: "Read a little, then use it",
+    body: "Every chapter alternates between short explanations and questions about what you just read. One thing per screen, so you're never asked to hold six ideas at once."
+  },
+  {
+    icon: "hint",
+    title: "Being wrong costs nothing",
+    body: "There are no points, streaks or badges here. A wrong answer just means the question comes back sooner. Hints are always available and using one is never held against you."
+  },
+  {
+    icon: "review",
+    title: "Things come back on purpose",
+    body: "Questions you've answered return days later, and the ones you keep missing return sooner. That spacing is what moves something from 'I read it' to 'I know it'."
+  }
+];
+function Intro({ onDone }) {
+  const [at, setAt] = useState(0);
+  const card = INTRO[at];
+  const last = at === INTRO.length - 1;
+  return (
+    <div className="ob intro" id="intro">
+      <div className="obtop"><div className="obmk"><Icon name={card.icon} size={44} /></div></div>
+      <h1 style={{ textAlign: "center" }}>{card.title}</h1>
+      <div className="sub" style={{ textAlign: "center", maxWidth: 460, margin: "0 auto" }}>{card.body}</div>
+      <div className="introdots" role="presentation">
+        {INTRO.map((_, i) => <span key={i} className={i === at ? "on" : ""} />)}
+      </div>
+      <div className="introbtns">
+        <button className="btn go big" onClick={() => { haptic(6); last ? onDone() : setAt(at + 1); }}>
+          {last ? "Start learning" : "Next"}
+        </button>
+        {!last && <button className="linkbtn" onClick={onDone}>Skip</button>}
+      </div>
+    </div>
+  );
+}
+function Sheet({ sheet, close: rawClose }) {
+  /* A choice sheet has three exits, not two: confirm, cancel, and dismissed
+     without answering (scrim tap, Escape, the X). The third used to be
+     indistinguishable from cancel. It matters for the cloud-conflict prompt,
+     where "cancel" means "keep this device" — a real decision — and dismissing
+     means no decision was made at all. */
+  const close = useCallback(() => {
+    rawClose();
+    if (sheet && sheet.onDismiss) sheet.onDismiss();
+  }, [rawClose, sheet]);
   useEffect(() => {
     const onKey = e => { if (e.key === "Escape") close(); };
     document.addEventListener("keydown", onKey);
@@ -1962,15 +2627,15 @@ function Sheet({ sheet, close }) {
         {sheet.items ? (
           <div>
             {sheet.items.map((it, i) => (
-              <button className="sheetitem" key={i} onClick={() => { haptic(6); close(); if (it.on) it.on(); }}>
-                <span className="si">{it.icon}</span><span>{it.label}</span>
+              <button className="sheetitem" key={i} onClick={() => { haptic(6); rawClose(); if (it.on) it.on(); }}>
+                <span className="si">{typeof it.icon === "string" && it.icon.length > 2 ? <Icon name={it.icon} size={19} /> : it.icon}</span><span>{it.label}</span>
               </button>
             ))}
           </div>
         ) : (
           <div className="sheetbtns">
-            <button className={"btn " + (sheet.danger ? "danger" : "go")} onClick={() => { haptic(8); close(); if (sheet.onConfirm) sheet.onConfirm(); }}>{sheet.confirmLabel || "Confirm"}</button>
-            <button className="btn" onClick={close}>{sheet.cancelLabel || "Cancel"}</button>
+            <button className={"btn " + (sheet.danger ? "danger" : "go")} onClick={() => { haptic(8); rawClose(); if (sheet.onConfirm) sheet.onConfirm(); }}>{sheet.confirmLabel || "Confirm"}</button>
+            <button className="btn" onClick={() => { haptic(6); rawClose(); if (sheet.onCancel) sheet.onCancel(); }}>{sheet.cancelLabel || "Cancel"}</button>
           </div>
         )}
       </div>
@@ -2070,7 +2735,7 @@ function QuestionStep({ step, speakSubj, onAnswer, onDone, done }) {
             else if (answered && c === picked) cls += " wrong";
             return (
               <button className={cls} key={i} disabled={answered} onClick={() => answerChoice(c)}>
-                {c}{answered && c === e.right ? <span className="m">\u2713</span> : (answered && c === picked ? <span className="m">\u2717</span> : null)}
+                {c}{answered && c === e.right ? <span className="m">✓</span> : (answered && c === picked ? <span className="m">✗</span> : null)}
               </button>
             );
           })}
@@ -2242,14 +2907,18 @@ function Deck({ exList, ids, speakSubj, seed, onAnswer, onLast, onFinish, saveKe
 }
 
 /* in-lesson AI teacher */
-function AITeacher({ teach, title, aiAvailable, callModel }) {
+function AITeacher({ teach, title, aiAvailable, callModel, aiUnavailableReason }) {
   const [msgs, setMsgs] = useState([]);
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
-  const [note, setNote] = useState(aiAvailable() ? "" : "Open in the Claude preview (or add an API key in Settings) to chat with the AI teacher.");
+  // The old copy told people to fetch an API key. They don't need one any more —
+  // signing in is the whole requirement — so it says that instead.
+  const whyNot = () => (aiUnavailableReason && aiUnavailableReason()) ||
+    "Sign in under Settings → Cloud sync to chat with the AI teacher.";
+  const [note, setNote] = useState(aiAvailable() ? "" : whyNot());
   function ask() {
     const question = q.trim(); if (!question) return;
-    if (!aiAvailable()) { setNote("The AI teacher needs the Claude preview, or an API key in Settings."); return; }
+    if (!aiAvailable()) { setNote(whyNot()); return; }
     setMsgs(m => [...m, { who: "me", text: question }, { who: "ai", text: "…thinking…" }]); setQ(""); setBusy(true); setNote("");
     callModel(A.GEN.buildHelpPrompt(teach, question, title)).then(t => {
       setMsgs(m => { const c = m.slice(); c[c.length - 1] = { who: "ai", text: (t || "").trim() || "(no reply)" }; return c; }); setBusy(false);
@@ -2259,7 +2928,7 @@ function AITeacher({ teach, title, aiAvailable, callModel }) {
   }
   return (
     <div className="card">
-      <span className="kicker">🤖 AI teacher</span>
+      <span className="kicker">AI teacher</span>
       <div className="setdesc">Stuck or curious? Ask about this lesson — the AI helps one step at a time, without just handing you answers.</div>
       <div className="chat">{msgs.map((m, i) => <div className={"msg " + m.who} key={i}>{m.text}</div>)}</div>
       <div className="typerow">
@@ -2278,22 +2947,39 @@ function AITeacher({ teach, title, aiAvailable, callModel }) {
    hand over to Study It. */
 function LecternApp({ onOpenStudyIt } = {}) {
   const [auth, setAuth] = useState(() => jget(AKEY, { users: [], current: null }));
-  const [settings, setSettings] = useState(() => ({ sound: true, dark: false, haptics: true, textBig: false, aiKey: "", aiModel: "", ...jget(SKEY, {}) }));
+  const [settings, setSettings] = useState(() => ({ sound: true, dark: false, autoTheme: false, haptics: true, textBig: false, aiKey: "", aiModel: "", ...jget(SKEY, {}) }));
   const [notes, setNotes] = useState({});
   // Lessons the learner generated INTO a built-in subject, kept per account and
   // always appended after the built-in ones so finished-lesson numbering holds.
   const [added, setAdded] = useState({});
+  // How many steps were taken on each day. A plain record, not a streak: there
+  // is no reward for a long run and no penalty for a gap.
+  const [activity, setActivity] = useState({});
+  // Steps the learner flagged to come back to. Their choice, not the app's.
+  const [saved, setSaved] = useState({});
   // Which individual steps are finished, keyed "subject/stepIndex".
   const [stepsDone, setStepsDone] = useState({});
   const [topics, setTopics] = useState(() => jget(TKEY, []));
   const cur = useMemo(() => auth.users.find(u => u.id === auth.current) || null, [auth]);
+  /* Cloud sync state. `cloud.user` is the SUPABASE account (shared with Study It
+     and CodeQuest); `cur` above is still the on-device profile. They are
+     deliberately separate: you can use Lectern with no cloud account at all. */
+  const [cloud, setCloud] = useState({ user: null, status: "off", at: null, error: null });
+  const cloudRef = useRef({ timer: null, ready: false });
   const [prog, setProg] = useState(() => jget(pkey(auth.current), {}));
   const [sched, setSched] = useState(() => jget(skey(auth.current), {}));
   const [last, setLast] = useState(() => jget(lkey(auth.current), null));
+  // Reopening the app should put you back where you were, the way a real app
+  // does. Only screens worth returning to are restored — not a half-finished
+  // sheet or the topic generator.
   const [route, setRoute] = useState({ tab: "home", scr: "grid", subj: null, unit: 0 });
+  const routeReady = useRef(false);
   const [splash, setSplash] = useState(true);
   const [confettiKey, setConfettiKey] = useState(0);
   const [sheet, setSheet] = useState(null);
+  const [palette, setPalette] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
+  const [offline, setOffline] = useState(() => (typeof navigator !== "undefined" && navigator.onLine === false));
   const [toast, setToast] = useState(null);
   const [installEvt, setInstallEvt] = useState(null);
   const scrollRef = useRef(null);
@@ -2324,6 +3010,38 @@ function LecternApp({ onOpenStudyIt } = {}) {
   useEffect(() => { if (uid) jset(lkey(uid), last); }, [last, uid]);
   useEffect(() => { setNotes(uid ? (jget(nkey(uid), {}) || {}) : {}); }, [uid]);
   useEffect(() => { if (uid) jset(nkey(uid), notes); }, [notes, uid]);
+  useEffect(() => { setActivity(uid ? (jget(akey(uid), {}) || {}) : {}); }, [uid]);
+  useEffect(() => { setSaved(uid ? (jget(mkey(uid), {}) || {}) : {}); }, [uid]);
+  // Once per account, and never again unless asked for from Settings.
+  useEffect(() => {
+    if (!uid) { setShowIntro(false); return; }
+    let seen = true;
+    try { seen = !!localStorage.getItem("lectern.intro.v1." + uid); } catch (e) { seen = true; }
+    setShowIntro(!seen);
+  }, [uid]);
+  const RESUMABLE = { home: 1, progress: 1, settings: 1, learn: 1 };
+  useEffect(() => {
+    routeReady.current = false;
+    if (!uid) return;
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem("lectern.route.v1." + uid) || "null"); } catch (e) { saved = null; }
+    if (saved && RESUMABLE[saved.tab] && saved.scr !== "generate" && saved.scr !== "done") {
+      setRoute(r => ({ ...r, ...saved }));
+    }
+    routeReady.current = true;
+  }, [uid]);
+  useEffect(() => {
+    if (!uid || !routeReady.current) return;
+    try { localStorage.setItem("lectern.route.v1." + uid, JSON.stringify(route)); } catch (e) {}
+  }, [route, uid]);
+
+  const openIntro = () => setShowIntro(true);
+  const closeIntro = () => {
+    setShowIntro(false);
+    try { if (uid) localStorage.setItem("lectern.intro.v1." + uid, "1"); } catch (e) {}
+  };
+  useEffect(() => { if (uid) jset(mkey(uid), saved); }, [saved, uid]);
+  useEffect(() => { if (uid) jset(akey(uid), activity); }, [activity, uid]);
   useEffect(() => { setAdded(uid ? (jget(xkey(uid), {}) || {}) : {}); }, [uid]);
   useEffect(() => { if (uid) jset(xkey(uid), added); }, [added, uid]);
   useEffect(() => {
@@ -2346,8 +3064,57 @@ function LecternApp({ onOpenStudyIt } = {}) {
     setStepsDone(seeded);
   }, [uid]);
   useEffect(() => { if (uid) jset(tkey(uid), stepsDone); }, [stepsDone, uid]);
-  useEffect(() => { const t = setTimeout(() => setSplash(false), 1250); return () => clearTimeout(t); }, []);
+  useEffect(() => { const t = setTimeout(() => setSplash(false), 420); return () => clearTimeout(t); }, []);
   useEffect(() => { try { installShell(); } catch (e) {} }, []);
+  // Keep the browser tab and task switcher honest about where you are.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    try {
+      const where = locationLabel(app);
+      document.title = where && where !== "Lectern" ? where + " · Lectern" : "Lectern";
+    } catch (e) {}
+  }, [route.tab, route.scr, route.subj, route.unit, route.step, cur, topics, added]);
+  // When asked to, track the device's light/dark setting live.
+  useEffect(() => {
+    if (!settings.autoTheme || typeof window === "undefined" || !window.matchMedia) return;
+    let mq = null;
+    try { mq = window.matchMedia("(prefers-color-scheme: dark)"); } catch (e) { return; }
+    if (!mq) return;
+    const apply = () => setSettings(x => (x.dark === mq.matches ? x : { ...x, dark: mq.matches }));
+    apply();
+    if (mq.addEventListener) { mq.addEventListener("change", apply); return () => mq.removeEventListener("change", apply); }
+    if (mq.addListener) { mq.addListener(apply); return () => mq.removeListener(apply); }
+  }, [settings.autoTheme]);
+  // Losing the network doesn't stop the lessons — they're on the device — but it
+  // does stop the AI, so say so rather than letting a request fail silently.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const on = () => setOffline(false), off = () => setOffline(true);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
+  // Keyboard shortcuts, for anyone on a real keyboard.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onKey = e => {
+      const t = e.target, typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+      if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) { e.preventDefault(); setPalette(v => !v); return; }
+      if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "/") { e.preventDefault(); setPalette(true); return; }
+      if (e.key === "?") { e.preventDefault(); setSheet({ title: "Keyboard shortcuts", body: "Everything here works from any screen it applies to.", items: [
+        { icon: "learn", label: "⌘K or /  —  search everything" },
+        { icon: "forward", label: "1 – 4  —  pick an answer" },
+        { icon: "hint", label: "H  —  reveal the next hint" },
+        { icon: "note", label: "S  —  save this step for later" },
+        { icon: "forward", label: "\u2190 \u2192  —  move between steps" },
+        { icon: "back", label: "Esc  —  close what's open" },
+        { icon: "settings", label: "?  —  show this list" }
+      ] }); return; }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2395,11 +3162,25 @@ function LecternApp({ onOpenStudyIt } = {}) {
   const deckSave = (key, val) => { const all = jget(dkey(uid), {}) || {}; all[key] = val; jset(dkey(uid), all); };
   const deckClear = key => { const all = jget(dkey(uid), {}) || {}; if (key in all) { delete all[key]; jset(dkey(uid), all); } };
   // A class in CodeQuest's sense: the chapters and the flat list of steps.
-  const classOf = useCallback(id => buildSteps(courseLessons(id)), [courseLessons]);
+  /* Build a class once per subject and hand back the SAME object until its
+     lessons actually change. Rebuilding on every render gave every step a new
+     identity, and the runner resets its answer whenever the step changes — so
+     an answer was wiped in the same tick it was submitted. */
+  const classCache = useRef({});
+  const classOf = useCallback(id => {
+    const lessons = courseLessons(id);
+    const hit = classCache.current[id];
+    if (hit && hit.lessons === lessons) return hit.cls;
+    const cls = buildSteps(lessons);
+    classCache.current[id] = { lessons: lessons, cls: cls };
+    return cls;
+  }, [courseLessons]);
   const stepKey = (id, i) => id + "/" + i;
   const isStepDone = (id, i) => !!stepsDone[stepKey(id, i)];
   const markStep = (id, i, cls) => {
+    const already = !!stepsDone[stepKey(id, i)];
     setStepsDone(o => (o[stepKey(id, i)] ? o : { ...o, [stepKey(id, i)]: true }));
+    if (!already) { const key = dayStamp(); setActivity(a => ({ ...a, [key]: (a[key] || 0) + 1 })); }
     // A chapter counts as a finished lesson once every one of its steps is done.
     const step = cls && cls.steps[i];
     if (!step) return;
@@ -2410,6 +3191,86 @@ function LecternApp({ onOpenStudyIt } = {}) {
     }
     if (all) markDone(id, ch.lesson);
   };
+  /* A learner who used Lectern before it tracked individual steps has their
+     history in the lesson-level store only, so every finished lesson showed as
+     "0 of 8 steps". Their work isn't lost — expand each finished lesson into its
+     steps, once, and record that it has been done so it never runs twice. */
+  useEffect(() => {
+    if (!uid) return;
+    const flag = "lectern.stepfill.v1." + uid;
+    try { if (localStorage.getItem(flag)) return; } catch (e) {}
+    const markDoneFlag = () => { try { localStorage.setItem(flag, "1"); } catch (e) {} };
+    const finished = jget(pkey(uid), {}) || {};
+    const lessonsBySubject = {};
+    Object.keys(finished).forEach(k => {
+      if (!finished[k]) return;
+      const parts = String(k).split("/");
+      if (parts.length !== 2) return;
+      const idx = parseInt(parts[1], 10);
+      if (!isFinite(idx)) return;
+      (lessonsBySubject[parts[0]] = lessonsBySubject[parts[0]] || []).push(idx);
+    });
+    const subjects = Object.keys(lessonsBySubject);
+    if (!subjects.length) { markDoneFlag(); return; }
+    const filled = {};
+    subjects.forEach(sid => {
+      let cls = null;
+      try { cls = classOf(sid); } catch (e) { return; }
+      if (!cls || !cls.steps) return;
+      cls.steps.forEach((st, i) => {
+        if (st.chapter && lessonsBySubject[sid].indexOf(st.chapter.lesson) >= 0) filled[sid + "/" + i] = true;
+      });
+    });
+    if (Object.keys(filled).length) setStepsDone(o => ({ ...filled, ...o }));
+    markDoneFlag();
+  }, [uid, classOf]);
+
+  const isSaved = (id, i) => !!saved[id + "/" + i];
+  const toggleSaved = (id, i) => setSaved(o => {
+    const k = id + "/" + i, nx = { ...o };
+    if (nx[k]) delete nx[k]; else nx[k] = Date.now();
+    return nx;
+  });
+  const savedList = () => Object.keys(saved).map(k => {
+    const cut = String(k).lastIndexOf("/");
+    const sid = k.slice(0, cut), idx = parseInt(k.slice(cut + 1), 10);
+    const sub = subjOf(sid);
+    if (!sub || !isFinite(idx)) return null;
+    let cls = null;
+    try { cls = classOf(sid); } catch (e) { return null; }
+    const st = cls && cls.steps[idx];
+    if (!st) return null;
+    return { key: k, sub: sub, i: idx, step: st, at: saved[k] };
+  }).filter(Boolean).sort((a, b) => b.at - a.at);
+
+  /* Everything this account holds about one subject, and nothing else.
+     Returns what was removed so the action can be undone. */
+  const clearSubject = id => {
+    const removed = { steps: {}, sched: {}, notes: {}, saved: {}, prog: {} };
+    const prefix = id + "/";
+    Object.keys(stepsDone).forEach(k => { if (k.indexOf(prefix) === 0) removed.steps[k] = stepsDone[k]; });
+    Object.keys(sched).forEach(k => { if (k.indexOf(prefix) === 0) removed.sched[k] = sched[k]; });
+    Object.keys(notes).forEach(k => { if (k.indexOf(prefix) === 0) removed.notes[k] = notes[k]; });
+    Object.keys(saved).forEach(k => { if (k.indexOf(prefix) === 0) removed.saved[k] = saved[k]; });
+    Object.keys(prog).forEach(k => { if (k.indexOf(prefix) === 0) removed.prog[k] = prog[k]; });
+    const strip = obj => { const nx = {}; Object.keys(obj).forEach(k => { if (k.indexOf(prefix) !== 0) nx[k] = obj[k]; }); return nx; };
+    setStepsDone(strip); setSched(strip); setNotes(strip); setSaved(strip); setProg(strip);
+    setLast(l => (l && l.subj === id ? null : l));
+    return removed;
+  };
+  const restoreSubject = removed => {
+    if (!removed) return;
+    setStepsDone(o => ({ ...o, ...removed.steps }));
+    setSched(o => ({ ...o, ...removed.sched }));
+    setNotes(o => ({ ...o, ...removed.notes }));
+    setSaved(o => ({ ...o, ...removed.saved }));
+    setProg(o => ({ ...o, ...removed.prog }));
+  };
+  const subjectHasWork = id => {
+    const prefix = id + "/";
+    return Object.keys(stepsDone).some(k => k.indexOf(prefix) === 0);
+  };
+
   const stepsDoneIn = (id, from, count) => {
     let done = 0;
     for (let k = from; k < from + count; k++) if (stepsDone[stepKey(id, k)]) done++;
@@ -2440,14 +3301,18 @@ function LecternApp({ onOpenStudyIt } = {}) {
   // the saved password and API key. That makes the file sensitive — the Settings
   // card says so plainly, because a backup you can't restore fully isn't one.
   const buildBackup = () => ({
-    app: "lectern", version: 2, exportedAt: new Date().toISOString(),
+    app: "lectern", version: 3, exportedAt: new Date().toISOString(),
     account: {
       name: cur ? cur.name : "",
       levels: (cur && cur.levels) || {},
       profile: (cur && cur.profile) || "",
       hash: (cur && cur.hash) || ""
     },
-    progress: prog || {}, reviews: sched || {}, last: last || null, topics: topics || [], added: added || {},
+    // Everything the account owns. This list must grow whenever a new store is
+    // added, or a restore silently drops it.
+    progress: prog || {}, reviews: sched || {}, last: last || null,
+    topics: topics || [], added: added || {},
+    steps: stepsDone || {}, notes: notes || {}, saved: saved || {}, activity: activity || {},
     settings: {
       sound: !!settings.sound, haptics: !!settings.haptics,
       dark: !!settings.dark, textBig: !!settings.textBig,
@@ -2464,7 +3329,9 @@ function LecternApp({ onOpenStudyIt } = {}) {
       lessons: Object.keys(d.progress).filter(k => d.progress[k]).length,
       reviews: d.reviews && typeof d.reviews === "object" ? Object.keys(d.reviews).length : 0,
       topics: Array.isArray(d.topics) ? d.topics.length : 0,
-      added: d.added && typeof d.added === "object" ? Object.keys(d.added).reduce((a, k) => a + (d.added[k] || []).length, 0) : 0
+      added: d.added && typeof d.added === "object" ? Object.keys(d.added).reduce((a, k) => a + (d.added[k] || []).length, 0) : 0,
+      steps: d.steps && typeof d.steps === "object" ? Object.keys(d.steps).length : 0,
+      notes: d.notes && typeof d.notes === "object" ? Object.keys(d.notes).length : 0
     };
     return { ok: true, data: d, counts };
   };
@@ -2474,6 +3341,10 @@ function LecternApp({ onOpenStudyIt } = {}) {
     setLast(d.last || null);
     if (Array.isArray(d.topics)) setTopics(d.topics);
     if (d.added && typeof d.added === "object") setAdded(d.added);
+    if (d.steps && typeof d.steps === "object") setStepsDone(d.steps);
+    if (d.notes && typeof d.notes === "object") setNotes(d.notes);
+    if (d.saved && typeof d.saved === "object") setSaved(d.saved);
+    if (d.activity && typeof d.activity === "object") setActivity(d.activity);
     if (d.settings) setSettings(x => ({
       ...x,
       sound: !!d.settings.sound, haptics: !!d.settings.haptics,
@@ -2526,7 +3397,26 @@ function LecternApp({ onOpenStudyIt } = {}) {
 
   const depths = { home: 0, progress: 0, settings: 0 };
   function depthOf(r) { if (r.tab !== "learn") return 0; return r.scr === "grid" ? 0 : (r.scr === "subject" || r.scr === "generate" || r.scr === "srs" || r.scr === "weak") ? 1 : r.scr === "done" ? 3 : 2; }
-  const go = useCallback(patch => { setRoute(r => ({ ...r, ...patch })); if (scrollRef.current && scrollRef.current.scrollTo) scrollRef.current.scrollTo(0, 0); }, []);
+  const scrollMemory = useRef({});
+  // Identify the SCREEN, not the whole route: coming back to the grid leaves the
+  // old subject id sitting in the route, and including it meant the key never
+  // matched the one we saved on the way out.
+  const routeKey = r => {
+    if (r.tab !== "learn") return r.tab;
+    if (r.scr === "grid" || r.scr === "srs" || r.scr === "weak" || r.scr === "generate") return "learn/" + r.scr;
+    if (r.scr === "subject") return "learn/subject/" + r.subj;
+    return ["learn", r.scr, r.subj, r.unit, r.step].join("/");
+  };
+  const go = useCallback(patch => {
+    // remember where this screen was scrolled to before leaving it
+    setRoute(r => {
+      try {
+        const el = scrollRef.current;
+        if (el && typeof el.scrollTop === "number") scrollMemory.current[routeKey(r)] = el.scrollTop;
+      } catch (e) {}
+      return { ...r, ...patch };
+    });
+  }, []);
   // Open a class at a particular step. This is how the learner moves now.
   const openStep = (id, i, lesson) => {
     if (lesson !== undefined) setLast({ subj: id, unit: lesson });
@@ -2575,11 +3465,228 @@ function LecternApp({ onOpenStudyIt } = {}) {
     } catch (e) { showToast("This browser wouldn't show the install prompt."); }
   };
   const signOut = () => { setAuth(a => ({ ...a, current: null })); };
-  const aiAvailable = () => (typeof window !== "undefined" && window.claude && typeof window.claude.complete === "function") || !!settings.aiKey;
-  const callModel = prompt => {
-    if (window.claude && typeof window.claude.complete === "function") return Promise.resolve(window.claude.complete(prompt));
+
+  const pushNow = useCallback(async (reason) => {
+    const sb = await getSupabase();
+    const u = cloud.user;
+    if (!sb || !u || !uid) return false;
+    setCloud(c => ({ ...c, status: "syncing", error: null }));
+    try {
+      await cloudSave(sb, u.id, collectLocal(uid));
+      setCloud(c => ({ ...c, status: "ok", at: Date.now(), error: null }));
+      return true;
+    } catch (e) {
+      setCloud(c => ({ ...c, status: "error", error: (e && e.message) || "Sync failed" }));
+      return false;
+    }
+  }, [cloud.user, uid]);
+
+  // Debounced autosave. Only runs once the first reconcile has finished, so a
+  // half-loaded device can't stomp a good cloud copy.
+  useEffect(() => {
+    if (!cloud.user || !uid || !cloudRef.current.ready) return;
+    if (cloudRef.current.timer) clearTimeout(cloudRef.current.timer);
+    cloudRef.current.timer = setTimeout(() => { pushNow("auto"); }, 2500);
+    return () => { if (cloudRef.current.timer) clearTimeout(cloudRef.current.timer); };
+  }, [prog, sched, last, notes, added, stepsDone, topics, settings, auth, cloud.user, uid, pushNow]);
+
+  // First contact after signing in: decide between the two copies, out loud.
+  const reconcile = useCallback(async (sbUser) => {
+    const sb = await getSupabase();
+    if (!sb || !uid) return;
+    setCloud(c => ({ ...c, status: "syncing", error: null }));
+    let remote = null;
+    try { remote = await cloudLoad(sb, sbUser.id); }
+    catch (e) {
+      setCloud(c => ({ ...c, status: "error", error: (e && e.message) || "Couldn't reach the cloud" }));
+      return;
+    }
+    const localSnap = collectLocal(uid);
+    const finish = () => { cloudRef.current.ready = true; };
+
+    if (!hasData(remote)) {                      // nothing up there yet
+      try {
+        await cloudSave(sb, sbUser.id, localSnap);
+        setCloud(c => ({ ...c, status: "ok", at: Date.now() }));
+        showToast("Cloud sync on. This device's progress was uploaded.");
+      } catch (e) {
+        setCloud(c => ({ ...c, status: "error", error: (e && e.message) || "Upload failed" }));
+      }
+      return finish();
+    }
+    if (!hasData(localSnap)) {                   // nothing here yet
+      applyLocal(uid, remote);
+      setCloud(c => ({ ...c, status: "ok", at: Date.now() }));
+      finish();
+      showToast("Cloud progress downloaded.");
+      setTimeout(() => { try { window.location.reload(); } catch (e) {} }, 600);
+      return;
+    }
+    if (sameData(localSnap, remote)) {           // already identical
+      setCloud(c => ({ ...c, status: "ok", at: Date.now() }));
+      return finish();
+    }
+    // Both sides have real work and they differ. Ask; never guess.
+    confirmSheet({
+      title: "Two sets of progress",
+      body: "This device and your cloud account both have progress, and they don't match. " +
+            "Nothing has been changed yet. Keeping one replaces the other — there's no way to merge them.",
+      confirmLabel: "Use the cloud copy",
+      cancelLabel: "Keep this device",
+      onConfirm: () => {
+        applyLocal(uid, remote);
+        setCloud(c => ({ ...c, status: "ok", at: Date.now() }));
+        finish();
+        showToast("Cloud copy restored.");
+        setTimeout(() => { try { window.location.reload(); } catch (e) {} }, 600);
+      },
+      onCancel: async () => {
+        finish();
+        const okPush = await pushNow("keep-local");
+        if (okPush) showToast("This device's progress is now the cloud copy.");
+      },
+      // Dismissed without answering. Nothing is chosen and nothing is synced;
+      // Settings shows the unresolved state with a way back to this prompt.
+      onDismiss: () => {
+        setCloud(c => ({ ...c, status: "conflict", error: null }));
+      },
+    });
+  }, [uid, pushNow]);
+
+  // Restore an existing session on load, and follow sign-in/out.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const sb = await getSupabase();
+      if (!sb || !alive) return;
+      try {
+        const { data } = await sb.auth.getSession();
+        const u = data && data.session && data.session.user;
+        if (u && alive) { setCloud(c => ({ ...c, user: u, status: "syncing" })); reconcile(u); }
+      } catch (e) {}
+      try {
+        sb.auth.onAuthStateChange((_evt, session) => {
+          if (!alive) return;
+          const su = session && session.user;
+          if (!su) { cloudRef.current.ready = false; setCloud({ user: null, status: "off", at: null, error: null }); }
+        });
+      } catch (e) {}
+    })();
+    return () => { alive = false; };
+  }, [reconcile]);
+
+  const cloudSignIn = useCallback(async (email, password) => {
+    const sb = await getSupabase();
+    if (!sb) return { error: "Couldn't load the sign-in service. Check your connection." };
+    const { data, error } = await sb.auth.signInWithPassword({ email: (email || "").trim(), password });
+    if (error) return { error: error.message };
+    setCloud(c => ({ ...c, user: data.user, status: "syncing", error: null }));
+    reconcile(data.user);
+    return {};
+  }, [reconcile]);
+
+  const cloudSignUp = useCallback(async (email, password) => {
+    const sb = await getSupabase();
+    if (!sb) return { error: "Couldn't load the sign-in service. Check your connection." };
+    const { data, error } = await sb.auth.signUp({ email: (email || "").trim(), password });
+    if (error) return { error: error.message };
+    if (!data.session) return { needsConfirm: true };   // project requires email confirmation
+    setCloud(c => ({ ...c, user: data.user, status: "syncing", error: null }));
+    reconcile(data.user);
+    return {};
+  }, [reconcile]);
+
+  // Study It's sign-in modal offers a magic link and a password reset, so
+  // Lectern offers the same two — it is the same account, and finding one app
+  // can recover it while another can't would be its own small betrayal.
+  const cloudMagicLink = useCallback(async (email) => {
+    const sb = await getSupabase();
+    if (!sb) return { error: "Couldn't load the sign-in service. Check your connection." };
+    const { error } = await sb.auth.signInWithOtp({
+      email: (email || "").trim(),
+      options: { emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined },
+    });
+    if (error) return { error: error.message };
+    return { sent: true };
+  }, []);
+
+  const cloudResetPassword = useCallback(async (email) => {
+    const sb = await getSupabase();
+    if (!sb) return { error: "Couldn't load the sign-in service. Check your connection." };
+    const { error } = await sb.auth.resetPasswordForEmail((email || "").trim(), {
+      redirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
+    });
+    if (error) return { error: error.message };
+    return { sent: true };
+  }, []);
+
+  const cloudSignOut = useCallback(async () => {
+    const sb = await getSupabase();
+    cloudRef.current.ready = false;
+    if (sb) { try { await sb.auth.signOut(); } catch (e) {} }
+    setCloud({ user: null, status: "off", at: null, error: null });
+  }, []);
+
+  // Reopen the conflict prompt after it was dismissed.
+  const cloudResolve = useCallback(() => {
+    if (cloud.user) reconcile(cloud.user);
+  }, [cloud.user, reconcile]);
+
+  const cloudSyncNow = useCallback(async () => {
+    const okPush = await pushNow("manual");
+    showToast(okPush ? "Synced." : "Sync failed. Your progress is still safe on this device.");
+  }, [pushNow]);
+
+  /* AI access.
+
+     Three routes, in order:
+       1. The Claude preview host, if the app is running inside one.
+       2. The shared Gemini proxy — a Supabase Edge Function that holds ONE
+          Gemini key as a server secret. Signing in is what unlocks it, so
+          nobody has to find, paste or protect an API key. This is the normal
+          path for everyone.
+       3. A personal key from Settings, if someone has deliberately set one.
+          Kept as an escape hatch: their key, their quota, their choice.
+
+     A browser cannot call Gemini without a key, and a key shipped in front-end
+     JavaScript is public — anyone could take it from the bundle and spend it.
+     The proxy is the only version of "no keys in the app" that isn't just a
+     hidden key. It also meters usage per account per day, so one signed-in
+     account can't run up an unbounded bill. */
+  const aiAvailable = () =>
+    (typeof window !== "undefined" && window.claude && typeof window.claude.complete === "function") ||
+    !!cloud.user ||
+    !!settings.aiKey;
+
+  // Why AI isn't available, in words a learner can act on rather than "no-ai".
+  const aiUnavailableReason = () =>
+    cloud.user ? "" : "Sign in under Settings → Cloud sync to use the AI teacher. No API key needed.";
+
+  const callModel = async prompt => {
+    if (typeof window !== "undefined" && window.claude && typeof window.claude.complete === "function") {
+      return window.claude.complete(prompt);
+    }
+
+    if (cloud.user) {
+      const sb = await getSupabase();
+      if (sb) {
+        // invoke() attaches the caller's session, which is exactly what the
+        // function checks — an anonymous call is refused server-side.
+        const { data, error } = await sb.functions.invoke("ai", {
+          body: { prompt, model: settings.aiModel || undefined },
+        });
+        // A non-2xx comes back as `error`, but the useful message is in the
+        // body the function sent, so that is preferred over the generic one.
+        const said = data && data.error;
+        if (said) throw new Error(said);
+        if (error) throw new Error(error.message || "The AI request failed.");
+        if (data && data.text) return data.text;
+        throw new Error("The AI returned nothing. Try rephrasing.");
+      }
+    }
+
     if (settings.aiKey) {
-      return fetch("https://api.anthropic.com/v1/messages", {
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -2592,14 +3699,13 @@ function LecternApp({ onOpenStudyIt } = {}) {
           max_tokens: 2000,
           messages: [{ role: "user", content: prompt }]
         })
-      })
-        .then(r => {
-          if (!r.ok) return r.text().then(() => { throw new Error("The AI request failed (" + r.status + ")."); });
-          return r.json();
-        })
-        .then(j => (j.content && j.content[0] && j.content[0].text) || "");
+      });
+      if (!r.ok) throw new Error("The AI request failed (" + r.status + ").");
+      const j = await r.json();
+      return (j.content && j.content[0] && j.content[0].text) || "";
     }
-    return Promise.reject(new Error("no-ai"));
+
+    throw new Error(aiUnavailableReason() || "no-ai");
   };
 
   // Moving between screens has to move the keyboard and screen-reader focus with
@@ -2682,7 +3788,8 @@ function LecternApp({ onOpenStudyIt } = {}) {
     cur, auth, setAuth, signOut, levelOf, setLevelOf, getProfile, setProfile,
     // the course material
     courseLessons, subjOf, courseSubjects, trackedSubjects, lessonsIn, topics, setTopics,
-    added, addLessons, clearAdded, addedCount, builtInCount,
+    added, addLessons, clearAdded, addedCount, builtInCount, activity,
+    isSaved, toggleSaved, savedList, clearSubject, restoreSubject, subjectHasWork,
     classOf, isStepDone, markStep, stepsDoneIn, firstUnfinishedStep,
     // what they have done
     prog, sched, last, isDone, doneCount, totalDone, totalLessons,
@@ -2691,11 +3798,14 @@ function LecternApp({ onOpenStudyIt } = {}) {
     getNote, setNote, noteList, deckLoad, deckSave, deckClear,
     buildBackup, readBackup, applyBackup, exportBackup,
     // preferences and the AI
-    settings, setSettings, knownContext, aiAvailable, callModel,
+    settings, setSettings, knownContext, aiAvailable, callModel, aiUnavailableReason,
     // talking to the person
-    showToast, openSheet, closeSheet, confirmSheet, showConfetti,
+    showToast, openSheet, closeSheet, confirmSheet, showConfetti, openIntro,
     // installing to the home screen
     installReady, promptInstall, isStandalone, isIOS,
+    // cloud sync (optional; local storage is still the source of truth)
+    cloud, cloudSignIn, cloudSignUp, cloudSignOut, cloudSyncNow, cloudResolve,
+    cloudMagicLink, cloudResetPassword,
     // the hub: how to open Study It, which ships in this same deploy one route
     // away. Undefined when Lectern runs standalone, and AppDoors drops the
     // door in that case rather than showing a button that does nothing.
@@ -2703,6 +3813,15 @@ function LecternApp({ onOpenStudyIt } = {}) {
   };
 
   const d = depthOf(route); const dir = d > depthRef.current ? "fwd" : d < depthRef.current ? "back" : "fade"; depthRef.current = d;
+  // Going back restores the reading position; anything else starts at the top.
+  const dirRef = useRef(dir); dirRef.current = dir;
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || typeof el.scrollTop !== "number") return;
+    const remembered = scrollMemory.current[routeKey(route)];
+    const target = dirRef.current === "back" && typeof remembered === "number" ? remembered : 0;
+    try { if (el.scrollTo) el.scrollTo(0, target); else el.scrollTop = target; } catch (e) { el.scrollTop = target; }
+  }, [route.tab, route.scr, route.subj, route.unit, route.step]);
 
   let screen = null;
   if (route.tab === "home") screen = <Dashboard app={app} />;
@@ -2729,25 +3848,43 @@ function LecternApp({ onOpenStudyIt } = {}) {
       <div className="lectern-root" style={rootStyle}>
         <div className="app">
           <header className="appbar">
-            <div className="mk">📖</div><div className="ti">Lectern</div>
-            <div className="rt">{cur && <button className="avatar tap" style={{ background: avatarColor(cur.name) }} aria-label="Your account" onClick={() => openSheet({ title: cur.name, body: cur.guest ? "Signed in as a guest on this device." : "Signed in on this device.", items: [
-              { icon: "📈", label: "Your progress", on: () => go({ tab: "progress" }) },
-              { icon: "⚙️", label: "Settings", on: () => go({ tab: "settings" }) },
-              ...(auth.users.length > 1 ? [{ icon: "🔀", label: "Switch account", on: () => { signOut(); showToast("Pick an account to continue."); } }] : []),
-              { icon: "🚪", label: "Sign out", on: () => { signOut(); showToast("Signed out."); } }
+            <div className="mk"><Icon name="lectern" size={19} /></div>
+            <div className="tiwrap">
+              <div className="ti">Lectern</div>
+              <div className="tiwhere">{locationLabel(app)}</div>
+            </div>
+            <div className="rt">
+              {cur && <button className="iconbtn" aria-label="Search everything" title="Search (⌘K)" onClick={() => { haptic(5); setPalette(true); }}><Icon name="learn" size={18} /></button>}
+              {cur && <button className="avatar tap" style={{ background: avatarColor(cur.name) }} aria-label="Your account" onClick={() => openSheet({ title: cur.name, body: cur.guest ? "Signed in as a guest on this device." : "Signed in on this device.", items: [
+              { icon: "progress", label: "Your progress", on: () => go({ tab: "progress" }) },
+              { icon: "settings", label: "Settings", on: () => go({ tab: "settings" }) },
+              ...(auth.users.length > 1 ? [{ icon: "switchuser", label: "Switch account", on: () => { signOut(); showToast("Pick an account to continue."); } }] : []),
+              { icon: "exit", label: "Sign out", on: () => { signOut(); showToast("Signed out."); } }
             ] })}>{initial(cur.name)}</button>}</div>
           </header>
+          {offline && <div className="offbar" role="status">Offline — your lessons still work. AI topics need a connection.</div>}
           <main className="scroll" ref={scrollRef} id="lectern-main">
-            <div className={"screen nav-" + dir} ref={screenRef} tabIndex={-1} key={route.tab + "/" + route.scr + "/" + route.subj + "/" + route.unit + "/" + route.step}>{screen}</div>
+            <div className={"screen nav-" + dir} ref={screenRef} tabIndex={-1} key={route.tab + "/" + route.scr + "/" + route.subj + "/" + route.unit + "/" + route.step}>
+              <ErrorBoundary key={route.tab + route.scr + route.subj + route.unit} onReset={() => go({ tab: "home", scr: "grid" })}>{screen}</ErrorBoundary>
+            </div>
           </main>
           <nav className="tabbar">
-            {[["home", "Home", "🏠"], ["learn", "Learn", "📚"], ["progress", "Progress", "📈"], ["settings", "Settings", "⚙️"]].map(t => (
-              <button className={"tab" + (route.tab === t[0] ? " on" : "")} key={t[0]} aria-current={route.tab === t[0] ? "page" : undefined} onClick={() => { haptic(5); t[0] === "learn" ? go({ tab: "learn", scr: "grid" }) : go({ tab: t[0] }); }}>
-                <span className="tic">{t[2]}</span><span>{t[1]}</span>
+            {[["home", "Home", "home"], ["learn", "Learn", "learn"], ["progress", "Progress", "progress"], ["settings", "Settings", "settings"]].map(t => (
+              <button className={"tab" + (route.tab === t[0] ? " on" : "")} key={t[0]} aria-current={route.tab === t[0] ? "page" : undefined}
+                aria-label={t[0] === "home" && dueIds.length > 0 ? t[1] + ", " + dueIds.length + (dueIds.length === 1 ? " review due" : " reviews due") : undefined} onClick={() => { haptic(5); t[0] === "learn" ? go({ tab: "learn", scr: "grid" }) : go({ tab: t[0] }); }}>
+                <span className="tic">
+                  <Icon name={t[2]} size={21} />
+                  {t[0] === "home" && dueIds.length > 0 && (
+                    <span className="tbadge" aria-hidden="true">{dueIds.length > 99 ? "99+" : dueIds.length}</span>
+                  )}
+                </span>
+                <span>{t[1]}</span>
               </button>
             ))}
           </nav>
         </div>
+        {showIntro && cur && <Intro onDone={closeIntro} />}
+        {palette && <CommandPalette app={app} close={() => setPalette(false)} />}
         {confettiKey > 0 && <Confetti trigger={confettiKey} />}
         {sheet && <Sheet sheet={sheet} close={closeSheet} />}
         {toast && <Toast toast={toast} key={toast.k} dismiss={() => setToast(null)} />}
@@ -2773,18 +3910,165 @@ function Ring({ done, total }) {
 }
 function SubjectCard({ app, s }) {
   const isCourse = s.kind !== "math" && s.kind !== "music";
-  const lessons = isCourse ? app.courseLessons(s.id) : [];
-  const total = lessons.length, done = app.doneCount(s.id, total);
-  const allDone = isCourse && total && done === total;
+  let cls = null;
+  if (isCourse) { try { cls = app.classOf(s.id); } catch (e) { cls = null; } }
+  const steps = cls ? cls.steps.length : 0;
+  let stepsDone = 0;
+  if (cls) for (let i = 0; i < steps; i++) if (app.isStepDone(s.id, i)) stepsDone++;
+  const chapters = cls ? cls.chapters.length : 0;
+  const chaptersDone = cls ? cls.chapters.filter(ch => app.stepsDoneIn(s.id, ch.from, ch.count) === ch.count).length : 0;
+  const allDone = isCourse && steps > 0 && stepsDone === steps;
+  const pct = steps ? Math.round(stepsDone / steps * 100) : 0;
   return (
     <button className="subj" style={{ "--a": s.accent, "--a-tint": s.tint }} onClick={() => app.go({ tab: "learn", scr: "subject", subj: s.id })}>
       <div className="ic" style={{ background: s.tint }}>{s.icon}</div>
       <div className="nm">{s.name}{allDone && <span className="tick" style={{ color: s.accent }}>✓</span>}</div>
       <div className="bl">{s.blurb || (s.kind === "topic" ? "Made with AI · your topic" : "")}</div>
       {s.kind === "math" ? <div className="ct">{A.MATH.topics.length} topics</div>
-        : s.kind === "music" ? <div className="ct">4 lessons</div>
-          : <><div className="ct">{done > 0 ? done + " of " + total + " done" : total + " lessons"}</div><div className="pbar"><i style={{ width: (total ? Math.round(done / total * 100) : 0) + "%", background: s.accent }} /></div></>}
+        : s.kind === "music" ? <div className="ct">{MUSIC_UNITS.length} units</div>
+          : <>
+            <div className="ct">
+              {stepsDone === 0
+                ? chapters + (chapters === 1 ? " chapter" : " chapters")
+                : allDone
+                  ? "All " + chapters + " chapters done"
+                  : chaptersDone + " of " + chapters + " chapters · " + pct + "%"}
+            </div>
+            <div className="pbar"><i style={{ width: pct + "%", background: s.accent }} /></div>
+          </>}
     </button>
+  );
+}
+/* What to do next, in the order a tutor would suggest it — and each suggestion
+   carries the reason, so the learner can disagree with it. The order is fixed
+   and explainable rather than a score nobody can audit:
+     1. reviews that are due, because a memory decays on a schedule
+     2. questions repeatedly missed, because they are the actual gaps
+     3. the class already in progress, because finishing beats starting
+     4. the shortest way back in, when nothing is pressing */
+/* A plain name for wherever the learner currently is. Used for the window title
+   and the app bar, so the app never claims to be somewhere it isn't. */
+function locationLabel(app) {
+  const r = app.route;
+  if (r.tab === "progress") return "Your progress";
+  if (r.tab === "settings") return "Settings";
+  if (r.tab === "home") return "Home";
+  if (r.tab === "learn") {
+    if (r.scr === "grid") return "Subjects";
+    if (r.scr === "srs") return "Daily review";
+    if (r.scr === "weak") return "Trouble spots";
+    if (r.scr === "generate") return "New topic";
+    const sub = r.subj ? app.subjOf(r.subj) : null;
+    if (!sub) return "Subjects";
+    if (r.scr === "subject") return sub.name;
+    let cls = null;
+    try { cls = app.classOf(sub.id); } catch (e) { cls = null; }
+    const st = cls && cls.steps[r.step != null ? r.step : r.unit];
+    if (st && st.chapter) return st.chapter.title + " · " + sub.name;
+    return sub.name;
+  }
+  return "Lectern";
+}
+function greetingFor(d) {
+  const h = d.getHours();
+  return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+}
+function recommendNext(app) {
+  const out = [];
+  const due = app.dueIds.length;
+  if (due > 0) {
+    out.push({
+      id: "review", accent: "#e64980", tint: "#ffe1ef", icon: "review",
+      title: "Daily review",
+      detail: due === 1 ? "1 question is due" : due + " questions are due",
+      why: "Due now — reviewing today holds it longer than reviewing tomorrow.",
+      on: () => app.go({ tab: "learn", scr: "srs" })
+    });
+  }
+  const weak = app.weakIds.length;
+  if (weak > 0) {
+    out.push({
+      id: "weak", accent: "#f08c00", tint: "#fff0d6", icon: "target",
+      title: "Trouble spots",
+      detail: weak === 1 ? "1 question you keep missing" : weak + " questions you keep missing",
+      why: "You've got each of these wrong more than once, so they're worth more than new material.",
+      on: () => app.go({ tab: "learn", scr: "weak" })
+    });
+  }
+  // the class in progress: partly done, and the nearest to finishing
+  let best = null;
+  (app.trackedSubjects || []).forEach(sub => {
+    let cls = null;
+    try { cls = app.classOf(sub.id); } catch (e) { return; }
+    if (!cls || !cls.steps.length) return;
+    let doneHere = 0;
+    for (let i = 0; i < cls.steps.length; i++) if (app.isStepDone(sub.id, i)) doneHere++;
+    if (doneHere === 0 || doneHere === cls.steps.length) return;
+    const left = cls.steps.length - doneHere;
+    if (!best || left < best.left) best = { sub: sub, cls: cls, left: left, done: doneHere };
+  });
+  if (best) {
+    // Point at the chapter they are actually inside, not the whole subject —
+    // "63 steps left" is a wall; "4 steps left in this chapter" is a decision.
+    const at = app.firstUnfinishedStep(best.sub.id, best.cls);
+    const ch = best.cls.chapters.filter(c => at >= c.from && at < c.from + c.count)[0] || best.cls.chapters[0];
+    const chLeft = [];
+    for (let i = ch.from; i < ch.from + ch.count; i++) if (!app.isStepDone(best.sub.id, i)) chLeft.push(best.cls.steps[i]);
+    const pct = Math.round(best.done / best.cls.steps.length * 100);
+    out.push({
+      id: "continue", accent: best.sub.accent, tint: best.sub.tint, glyph: best.sub.icon,
+      title: "Continue " + best.sub.name,
+      detail: ch.title + " · " + chLeft.length + (chLeft.length === 1 ? " step left · " : " steps left · ") + minutesLabel(estimateMinutes(chLeft)),
+      why: "You're part way through this chapter" + (pct >= 5 ? ", and " + pct + "% through " + best.sub.name : "") + ".",
+      on: () => app.openStep(best.sub.id, at)
+    });
+  }
+  if (out.length < 2) {
+    // nothing in flight: offer the shortest way in
+    let shortest = null;
+    (app.trackedSubjects || []).forEach(sub => {
+      let cls = null;
+      try { cls = app.classOf(sub.id); } catch (e) { return; }
+      if (!cls || !cls.chapters.length) return;
+      let started = false;
+      for (let i = 0; i < cls.steps.length; i++) if (app.isStepDone(sub.id, i)) { started = true; break; }
+      if (started) return;
+      const ch = cls.chapters[0];
+      const mins = estimateMinutes(cls.steps.slice(ch.from, ch.from + ch.count));
+      if (!shortest || mins < shortest.mins) shortest = { sub: sub, ch: ch, mins: mins };
+    });
+    if (shortest) {
+      out.push({
+        id: "start", accent: shortest.sub.accent, tint: shortest.sub.tint, glyph: shortest.sub.icon,
+        title: "Start " + shortest.sub.name,
+        detail: shortest.ch.title + " · " + minutesLabel(shortest.mins),
+        why: "The shortest first chapter of anything you haven't opened yet.",
+        on: () => app.openStep(shortest.sub.id, shortest.ch.from)
+      });
+    }
+  }
+  return out.slice(0, 3);
+}
+function NextUp({ app }) {
+  const picks = recommendNext(app);
+  if (!picks.length) return null;
+  return (
+    <div className="nextup">
+      <div className="secttl">Up next</div>
+      {picks.map((p, i) => (
+        <button className={i === 0 ? "cont rec lead" : "cont rec"} key={p.id}
+          style={{ "--a": p.accent, "--a-tint": p.tint }}
+          onClick={() => { haptic(6); p.on(); }}>
+          <div className="cic" style={{ background: p.tint, color: p.accent }}>{p.icon ? <Icon name={p.icon} size={19} /> : p.glyph}</div>
+          <div className="recmid">
+            <div className="cl">{p.title}</div>
+            <div className="ct2">{p.detail}</div>
+            <div className="recwhy">{p.why}</div>
+          </div>
+          <div className="go2">›</div>
+        </button>
+      ))}
+    </div>
   );
 }
 function Dashboard({ app }) {
@@ -2797,18 +4081,12 @@ function Dashboard({ app }) {
     <div>
       <div className="hero">
         <div className="txt">
-          <div className="hi2">Welcome back{app.cur ? ", " + app.cur.name : ""} 👋</div>
-          <div className="p2">{done === 0 ? "Let's start learning. Pick up any subject below." : done === total ? "Amazing — you've completed every lesson!" : "You've completed " + done + " of " + total + " lessons. Keep going!"}</div>
+          <h1 className="hi2">{greetingFor(new Date())}{app.cur ? ", " + app.cur.name : ""}</h1>
+          <div className="p2">{done === 0 ? "Pick a subject below to begin." : done === total ? "Every chapter complete." : done + " of " + total + " chapters complete."}</div>
         </div>
         <Ring done={done} total={total} />
       </div>
-      {nDue > 0 && (
-        <button className="cont" style={{ "--a": "#e64980", "--a-tint": "#ffe1ef" }} onClick={() => { haptic(6); app.go({ tab: "learn", scr: "srs" }); }}>
-          <div className="cic" style={{ background: "#ffe1ef" }}>🔁</div>
-          <div><div className="cl">Daily review</div><div className="ct2">{nDue}{nDue === 1 ? " item" : " items"} to review</div><div className="cs">Refresh what you've learned</div></div>
-          <div className="go2">›</div>
-        </button>
-      )}
+      <NextUp app={app} />
       {app.weakIds.length > 0 && (
         <button className="cont" style={{ "--a": "#f08c00", "--a-tint": "#fff0d6" }} onClick={() => { haptic(6); app.go({ tab: "learn", scr: "weak" }); }}>
           <div className="cic" style={{ background: "#fff0d6" }}>🎯</div>
@@ -2932,7 +4210,7 @@ function Grid({ app }) {
       <div className="grid" style={{ marginTop: 14 }}>
         <button className="subj create" style={{ "--a": "#7b61ff", "--a-tint": "#efeaff" }} onClick={() => app.go({ tab: "learn", scr: "generate" })}>
           <div className="ic" style={{ background: "#efeaff" }}>✨</div>
-          <div className="nm">Create a topic</div><div className="bl">Type any topic and let AI build a lesson set for you</div><div className="ct">Powered by AI</div>
+          <div className="nm">Create a topic</div><div className="bl">Type any topic and let AI build a set of chapters</div><div className="ct">Powered by AI</div>
         </button>
         {app.topics.map(t => <SubjectCard app={app} s={app.subjOf(t.id)} key={t.id} />)}
       </div>
@@ -2973,15 +4251,28 @@ function SubjectPath({ app }) {
         <div className="node">🔀</div><div><div className="st">Mixed Review</div><div className="ss">All {allQ} questions, shuffled</div></div>
       </div>
       <div className="card" style={{ "--a": s.accent, "--a-tint": s.tint }}>
-        <span className="kicker">✨ More {s.name}</span>
+        <span className="kicker">More {s.name}</span>
         <div className="setdesc" style={{ margin: "4px 0 12px" }}>
           {s.kind === "topic"
             ? "Add another set of lessons to " + s.name + ". The AI is told what this topic already covers, so it builds on it instead of repeating it."
             : "Ask for a topic within " + s.name + " — anything the built-in lessons don't cover. The new lessons are added to this subject, below the ones already here."}
         </div>
         <button className="btn go" onClick={() => app.go({ tab: "learn", scr: "generate", subj: s.id })}>
-          {s.kind === "topic" ? "Add more lessons" : "Add a topic to " + s.name}
+          {s.kind === "topic" ? "Add more chapters" : "Add a topic to " + s.name}
         </button>
+        {app.subjectHasWork(s.id) && (
+          <div style={{ marginTop: 12, textAlign: "center" }}>
+            <button className="linkbtn" onClick={() => app.confirmSheet({
+              title: "Start " + s.name + " over?",
+              body: "Your progress, notes and saved steps for " + s.name + " will be cleared. Every other subject is untouched, and you can undo this straight after.",
+              confirmLabel: "Start over", danger: true,
+              onConfirm: () => {
+                const removed = app.clearSubject(s.id);
+                app.showToast(s.name + " reset.", { label: "Undo", on: () => { app.restoreSubject(removed); app.showToast(s.name + " restored."); } });
+              }
+            })}>Start {s.name} over</button>
+          </div>
+        )}
         {s.kind !== "topic" && app.addedCount(s.id) > 0 && (
           <div style={{ marginTop: 12, textAlign: "center" }}>
             <button className="linkbtn" onClick={() => app.confirmSheet({
@@ -3037,6 +4328,11 @@ function ClassChapters({ app, s }) {
           {totalDone === 0 ? "Start " + s.name + " \u203a" : totalDone === cls.steps.length ? "Practise again \u203a" : "Continue \u203a"}
         </button>
       )}
+      {totalDone < cls.steps.length && (
+        <div className="clsest">
+          {cls.steps.length - totalDone} step{cls.steps.length - totalDone === 1 ? "" : "s"} left · {minutesLabel(estimateMinutes(cls.steps.filter((_, i) => !app.isStepDone(s.id, i))))} at an unhurried pace
+        </div>
+      )}
       {cls.chapters.map(ch => {
         const doneHere = app.stepsDoneIn(s.id, ch.from, ch.count);
         const isOpen = open === ch.lesson;
@@ -3047,7 +4343,12 @@ function ClassChapters({ app, s }) {
               <span className={"chapno" + (complete ? " done" : "")}>{complete ? "\u2713" : ch.no}</span>
               <span className="chapmid">
                 <span className="chapttl">{ch.title}</span>
-                <span className="chapsub">{doneHere} of {ch.count} steps{complete ? " \u00b7 finished" : ""}</span>
+                <span className="chapsub">
+                  {doneHere} of {ch.count} steps
+                  {complete
+                    ? " \u00b7 finished"
+                    : " \u00b7 " + minutesLabel(estimateMinutes(cls.steps.slice(ch.from + doneHere, ch.from + ch.count))) + (doneHere ? " left" : "")}
+                </span>
               </span>
               <span className="chapchev">{isOpen ? "\u2304" : "\u203a"}</span>
             </button>
@@ -3098,8 +4399,26 @@ function StepRunner({ app }) {
   return (
     <div>
       <Back label={s.name} onClick={() => app.go({ tab: "learn", scr: "subject", subj: s.id })} />
+      <StepKeys app={app} subj={s.id} index={i}
+        canAdvance={app.isStepDone(s.id, i)}
+        onPrev={() => app.openStep(s.id, i - 1)}
+        onNext={() => (i < cls.steps.length - 1 ? app.openStep(s.id, i + 1) : advance())} />
       <div className="stephd">
-        <div className="stepchap">{ch.no} \u00b7 {ch.title}</div>
+        <div className="stepchaprow">
+          <div className="stepchap">{ch.no} · {ch.title}</div>
+          <button className={"savebtn" + (app.isSaved(s.id, i) ? " on" : "")}
+            aria-pressed={app.isSaved(s.id, i)}
+            aria-label={app.isSaved(s.id, i) ? "Remove this step from Saved" : "Save this step to come back to"}
+            title={app.isSaved(s.id, i) ? "Saved" : "Save for later"}
+            onClick={() => {
+              haptic(5);
+              const now = !app.isSaved(s.id, i);
+              app.toggleSaved(s.id, i);
+              app.showToast(now ? "Saved. Find it under Progress." : "Removed from Saved.");
+            }}>
+            <Icon name="note" size={17} />
+          </button>
+        </div>
         <div className="progwrap">
           <div className="progbar" role="progressbar" aria-valuemin={0} aria-valuemax={ch.count} aria-valuenow={doneHere} aria-label={"Progress through " + ch.title}>
             <i style={{ width: (ch.count ? (doneHere / ch.count) * 100 : 0) + "%" }} />
@@ -3111,13 +4430,13 @@ function StepRunner({ app }) {
         ? <ConceptStep step={step} done={app.isStepDone(s.id, i)} onDone={advance} />
         : <QuestionStep step={step} speakSubj={s.id} onAnswer={answer} onDone={advance} done={app.isStepDone(s.id, i)} />}
       <div className="steprow">
-        {i > 0 && <button className="linkbtn" onClick={() => app.openStep(s.id, i - 1)}>\u2039 Previous step</button>}
+        {i > 0 && <button className="linkbtn" onClick={() => app.openStep(s.id, i - 1)}>‹ Previous step</button>}
         <span className="spacer" />
         {!app.isStepDone(s.id, i) && step.type !== "concept" &&
           <button className="linkbtn" onClick={() => { app.markStep(s.id, i, cls); app.openStep(s.id, Math.min(i + 1, cls.steps.length - 1)); }}>Skip this one</button>}
       </div>
       <NotesCard app={app} noteKey={s.id + "/" + step.lesson} />
-      <AITeacher teach={(app.courseLessons(s.id)[step.lesson] || {}).teach || []} title={ch.title} aiAvailable={app.aiAvailable} callModel={app.callModel} />
+      <AITeacher teach={(app.courseLessons(s.id)[step.lesson] || {}).teach || []} title={ch.title} aiAvailable={app.aiAvailable} callModel={app.callModel} aiUnavailableReason={app.aiUnavailableReason} />
     </div>
   );
 }
@@ -3183,7 +4502,7 @@ function Unit({ app }) {
           onFinish={() => app.go({ tab: "learn", scr: "done", subj: s.id, unit: app.route.unit })} />
       </div>
       <NotesCard app={app} noteKey={s.id + "/" + app.route.unit} />
-      <AITeacher teach={u.teach} title={u.title} aiAvailable={app.aiAvailable} callModel={app.callModel} />
+      <AITeacher teach={u.teach} title={u.title} aiAvailable={app.aiAvailable} callModel={app.callModel} aiUnavailableReason={app.aiUnavailableReason} />
     </div>
   );
 }
@@ -3266,33 +4585,324 @@ function Done({ app }) {
     <div>
       <div className="card done-card">
         <div className="burst"><div className="checkbig">✓</div></div>
-        <h1 style={{ textAlign: "center", marginTop: 6 }}>Lesson complete!</h1>
+        <h1 style={{ textAlign: "center", marginTop: 6 }}>Chapter complete</h1>
         <div className="sub" style={{ textAlign: "center", marginBottom: 6 }}>{units[i].title} · {s.name}</div>
       </div>
+      <ChapterSummary app={app} s={s} unit={i} />
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
-        {hasNext ? <button className="btn go big" onClick={() => app.openLesson(s.id, i + 1)}>Next lesson: {units[i + 1].title} ›</button>
+        {hasNext ? <button className="btn go big" onClick={() => app.openLesson(s.id, i + 1)}>
+          Next: {units[i + 1].title} · {(() => {
+            try {
+              const cls = app.classOf(s.id);
+              const ch = cls.chapters.filter(c => c.lesson === i + 1)[0];
+              return ch ? minutesLabel(estimateMinutes(cls.steps.slice(ch.from, ch.from + ch.count))) : "";
+            } catch (e) { return ""; }
+          })()} ›
+        </button>
           : (allDone && <div className="sub" style={{ textAlign: "center" }}>🎉 You've finished every lesson in {s.name}!</div>)}
         <button className="btn big" onClick={() => app.go({ tab: "learn", scr: "subject", subj: s.id })}>Back to {s.name}</button>
       </div>
-      <div style={{ textAlign: "center" }}><button className="linkbtn" onClick={() => app.openLesson(s.id, i)}>Practice this lesson again</button></div>
+      <div style={{ textAlign: "center" }}><button className="linkbtn" onClick={() => app.openLesson(s.id, i)}>Go through this chapter again</button></div>
     </div>
   );
 }
+/* What actually happened in this chapter. The numbers come from the review
+   record for its questions — a question you have never missed is one you have
+   answered right every time it has been asked. Where there is no record yet, the
+   screen says so rather than inventing an accuracy figure. */
+function ChapterSummary({ app, s, unit }) {
+  let cls = null;
+  try { cls = app.classOf(s.id); } catch (e) { cls = null; }
+  const ch = cls && cls.chapters ? cls.chapters.filter(c => c.lesson === unit)[0] : null;
+  if (!ch) return null;
+
+  const questions = [];
+  for (let i = ch.from; i < ch.from + ch.count; i++) {
+    const st = cls.steps[i];
+    if (!st || st.type === "concept" || st.ex === undefined) continue;
+    // the same id the runner records against: subject / lesson / exercise
+    questions.push({ i: i, step: st, rec: app.sched[s.id + "/" + st.lesson + "/" + st.ex] || null });
+  }
+  if (!questions.length) return null;
+
+  const answered = questions.filter(q => q.rec && q.rec.seen);
+  const clean = answered.filter(q => !(q.rec.missed > 0));
+  const missed = answered.filter(q => q.rec.missed > 0);
+  const readMins = estimateMinutes(cls.steps.slice(ch.from, ch.from + ch.count));
+
+  return (
+    <div className="card summary">
+      <span className="kicker">How it went</span>
+      <div className="sumrow">
+        <div className="sumstat">
+          <div className="sumbig">{questions.length}</div>
+          <div className="sumlab">{questions.length === 1 ? "question" : "questions"}</div>
+        </div>
+        <div className="sumstat">
+          <div className="sumbig">{answered.length ? clean.length + "/" + answered.length : "—"}</div>
+          <div className="sumlab">never missed</div>
+        </div>
+        <div className="sumstat">
+          <div className="sumbig">{readMins}</div>
+          <div className="sumlab">min of reading</div>
+        </div>
+      </div>
+      {missed.length > 0 ? (
+        <>
+          <div className="setdesc" style={{ marginTop: 4 }}>
+            {missed.length === 1 ? "One question here has tripped you up." : missed.length + " questions here have tripped you up."} They'll come back in review, sooner than the rest.
+          </div>
+          <ul className="summiss">
+            {missed.slice(0, 4).map(q => <li key={q.i}>{(q.step.item && q.step.item.ask) || q.step.title}</li>)}
+          </ul>
+        </>
+      ) : answered.length === questions.length ? (
+        <div className="setdesc" style={{ marginTop: 4 }}>Every question here answered without a miss. They'll come back on a longer schedule.</div>
+      ) : (
+        <div className="setdesc" style={{ marginTop: 4 }}>Some of these haven't been asked yet — they'll appear in review over the next few days.</div>
+      )}
+    </div>
+  );
+}
+/* A learner's record, counted the same way everywhere: chapters finished,
+   steps taken, and how the questions have actually gone. Nothing here is
+   estimated — every figure is a count of something that happened. */
+/* ---------- charts ----------
+   Hand-drawn SVG so the app stays one file with one dependency. Each one plots
+   a count, never a projection, and each says plainly when it has no data. */
+function BarChart({ bars, max, height = 96, label }) {
+  const top = Math.max(1, max || Math.max.apply(null, bars.map(b => b.v).concat([1])));
+  const w = 100 / Math.max(1, bars.length);
+  return (
+    <div className="chart" role="img" aria-label={label}>
+      <svg viewBox={"0 0 100 " + height} preserveAspectRatio="none" style={{ height: height, width: "100%" }}>
+        {bars.map((b, i) => {
+          const h = b.v > 0 ? Math.max(2, (b.v / top) * (height - 16)) : 0;
+          return (
+            <g key={i}>
+              <rect x={i * w + w * 0.18} y={height - 14 - h} width={w * 0.64} height={h}
+                rx={Math.min(1.6, w * 0.3)} fill={b.v > 0 ? "var(--a)" : "var(--line)"} opacity={b.v > 0 ? 1 : 0.75}>
+                <title>{b.title}</title>
+              </rect>
+              {b.v === 0 && <rect x={i * w + w * 0.18} y={height - 16} width={w * 0.64} height="2" rx="1" fill="var(--line)" />}
+            </g>
+          );
+        })}
+      </svg>
+      <div className="chartx">{bars.map((b, i) => <span key={i} className={b.mark ? "on" : ""}>{b.label}</span>)}</div>
+    </div>
+  );
+}
+function Donut({ part, whole, caption }) {
+  const r = 32, c = 2 * Math.PI * r;
+  const frac = whole ? Math.max(0, Math.min(1, part / whole)) : 0;
+  return (
+    <div className="donut">
+      <svg width="84" height="84" viewBox="0 0 84 84" role="img" aria-label={caption}>
+        <circle cx="42" cy="42" r={r} fill="none" stroke="var(--line)" strokeWidth="9" />
+        {whole > 0 && (
+          <circle cx="42" cy="42" r={r} fill="none" stroke="var(--a)" strokeWidth="9" strokeLinecap="round"
+            strokeDasharray={c} strokeDashoffset={c * (1 - frac)} transform="rotate(-90 42 42)" />
+        )}
+        <text x="42" y="46" textAnchor="middle" className="donuttext">{whole ? Math.round(frac * 100) + "%" : "—"}</text>
+      </svg>
+      <div className="donutcap">{caption}</div>
+    </div>
+  );
+}
+function lastDays(activity, days) {
+  const out = [];
+  const now = new Date();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+    const key = dayStamp(d);
+    const v = (activity && activity[key]) || 0;
+    out.push({
+      v: v,
+      label: "SMTWTFS".charAt(d.getDay()),
+      mark: i === 0,
+      title: v + (v === 1 ? " step on " : " steps on ") + key
+    });
+  }
+  return out;
+}
+function reviewForecast(sched, days) {
+  const out = [];
+  const now = new Date();
+  const startOf = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const todayStart = startOf(now);
+  let overdue = 0;
+  const buckets = new Array(days).fill(0);
+  Object.keys(sched || {}).forEach(k => {
+    const r = sched[k];
+    if (!r || typeof r.due !== "number") return;
+    const dayIndex = Math.floor((startOf(new Date(r.due)) - todayStart) / 86400000);
+    if (dayIndex < 0) overdue++;
+    else if (dayIndex < days) buckets[dayIndex] += 1;
+  });
+  buckets[0] += overdue;   // anything overdue is due now
+  for (let i = 0; i < days; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+    out.push({
+      v: buckets[i],
+      label: i === 0 ? "now" : "SMTWTFS".charAt(d.getDay()),
+      mark: i === 0,
+      title: buckets[i] + (buckets[i] === 1 ? " review " : " reviews ") + (i === 0 ? "due now" : "on " + dayStamp(d))
+    });
+  }
+  return out;
+}
+function studyRecord(app) {
+  const subjects = [];
+  let steps = 0, stepsDone = 0, chapters = 0, chaptersDone = 0;
+  (app.trackedSubjects || []).forEach(sub => {
+    let cls = null;
+    try { cls = app.classOf(sub.id); } catch (e) { return; }
+    if (!cls || !cls.steps.length) return;
+    let doneHere = 0;
+    for (let i = 0; i < cls.steps.length; i++) if (app.isStepDone(sub.id, i)) doneHere++;
+    const chDone = cls.chapters.filter(ch => app.stepsDoneIn(sub.id, ch.from, ch.count) === ch.count).length;
+    steps += cls.steps.length; stepsDone += doneHere;
+    chapters += cls.chapters.length; chaptersDone += chDone;
+    subjects.push({ sub: sub, cls: cls, steps: cls.steps.length, done: doneHere, chapters: cls.chapters.length, chaptersDone: chDone });
+  });
+  // question record, from the review schedule
+  let asked = 0, clean = 0;
+  const sched = app.sched || {};
+  Object.keys(sched).forEach(k => {
+    const r = sched[k];
+    if (!r || !r.seen) return;
+    asked++;
+    if (!(r.missed > 0)) clean++;
+  });
+  const started = subjects.filter(x => x.done > 0 && x.done < x.steps).length;
+  const finished = subjects.filter(x => x.done === x.steps && x.steps).length;
+  return { subjects, steps, stepsDone, chapters, chaptersDone, asked, clean, started, finished };
+}
 function ProgressScreen({ app }) {
-  const done = app.totalDone, total = app.totalLessons;
+  const rec = studyRecord(app);
   return (
     <div>
-      <h1>Your Progress</h1><div className="sub">Every lesson you finish is saved here.</div>
+      <h1>Your Progress</h1>
+      <div className="sub">Counted from what you've actually finished. Nothing here is an estimate.</div>
       <div className="card" style={{ display: "flex", alignItems: "center", gap: 18 }}>
-        <div style={{ flex: 1 }}><div style={{ fontWeight: 800 }}>Overall</div><div className="pc" style={{ color: "var(--ink-faint)", fontSize: 13 }}>{done} of {total} lessons complete</div></div>
-        <Ring done={done} total={total} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 680 }}>Overall</div>
+          <div className="pc" style={{ color: "var(--ink-faint)", fontSize: 13 }}>
+            {rec.chaptersDone} of {rec.chapters} chapters · {rec.stepsDone} of {rec.steps} steps
+          </div>
+        </div>
+        <Ring done={rec.chaptersDone} total={rec.chapters} />
+      </div>
+      <div className="card summary">
+        <span className="kicker">Your record</span>
+        <div className="sumrow">
+          <div className="sumstat">
+            <div className="sumbig">{rec.stepsDone}</div>
+            <div className="sumlab">steps taken</div>
+          </div>
+          <div className="sumstat">
+            <div className="sumbig">{rec.asked ? rec.clean + "/" + rec.asked : "—"}</div>
+            <div className="sumlab">never missed</div>
+          </div>
+          <div className="sumstat">
+            <div className="sumbig">{rec.started + rec.finished}</div>
+            <div className="sumlab">{rec.started + rec.finished === 1 ? "subject open" : "subjects open"}</div>
+          </div>
+        </div>
+        <div className="reccols">
+          <Donut part={rec.clean} whole={rec.asked} caption={rec.asked ? "answered without a miss" : "no questions yet"} />
+          <Donut part={rec.chaptersDone} whole={rec.chapters} caption="chapters finished" />
+        </div>
+        <div className="setdesc">
+          {rec.asked === 0
+            ? "No questions answered yet — the record fills in as you go."
+            : rec.clean === rec.asked
+              ? "Every question you've been asked, you've answered without a miss."
+              : (rec.asked - rec.clean) + (rec.asked - rec.clean === 1 ? " question has" : " questions have") + " tripped you up at least once. Those come back sooner."}
+        </div>
+      </div>
+      {(() => {
+        const list = app.savedList();
+        if (!list.length) return null;
+        return (
+          <div className="card">
+            <span className="kicker">Saved for later</span>
+            <div className="setdesc" style={{ marginBottom: 8 }}>{list.length === 1 ? "1 step you flagged." : list.length + " steps you flagged."}</div>
+            {list.slice(0, 8).map(x => (
+              <button className="noterow" key={x.key} onClick={() => { haptic(5); app.openStep(x.sub.id, x.i); }}>
+                <span className="noteic" style={{ background: x.sub.tint }}>{x.sub.icon}</span>
+                <span className="notemid">
+                  <span className="notettl">{(x.step.item && x.step.item.ask) || x.step.title}</span>
+                  <span className="notetxt">{x.sub.name} · {x.step.chapter ? x.step.chapter.title : ""}</span>
+                </span>
+                <span className="go2">›</span>
+              </button>
+            ))}
+          </div>
+        );
+      })()}
+      <div className="card">
+        <span className="kicker">Steps taken · last 14 days</span>
+        {(() => {
+          const bars = lastDays(app.activity, 14);
+          const total = bars.reduce((a, b) => a + b.v, 0);
+          return (
+            <>
+              <BarChart bars={bars} label={"Steps taken on each of the last 14 days, " + total + " in total"} />
+              <div className="setdesc">
+                {total === 0
+                  ? "Nothing recorded in the last two weeks. A bar appears on any day you take a step."
+                  : total + (total === 1 ? " step" : " steps") + " over 14 days, on " + bars.filter(b => b.v > 0).length + " of them. Gaps are just gaps — nothing is lost by missing a day."}
+              </div>
+            </>
+          );
+        })()}
       </div>
       <div className="card">
-        {app.trackedSubjects.map(s => { const t = app.lessonsIn(s.id), dn = app.doneCount(s.id, t); return (
-          <div className="prow" key={s.id}><div className="pic" style={{ background: s.tint }}>{s.icon}</div>
-            <div><div className="pn">{s.name}</div><div className="pc">{dn} / {t}</div></div>
-            <div className="pbar"><i style={{ width: (t ? Math.round(dn / t * 100) : 0) + "%", background: s.accent }} /></div></div>
-        ); })}
+        <span className="kicker">Reviews coming up</span>
+        {(() => {
+          const bars = reviewForecast(app.sched, 7);
+          const total = bars.reduce((a, b) => a + b.v, 0);
+          return (
+            <>
+              <BarChart bars={bars} label={"Reviews falling due over the next 7 days"} />
+              <div className="setdesc">
+                {total === 0
+                  ? "No reviews scheduled yet. Answer some questions and they'll be scheduled to come back."
+                  : bars[0].v > 0
+                    ? bars[0].v + (bars[0].v === 1 ? " review is" : " reviews are") + " due now, " + total + " over the week."
+                    : "Nothing due today. " + total + " scheduled across the week."}
+              </div>
+            </>
+          );
+        })()}
+      </div>
+      <div className="card">
+        <span className="kicker">By subject</span>
+        <div className="subjchart">
+          {rec.subjects.filter(x => x.done > 0).length === 0
+            ? <div className="setdesc">No subject started yet.</div>
+            : rec.subjects.filter(x => x.done > 0).sort((a, b) => (b.done / b.steps) - (a.done / a.steps)).map(x => (
+              <div className="sbrow" key={x.sub.id}>
+                <span className="sbname">{x.sub.icon} {x.sub.name}</span>
+                <span className="sbtrack"><i style={{ width: Math.max(2, Math.round(x.done / x.steps * 100)) + "%", background: x.sub.accent }} /></span>
+                <span className="sbpct">{Math.round(x.done / x.steps * 100)}%</span>
+              </div>
+            ))}
+        </div>
+      </div>
+      <div className="card">
+        {rec.subjects.map(x => (
+          <div className="prow" key={x.sub.id}>
+            <div className="pic" style={{ background: x.sub.tint }}>{x.sub.icon}</div>
+            <div>
+              <div className="pn">{x.sub.name}</div>
+              <div className="pc">{x.chaptersDone} / {x.chapters} chapters{x.done && x.done < x.steps ? " · " + (x.steps - x.done) + " steps left" : ""}</div>
+            </div>
+            <div className="pbar"><i style={{ width: (x.steps ? Math.round(x.done / x.steps * 100) : 0) + "%", background: x.sub.accent }} /></div>
+          </div>
+        ))}
       </div>
       {app.weakIds.length > 0 && (
         <button className="cont" style={{ "--a": "#f08c00", "--a-tint": "#fff0d6", marginTop: 14 }} onClick={() => { haptic(6); app.go({ tab: "learn", scr: "weak" }); }}>
@@ -3326,6 +4936,153 @@ function NotesList({ app }) {
     </div>
   );
 }
+/* Cloud sign-in, laid out to mirror Study It's own modal so the three apps feel
+   like one product: same flow (label, "Welcome back.", email, password, primary
+   action, magic link, forgot password, mode toggle at the bottom), same copy
+   shape, rendered in Lectern's visual language rather than Study It's.
+
+   Feature parity is the point of the magic link and the reset link — it's the
+   same account, and being able to recover it from one app but not another would
+   be its own small betrayal. */
+function CloudAuthModal({ app, onClose }) {
+  const [mode, setMode] = useState("signin");   // "signin" | "signup"
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [note, setNote] = useState("");
+
+  useEffect(() => {
+    const onKey = e => { if (e.key === "Escape" && !busy) onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [busy, onClose]);
+
+  const submit = async () => {
+    setErr(""); setNote("");
+    if (!email.trim() || !pw) { setErr("Enter an email and a password."); return; }
+    setBusy(true);
+    const r = mode === "signup" ? await app.cloudSignUp(email, pw) : await app.cloudSignIn(email, pw);
+    setBusy(false);
+    if (r.error) { setErr(r.error); haptic([11, 55, 11]); return; }
+    if (r.needsConfirm) { setNote("Check your email to confirm the account, then sign in."); return; }
+    onClose();
+  };
+
+  const needEmail = () => {
+    if (email.trim()) return true;
+    setErr("Enter your email address first."); return false;
+  };
+  const magic = async () => {
+    setErr(""); setNote("");
+    if (!needEmail()) return;
+    setBusy(true); const r = await app.cloudMagicLink(email); setBusy(false);
+    if (r.error) setErr(r.error); else setNote("Sign-in link sent. Check your email.");
+  };
+  const reset = async () => {
+    setErr(""); setNote("");
+    if (!needEmail()) return;
+    setBusy(true); const r = await app.cloudResetPassword(email); setBusy(false);
+    if (r.error) setErr(r.error); else setNote("Password reset link sent. Check your email.");
+  };
+
+  return (
+    <>
+      <div className="scrim" onClick={() => !busy && onClose()} />
+      <div className="cloudmodal" role="dialog" aria-modal="true" aria-label="Cloud sign in">
+        <div className="cmhead">
+          <span className="kicker">{mode === "signup" ? "Create account" : "Sign in"}</span>
+          <button className="cmx" onClick={() => !busy && onClose()} aria-label="Close">✕</button>
+        </div>
+        <h2 className="cmtitle">{mode === "signup" ? "Welcome to Lectern." : "Welcome back."}</h2>
+        <p className="cmsub">
+          Your progress, notes and settings sync across every device you sign in on. The same account works in Study It and CodeQuest.
+        </p>
+        <input className="ans cloudin" type="email" autoComplete="email" placeholder="you@example.com"
+          value={email} disabled={busy} onChange={e => setEmail(e.target.value)} />
+        <input className="ans cloudin" type="password" style={{ marginTop: 10 }}
+          autoComplete={mode === "signup" ? "new-password" : "current-password"}
+          placeholder={mode === "signup" ? "Choose a password" : "Password"}
+          value={pw} disabled={busy} onChange={e => setPw(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") submit(); }} />
+        {err && <div className="fb no" style={{ marginTop: 12 }}>{err}</div>}
+        {note && <div className="fb ok" style={{ marginTop: 12 }}>{note}</div>}
+        <button className="btn go cmprimary" disabled={busy} onClick={submit}>
+          {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
+        </button>
+        <button className="btn cmsecondary" disabled={busy} onClick={magic}>Or email me a magic sign-in link</button>
+        {mode === "signin" && <button className="cmquiet" disabled={busy} onClick={reset}>Forgot password?</button>}
+        <div className="cmfoot">
+          <button className="cmlink" onClick={() => { setMode(mode === "signup" ? "signin" : "signup"); setErr(""); setNote(""); }}>
+            {mode === "signup" ? "Already have an account? Sign in" : "Need an account? Create one"}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* Cloud sync panel in Settings. The card states the truth about where data
+   lives; the sign-in itself happens in the modal above. */
+function CloudCard({ app }) {
+  const c = app.cloud;
+  const [open, setOpen] = useState(false);
+
+  if (c.user) {
+    const when = c.at ? new Date(c.at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : null;
+    const line =
+      c.status === "syncing" ? "Syncing…" :
+      c.status === "error" ? ("Not synced — " + (c.error || "something went wrong")) :
+      c.status === "conflict" ? "Two copies of your progress don't match. Nothing has been changed." :
+      when ? ("Synced at " + when) : "Connected.";
+    return (
+      <div className="card">
+        <span className="kicker">Cloud sync</span>
+        <div className="settitle" style={{ marginTop: 6 }}>Signed in as {c.user.email}</div>
+        <div className="setdesc" style={{ marginTop: 2 }}>{line}</div>
+        <div className="setdesc" style={{ marginTop: 6 }}>
+          The same account works in Study It and CodeQuest. Your progress is still saved on this device — the cloud is a copy.
+        </div>
+        <div className="setdesc" style={{ marginTop: 6 }}>
+          Stored: your progress, notes, flashcards, generated lessons, settings and profile name.
+          {app.settings && app.settings.aiKey
+            ? " That includes your AI key, so you don't have to type it on a new device — it's private to your account, but it is stored on the server."
+            : " Your AI key would be included too, if you set one."}
+          {" "}Your profile password stays on this device and is never uploaded.
+        </div>
+        <div className="row" style={{ marginTop: 12, flexWrap: "wrap", gap: 8 }}>
+          {c.status === "conflict"
+            ? <button className="btn go" onClick={app.cloudResolve}>Choose which to keep</button>
+            : <button className="btn go" disabled={c.status === "syncing"} onClick={app.cloudSyncNow}>Sync now</button>}
+          <button className="btn" onClick={() => app.confirmSheet({
+            title: "Sign out of cloud sync?",
+            body: "Your progress stays on this device. The cloud copy is kept and will be there when you sign back in.",
+            confirmLabel: "Sign out",
+            onConfirm: () => { app.cloudSignOut(); app.showToast("Cloud sync off."); },
+          })}>Sign out of cloud</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card">
+      <span className="kicker">Cloud sync</span>
+      <div className="settitle" style={{ marginTop: 6 }}>Off — progress is saved on this device only</div>
+      <div className="setdesc" style={{ marginTop: 2 }}>
+        Sign in to keep a copy in the cloud so your progress follows you to another device. The same account works in Study It and CodeQuest.
+      </div>
+      <div className="row" style={{ marginTop: 12 }}>
+        <button className="btn go" onClick={() => setOpen(true)}>Sign in / Create account</button>
+      </div>
+      <div className="setdesc" style={{ marginTop: 8 }}>
+        Nothing is uploaded until you sign in, and nothing is ever overwritten without asking you first.
+      </div>
+      {open && <CloudAuthModal app={app} onClose={() => setOpen(false)} />}
+    </div>
+  );
+}
+
 function SettingsScreen({ app }) {
   const [, force] = useState(0);
   const u = app.cur;
@@ -3333,6 +5090,7 @@ function SettingsScreen({ app }) {
   return (
     <div>
       <h1>Settings</h1><div className="sub">Make the app feel just right.</div>
+      <CloudCard app={app} />
       <div className="card">
         <span className="kicker">Account</span>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 6 }}>
@@ -3345,10 +5103,11 @@ function SettingsScreen({ app }) {
         </div>
       </div>
       <div className="card">
-        <Toggle icon="🔊" title="Sound effects" desc="Play a gentle chime for right and wrong answers" val={app.settings.sound} on={v => { set({ sound: v }); if (v) sfxCorrect(); }} />
-        <Toggle icon="📳" title="Vibration" desc="Feel a tap on your phone for answers" val={app.settings.haptics} on={v => { set({ haptics: v }); if (v) { PREFS.haptics = true; haptic(14); } }} />
-        <Toggle icon="🌙" title="Dark mode" desc="Switch to a cool, easy-on-the-eyes dark theme" val={app.settings.dark} on={v => set({ dark: v })} />
-        <Toggle icon="🔠" title="Larger text" desc="Bigger type for lessons, questions and answers" val={app.settings.textBig} on={v => set({ textBig: v })} />
+        <Toggle icon="sound" title="Sound effects" desc="Play a gentle chime for right and wrong answers" val={app.settings.sound} on={v => { set({ sound: v }); if (v) sfxCorrect(); }} />
+        <Toggle icon="vibrate" title="Vibration" desc="Feel a tap on your phone for answers" val={app.settings.haptics} on={v => { set({ haptics: v }); if (v) { PREFS.haptics = true; haptic(14); } }} />
+        <Toggle icon="settings" title="Match system theme" desc="Follow your device's light or dark setting automatically" val={app.settings.autoTheme} on={v => set({ autoTheme: v })} />
+        {!app.settings.autoTheme && <Toggle icon="moon" title="Dark mode" desc="Switch to a cool, easy-on-the-eyes dark theme" val={app.settings.dark} on={v => set({ dark: v })} />}
+        <Toggle icon="text" title="Larger text" desc="Bigger type for lessons, questions and answers" val={app.settings.textBig} on={v => set({ textBig: v })} />
       </div>
       <div className="card">
         <span className="kicker">AI topic generator</span>
@@ -3365,19 +5124,72 @@ function SettingsScreen({ app }) {
       </div>
       <div className="card">
         <span className="kicker">Data</span>
-        <div style={{ fontSize: 14, color: "var(--ink-soft)", margin: "4px 0 10px" }}>{app.totalDone} of {app.totalLessons} lessons complete are saved on this device.</div>
+        {(() => {
+          const r = studyRecord(app);
+          return (
+            <div style={{ fontSize: 14, color: "var(--ink-soft)", margin: "4px 0 10px" }}>
+              {r.chaptersDone} of {r.chapters} chapters and {r.stepsDone} of {r.steps} steps are saved on this device
+              {r.asked ? ", along with the review record for " + r.asked + (r.asked === 1 ? " question" : " questions") : ""}.
+            </div>
+          );
+        })()}
         <button className="btn" onClick={() => app.confirmSheet({
           title: "Reset all progress?",
-          body: "Every finished lesson and review for this account will be cleared. This can't be undone.",
+          body: "Every finished step, chapter and review for this account will be cleared. Your notes and saved steps go too. Topics you generated are kept. This can't be undone.",
           confirmLabel: "Reset progress", danger: true,
-          onConfirm: () => { jset(pkey(app.cur && app.cur.id), {}); jset(skey(app.cur && app.cur.id), {}); jset(lkey(app.cur && app.cur.id), null); location.reload(); }
+          onConfirm: () => {
+            // Clear every per-account store, not the three that existed when this
+            // button was written — steps, notes, saved items, activity and
+            // half-finished practice all belong to the same "progress".
+            const id = app.cur && app.cur.id;
+            jset(pkey(id), {});
+            jset(tkey(id), {});
+            jset(skey(id), {});
+            jset(lkey(id), null);
+            jset(dkey(id), {});
+            jset(nkey(id), {});
+            jset(mkey(id), {});
+            jset(akey(id), {});
+            try { localStorage.removeItem("lectern.stepfill.v1." + id); } catch (e) {}
+            try { location.reload(); } catch (e) {}
+          }
         })}>Reset all progress</button>
+      </div>
+      <div className="card">
+        <span className="kicker">About</span>
+        {(() => {
+          const rec = studyRecord(app);
+          let questions = 0;
+          rec.subjects.forEach(x => { questions += x.cls.steps.filter(st => st.item !== undefined || st.type !== "concept").length; });
+          let bytes = 0;
+          try {
+            const id = app.cur && app.cur.id;
+            ["progress.v3", "steps.v1", "srs.v1", "notes.v1", "saved.v1", "activity.v1", "topics.v2", "added.v1"].forEach(k => {
+              const v = localStorage.getItem("lectern." + k + "." + id) || localStorage.getItem("lectern." + k);
+              if (v) bytes += v.length;
+            });
+          } catch (e) { bytes = 0; }
+          const size = bytes < 1024 ? bytes + " bytes" : Math.round(bytes / 1024) + " KB";
+          return (
+            <>
+              <div className="aboutrows">
+                <div className="aboutrow"><span>Version</span><b>{APP_VERSION}</b></div>
+                <div className="aboutrow"><span>Content</span><b>{rec.subjects.length} subjects · {rec.chapters} chapters · {rec.steps} steps</b></div>
+                <div className="aboutrow"><span>Your data</span><b>{size} on this device</b></div>
+              </div>
+              <div className="setdesc" style={{ margin: "10px 0 12px" }}>
+                Nothing is sent anywhere. Everything above lives in this browser, on this device, and leaves only if you export a backup.
+              </div>
+            </>
+          );
+        })()}
+        <button className="btn" onClick={() => { haptic(5); app.openIntro(); }}>How Lectern works</button>
       </div>
       <BackupCard app={app} />
       <div className="card installcard">
-        <span className="kicker">📲 Install</span>
+        <span className="kicker">Install</span>
         {app.isStandalone()
-          ? <div className="setdesc" style={{ marginTop: 4 }}>You're running Lectern as an installed app. Nice.</div>
+          ? <div className="setdesc" style={{ marginTop: 4 }}>Lectern is installed and running from your home screen.</div>
           : app.installReady
             ? <><div className="setdesc" style={{ margin: "4px 0 12px" }}>Add Lectern to your home screen so it opens full-screen, without browser bars.</div>
                 <button className="btn go big" onClick={app.promptInstall}>Install Lectern</button></>
@@ -3404,7 +5216,7 @@ function BackupCard({ app }) {
     setErr("");
     app.confirmSheet({
       title: "Restore this backup?",
-      body: "It holds " + r.counts.lessons + (r.counts.lessons === 1 ? " finished lesson" : " finished lessons") + ", "
+      body: "It holds " + r.counts.steps + (r.counts.steps === 1 ? " finished step" : " finished steps") + ", "
         + r.counts.reviews + (r.counts.reviews === 1 ? " review" : " reviews") + " and "
         + r.counts.topics + (r.counts.topics === 1 ? " AI topic" : " AI topics")
         + (r.counts.added ? " and " + r.counts.added + (r.counts.added === 1 ? " lesson added to a subject" : " lessons added to subjects") : "")
@@ -3438,7 +5250,7 @@ function Toggle({ icon, title, desc, val, on }) {
   const [v, setV] = useState(val);
   return (
     <div className="setrow">
-      <div className="seticon">{icon}</div>
+      <div className="seticon">{typeof icon === "string" && icon.length > 2 ? <Icon name={icon} size={19} /> : icon}</div>
       <div className="setmid"><div className="settitle">{title}</div><div className="setdesc">{desc}</div></div>
       <button className={"switch" + (v ? " on" : "")} role="switch" aria-checked={v} aria-label={title} onClick={() => { const nv = !v; setV(nv); on(nv); }}><span className="knob" /></button>
     </div>
@@ -3640,7 +5452,7 @@ function Generate({ app }) {
       <div className="sub">{into
         ? (into.isTopic ? "This topic" : "This subject") + " already has "
           + (into.lessons.length === 1 ? "1 lesson" : into.lessons.length + " lessons")
-          + ". Say what else you want to cover and the new lessons will be added to " + into.name
+          + ". Say what else you want to cover and the new chapters will be added to " + into.name
           + " — the AI is told what is already there, so it builds on it rather than repeating it."
         : "Type anything you want to learn. AI will write a short set of lessons with practice — and every question is quality-checked before it's added."}</div>
       <div className="card">
@@ -3648,7 +5460,7 @@ function Generate({ app }) {
         <input className="ans" style={{ width: "100%" }} aria-label="Topic" placeholder={into ? (into.isTopic ? "e.g. how eruptions are predicted" : "e.g. ordering food in a restaurant") : "e.g. Volcanoes, the water cycle, chess openings…"} value={topic} onChange={e => setTopic(e.target.value)} />
         <p className="lbl">How familiar are you with this topic?</p>
         <div className="segs">{[["New to it", "beginner"], ["Know some", "intermediate"], ["Confident", "advanced"]].map(l => <button className={"seg" + (level === l[1] ? " on" : "")} key={l[1]} onClick={() => setLevel(l[1])}>{l[0]}</button>)}</div>
-        <button className="btn go big" disabled={busy} onClick={gen}>{into ? "✨ Add more lessons" : "✨ Generate lessons"}</button>
+        <button className="btn go big" disabled={busy} onClick={gen}>{into ? "Add more chapters" : "Generate chapters"}</button>
         {busy && <div className="spin"><div className="spinner" /><div className="spintext">Writing your lessons… this can take a few seconds.</div></div>}
       </div>
       {!app.aiAvailable() && <div className="card" style={{ borderColor: "var(--a)" }}><div className="settitle">AI isn't connected here</div><div className="setdesc" style={{ marginTop: 4 }}>This is running outside the Claude preview, so there's no AI to call. Open it inside the Claude app, or add an API key under Settings to generate here.</div></div>}
@@ -3690,7 +5502,7 @@ function Auth({ app }) {
   const tryPw = () => { if (hashPw(pw) === selected.hash) enter(selected.id); else { setErr("That password doesn't match. Try again."); haptic([11, 55, 11]); } };
   if (selected) return (
     <div className="ob" id="auth">
-      <div className="obtop"><div className="obmk">🔒</div><h1>Hi {selected.name}</h1><div className="obsub">Enter your password to continue.</div>
+      <div className="obtop"><div className="obmk"><Icon name="lock" size={44} /></div><h1>Hi {selected.name}</h1><div className="obsub">Enter your password to continue.</div>
         <PasswordField value={pw} onChange={setPw} onEnter={tryPw} placeholder="Password" label="Password" autoComplete="current-password" autoFocus />
         <div className="obsub" style={{ color: "var(--no)", minHeight: 18 }}>{err}</div>
       </div>
@@ -3699,7 +5511,7 @@ function Auth({ app }) {
   );
   return (
     <div className="ob" id="auth">
-      <div className="obtop"><div className="obmk">📖</div>
+      <div className="obtop"><div className="obmk"><Icon name="lectern" size={44} /></div>
         {mode === "login" ? (
           <>
             <h1>Welcome back</h1><div className="obsub">Choose your account to pick up where you left off.</div>
@@ -3716,7 +5528,7 @@ function Auth({ app }) {
       <div className="obfoot">
         {mode === "login"
           ? <><button className="obnext" onClick={() => setMode("create")}>Create a new account</button><button className="obskip" onClick={guest}>Continue as guest</button></>
-          : <><button className="obnext" onClick={create}>Create account & start ✨</button>{users.length > 0 && <button className="obskip" onClick={() => setMode("login")}>Log in to an existing account</button>}<button className="obskip" onClick={guest}>Continue as guest</button></>}
+          : <><button className="obnext" onClick={create}>Create account</button>{users.length > 0 && <button className="obskip" onClick={() => setMode("login")}>Log in to an existing account</button>}<button className="obskip" onClick={guest}>Continue as guest</button></>}
         <div className="obsub" style={{ fontSize: 12.5, opacity: .8 }}>Accounts are stored on this device. Cloud sync across devices can be added later.</div>
       </div>
     </div>
@@ -3828,73 +5640,6 @@ function HubReturn({ onBack }) {
   );
 }
 
-/* Study It's mark.
-
-   The repo already ships one — index.html has a <link rel="icon"> pointing at
-   favicon.svg — so the right icon for the Study It route is that file, not
-   something invented here. Rather than hardcode a path that could be renamed
-   out from under this file, the href sitting in the document at boot is
-   captured BEFORE anything touches it. Whatever index.html points at is what
-   the Study It route shows.
-
-   Two consequences worth knowing:
-   - This has to be read at module load. installShell() and the router both
-     rewrite that link, so by the time a component renders the original is gone.
-   - If index.html ever ships without an icon, the fallback below is used: a
-     bookmark in Study It's own editorial palette (App.jsx PALETTE_DARK — paper
-     #1A1D22, gold #C9A56B), deliberately a different shape from Lectern's mark
-     so the two can't be confused in a row of tabs. It measures 29% ink at 16px. */
-const STUDY_ICON_FALLBACK = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">' +
-  '<rect width="512" height="512" rx="116" fill="#1A1D22"/>' +
-  '<path d="M146 72h220a30 30 0 0 1 30 30v338l-140-96-140 96V102a30 30 0 0 1 30-30Z" fill="#C9A56B"/></svg>');
-const STUDY_ICON = (() => {
-  try {
-    if (typeof document === "undefined") return STUDY_ICON_FALLBACK;
-    const l = document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
-    const href = l && l.getAttribute("href");
-    return href ? href : STUDY_ICON_FALLBACK;
-  } catch (e) { return STUDY_ICON_FALLBACK; }
-})();
-
-/* Point the tab icon at one of the two marks.
-
-   The href is NOT mutated in place. Browsers differ on whether changing the
-   href of an existing <link rel="icon"> makes them repaint the tab, and Safari
-   is the least willing of them. Removing every icon link and appending a fresh
-   node is the version that works in the most places, so that's what this does.
-
-   It also find-or-CREATES, which matters: installShell() bails if an icon link
-   already exists — and index.html ships one — so Lectern's own icon would never
-   have been installed. And installShell() only runs inside the Lectern app, so
-   opening /#/study cold never reaches it at all.
-
-   Everything is wrapped, because a sandboxed preview can refuse head edits
-   outright and a favicon is never worth taking the app down for. */
-function setFavicon(href) {
-  try {
-    if (typeof document === "undefined") return;
-    const head = document.head;
-    if (!head) return;
-    const links = head.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]');
-    // Already showing this exact icon and nothing stale alongside it: leave it
-    // alone. Re-appending on every render would make the tab flicker.
-    if (links.length === 1 && links[0].getAttribute("href") === href) return;
-    for (let i = 0; i < links.length; i++) {
-      try { links[i].parentNode.removeChild(links[i]); } catch (e) {}
-    }
-    const l = document.createElement("link");
-    l.setAttribute("rel", "icon");
-    // A data-URI mark is SVG; a repo file might be .svg, .png or .ico, so the
-    // type attribute is only asserted when it's actually known to be right.
-    if (href.indexOf("data:image/svg+xml") === 0 || /\.svg(\?|$)/i.test(href)) {
-      l.setAttribute("type", "image/svg+xml");
-    }
-    l.setAttribute("href", href);
-    head.appendChild(l);
-  } catch (e) {}
-}
-
 export default function Lectern() {
   const read = () => routeFromHash(typeof window !== "undefined" ? window.location.hash : "");
   const [route, setRoute] = useState(read);
@@ -3913,11 +5658,14 @@ export default function Lectern() {
     else window.location.hash = next;
   }, []);
 
-  // The tab should say AND show where you are. Cheap, and it makes a row of
-  // open tabs readable at a glance.
+  // The title should say where you are. Cheap, and it makes bookmarks useful.
   useEffect(() => {
     if (typeof document === "undefined") return;
-    document.title = route === "study" ? "Study It" : "Lectern";
+    // Only the Study It route is named here. On the hub, Lectern sets its own
+    // per-screen title ("Home · Lectern", "Learn · Lectern") which is more
+    // useful than a flat app name — overriding it would be a downgrade, and it
+    // would fight back on the next screen change anyway.
+    if (route === "study") document.title = "Study It";
     setFavicon(route === "study" ? STUDY_ICON : APP_ICON);
   }, [route]);
 
