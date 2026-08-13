@@ -1825,6 +1825,24 @@ function jget(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.p
 function jset(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { MEM[k] = v; } }
 const AKEY = "lectern.auth.v1", SKEY = "lectern.settings.v3", TKEY = "lectern.topics.v2";
 
+/* Lectern used to accept a personal Anthropic key. It no longer does — AI runs
+   through the shared server, so there is nothing to type. Any key saved by an
+   older version is REMOVED here rather than left sitting in localStorage: a
+   secret the app can no longer use should not keep existing on the device, and
+   it would otherwise ride along in every cloud backup for no reason. */
+(function dropStoredApiKey() {
+  try {
+    if (typeof localStorage === "undefined" || !localStorage) return;
+    const raw = localStorage.getItem(SKEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    if (o && (("aiKey" in o) || ("aiModel" in o))) {
+      delete o.aiKey; delete o.aiModel;
+      localStorage.setItem(SKEY, JSON.stringify(o));
+    }
+  } catch (e) {}
+})();
+
 /* ---------------------------------------------------------------------------
    THE HUB
 
@@ -2966,7 +2984,7 @@ function AITeacher({ teach, title, aiAvailable, callModel, aiUnavailableReason }
    hand over to Study It. */
 function LecternApp({ onOpenStudyIt } = {}) {
   const [auth, setAuth] = useState(() => jget(AKEY, { users: [], current: null }));
-  const [settings, setSettings] = useState(() => ({ sound: true, dark: false, autoTheme: false, haptics: true, textBig: false, aiKey: "", aiModel: "", ...jget(SKEY, {}) }));
+  const [settings, setSettings] = useState(() => ({ sound: true, dark: false, autoTheme: false, haptics: true, textBig: false, ...jget(SKEY, {}) }));
   const [notes, setNotes] = useState({});
   // Lessons the learner generated INTO a built-in subject, kept per account and
   // always appended after the built-in ones so finished-lesson numbering holds.
@@ -3335,7 +3353,6 @@ function LecternApp({ onOpenStudyIt } = {}) {
     settings: {
       sound: !!settings.sound, haptics: !!settings.haptics,
       dark: !!settings.dark, textBig: !!settings.textBig,
-      aiKey: settings.aiKey || "", aiModel: settings.aiModel || ""
     }
   });
   const readBackup = text => {
@@ -3369,8 +3386,6 @@ function LecternApp({ onOpenStudyIt } = {}) {
       sound: !!d.settings.sound, haptics: !!d.settings.haptics,
       dark: !!d.settings.dark, textBig: !!d.settings.textBig,
       // older backups (version 1) carried no key; leave whatever is set here
-      aiKey: typeof d.settings.aiKey === "string" ? d.settings.aiKey : x.aiKey,
-      aiModel: typeof d.settings.aiModel === "string" ? d.settings.aiModel : x.aiModel
     }));
     if (d.account && cur) setAuth(a => ({ ...a, users: a.users.map(u => u.id === cur.id ? {
       ...u,
@@ -3674,8 +3689,7 @@ function LecternApp({ onOpenStudyIt } = {}) {
      account can't run up an unbounded bill. */
   const aiAvailable = () =>
     (typeof window !== "undefined" && window.claude && typeof window.claude.complete === "function") ||
-    !!cloud.user ||
-    !!settings.aiKey;
+    !!cloud.user;
 
   // Why AI isn't available, in words a learner can act on rather than "no-ai".
   const aiUnavailableReason = () =>
@@ -3692,7 +3706,7 @@ function LecternApp({ onOpenStudyIt } = {}) {
         // invoke() attaches the caller's session, which is exactly what the
         // function checks — an anonymous call is refused server-side.
         const { data, error } = await sb.functions.invoke("ai", {
-          body: { prompt, model: settings.aiModel || undefined },
+          body: { prompt },
         });
         // A non-2xx comes back as `error`, but the useful message is in the
         // body the function sent, so that is preferred over the generic one.
@@ -3702,26 +3716,6 @@ function LecternApp({ onOpenStudyIt } = {}) {
         if (data && data.text) return data.text;
         throw new Error("The AI returned nothing. Try rephrasing.");
       }
-    }
-
-    if (settings.aiKey) {
-      const r = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": settings.aiKey,
-          "anthropic-version": "2023-06-01",
-          "anthropic-dangerous-direct-browser-access": "true"
-        },
-        body: JSON.stringify({
-          model: settings.aiModel || "claude-3-5-haiku-latest",
-          max_tokens: 2000,
-          messages: [{ role: "user", content: prompt }]
-        })
-      });
-      if (!r.ok) throw new Error("The AI request failed (" + r.status + ").");
-      const j = await r.json();
-      return (j.content && j.content[0] && j.content[0].text) || "";
     }
 
     throw new Error(aiUnavailableReason() || "no-ai");
@@ -5103,9 +5097,6 @@ function CloudCard({ app }) {
         </div>
         <div className="setdesc" style={{ marginTop: 6 }}>
           Stored: your progress, notes, flashcards, generated lessons, settings and profile name.
-          {app.settings && app.settings.aiKey
-            ? " That includes your AI key, so you don't have to type it on a new device — it's private to your account, but it is stored on the server."
-            : " Your AI key would be included too, if you set one."}
           {" "}Your profile password stays on this device and is never uploaded.
         </div>
         <div className="row" style={{ marginTop: 12, flexWrap: "wrap", gap: 8 }}>
@@ -5169,10 +5160,11 @@ function SettingsScreen({ app }) {
       </div>
       <div className="card">
         <span className="kicker">AI topic generator</span>
-        <div className="setdesc" style={{ margin: "4px 0 12px" }}>{app.aiAvailable() ? ((typeof window !== "undefined" && window.claude) ? "Connected through the Claude preview — no key needed." : "Using your saved API key.") : "Not connected. Open inside the Claude app, or add a key below."}</div>
-        <p className="lbl">Anthropic API key — optional, for use outside the preview</p>
-        <input className="ans" type="password" autoComplete="off" placeholder="sk-ant-…" style={{ width: "100%" }} value={app.settings.aiKey} onChange={e => set({ aiKey: e.target.value.trim() })} />
-        <div className="setdesc" style={{ marginTop: 7 }}>Optional. You don't need a key — signing in under Cloud sync gives you AI with no key at all. If you do set one, it's kept on this device, and it's included in your cloud backup if Cloud sync is on.</div>
+        <div className="setdesc" style={{ margin: "4px 0 0" }}>
+          {app.aiAvailable()
+            ? "Ready. Ask for a topic in Learn and the AI teacher will write lessons for it."
+            : "Sign in under Cloud sync above and the AI teacher can write new lessons for any topic you ask for. There's no API key to find or paste."}
+        </div>
       </div>
       <div className="card">
         <span className="kicker">Your profile</span>
