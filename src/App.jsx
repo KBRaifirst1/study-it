@@ -129,7 +129,18 @@ const fontMono = `"JetBrains Mono", "Courier New", monospace`;
 // ============ APP VERSION / BUILD METADATA ============
 // These are real, not fake. APP_VERSION follows semver. BUILD_DATE is set at the time of this build.
 // Surfaced in the footer + Settings → About for transparency about which version users are on.
-const APP_VERSION = "1.40.0";
+/* Study It used to store a personal Anthropic or Gemini key. It no longer does.
+   Any key left by an older version is DELETED here rather than orphaned: a
+   secret the app can no longer use should not keep existing on the device. */
+(function dropStoredApiKeys() {
+  try {
+    if (typeof localStorage === "undefined" || !localStorage) return;
+    ["lectern_anthropic_api_key", "lectern_gemini_api_key", "lectern_local_model", "lectern_ai_provider"]
+      .forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+  } catch (e) {}
+})();
+
+const APP_VERSION = "1.41.0";
 const BUILD_DATE = "2026-06-02";
 const APP_NAME = "Study It";
 
@@ -1303,24 +1314,6 @@ function AppInner() {
   // Local WebGPU models — actual LLMs that run in your browser via WebLLM. Honest about quality.
   // Each entry includes the WebLLM model id, display label, download size, RAM requirement,
   // a description, and a "best for" hint mapped to actual Study It modes the model handles well.
-  const LOCAL_MODELS = {
-    // === RECOMMENDED — strong quality/size balance ===
-    "Llama-3.1-8B-Instruct-q4f32_1-MLC":   { label: "Llama 3.1 8B",   size: "~4.6 GB", ram: "~6 GB", desc: "Meta's flagship small model. Best general quality available locally.",     bestFor: "Explain · Tutor chat · Flashcards · Briefings", tier: "best" },
-    "Hermes-3-Llama-3.2-3B-q4f16_1-MLC":   { label: "Hermes 3 3B",    size: "~1.8 GB", ram: "~3 GB", desc: "NousResearch fine-tune of Llama 3.2. Best instruction-following at this size.", bestFor: "Flashcards · Practice quizzes · Cheatsheets",     tier: "best" },
-    "Qwen2.5-7B-Instruct-q4f16_1-MLC":     { label: "Qwen 2.5 7B",    size: "~4.4 GB", ram: "~6 GB", desc: "Alibaba. Strong reasoning + multilingual. Top open-weights at this size.",   bestFor: "Explain · Concept maps · Code & STEM",            tier: "best" },
-    // === BALANCED — good for most modern laptops ===
-    "Llama-3.2-3B-Instruct-q4f16_1-MLC":   { label: "Llama 3.2 3B",   size: "~1.7 GB", ram: "~3 GB", desc: "Meta. Solid balance for browser inference. Good default.",                    bestFor: "Flashcards · Tutor chat · Audio overviews",       tier: "balanced" },
-    "Phi-3.5-mini-instruct-q4f16_1-MLC":   { label: "Phi 3.5 Mini",   size: "~2.4 GB", ram: "~4 GB", desc: "Microsoft. Strong reasoning for its parameter count.",                        bestFor: "Practice · Exam · Error review",                  tier: "balanced" },
-    "gemma-2-2b-it-q4f16_1-MLC":           { label: "Gemma 2 2B",     size: "~1.6 GB", ram: "~3 GB", desc: "Google. Solid generalist; fast on most GPUs.",                                bestFor: "Cheatsheets · Vocab · Quick Q&A",                tier: "balanced" },
-    // === LIGHTWEIGHT — older / integrated GPUs ===
-    "Llama-3.2-1B-Instruct-q4f16_1-MLC":   { label: "Llama 3.2 1B",   size: "~700 MB", ram: "~1.5 GB", desc: "Tiny. Limited capability — fine for short definitions and vocab.",          bestFor: "Vocab drilling · Definition Q&A",                tier: "tiny" },
-    "SmolLM2-1.7B-Instruct-q4f16_1-MLC":   { label: "SmolLM2 1.7B",   size: "~1.0 GB", ram: "~2 GB", desc: "HuggingFace. Surprisingly capable for its size. Fastest.",                    bestFor: "Vocab · Short flashcards",                       tier: "tiny" },
-    "SmolLM2-360M-Instruct-q4f16_1-MLC":   { label: "SmolLM2 360M",   size: "~230 MB", ram: "~1 GB", desc: "Smallest viable. Toy-scale — barely useful but works on any device.",        bestFor: "Definition lookup only",                         tier: "tiny" },
-    // === REASONING — distilled from DeepSeek-R1 ===
-    "DeepSeek-R1-Distill-Qwen-7B-q4f16_1-MLC": { label: "DeepSeek-R1 7B (reasoning)", size: "~4.4 GB", ram: "~6 GB", desc: "Distilled from R1. Better for math/logic at the cost of speed.",     bestFor: "Math problems · Logic puzzles · STEM",          tier: "reasoning" },
-    // === VISION — can read images, scanned PDFs, basic handwriting (much weaker than Claude's vision) ===
-    "Phi-3.5-vision-instruct-q4f16_1-MLC":     { label: "Phi 3.5 Vision (image-capable)", size: "~3.0 GB", ram: "~5 GB", desc: "Microsoft. Reads printed text + simple diagrams locally. Handwriting unreliable.", bestFor: "Reading printed text · Scanned PDFs · Simple diagrams", tier: "vision" },
-  };
   // Default to Llama 3.2 3B (the previous default) — small enough to work on most hardware.
   // But surface bigger options prominently for users with good GPUs.
   const AI_PRESETS = {
@@ -1340,68 +1333,32 @@ function AppInner() {
   useEffect(() => { setMaxPower(!!aiSettings.multiAgent); }, [aiSettings.multiAgent]);
 
   // ============ ANTHROPIC API KEY (BYO key — real Claude in a standalone Vite deploy) ============
-  // When running inside Anthropic's Artifact runtime the key is injected automatically by the proxy.
-  // When self-hosting via Vite locally, the user pastes their own key here and we send it directly.
-  const [anthropicApiKey, setAnthropicApiKey] = useState(() => {
-    try { return localStorage.getItem("lectern_anthropic_api_key") || ""; } catch { return ""; }
-  });
-  const [anthropicApiKeyDraft, setAnthropicApiKeyDraft] = useState("");
-  const [aiKeyStatus, setAiKeyStatus] = useState("");
-  useEffect(() => { try { localStorage.setItem("lectern_anthropic_api_key", anthropicApiKey); } catch {} }, [anthropicApiKey]);
-  // Build auth headers — uses key if user pasted one, otherwise relies on host proxy (Artifact runtime).
-  const _claudeHeaders = () => {
-    const h = { "Content-Type": "application/json" };
-    if (anthropicApiKey && anthropicApiKey.trim()) {
-      h["x-api-key"] = anthropicApiKey.trim();
-      h["anthropic-version"] = "2023-06-01";
-      // Required for direct browser→Anthropic calls (no backend proxy):
-      h["anthropic-dangerous-direct-browser-access"] = "true";
-    }
-    return h;
-  };
-
-  // ============ GOOGLE GEMINI (alternate cloud provider) ============
-  // Google's Gemini API is a viable alternative to Anthropic — has a genuine free tier
-  // (Gemini 2.5 Flash: 15 req/min, 1500 req/day free) so users without an Anthropic Console
-  // account can still get frontier-quality output. Different API format so it needs its own
-  // call function (callGemini) rather than sharing callClaude's Anthropic-shaped body.
-  const [geminiApiKey, setGeminiApiKey] = useState(() => {
-    try { return localStorage.getItem("lectern_gemini_api_key") || ""; } catch { return ""; }
-  });
-  const [geminiApiKeyDraft, setGeminiApiKeyDraft] = useState("");
-  useEffect(() => { try { localStorage.setItem("lectern_gemini_api_key", geminiApiKey); } catch {} }, [geminiApiKey]);
-  const [geminiModel, setGeminiModel] = useState(() => {
-    try { return localStorage.getItem("lectern_gemini_model") || "gemini-2.5-flash"; } catch { return "gemini-2.5-flash"; }
-  });
-  useEffect(() => { try { localStorage.setItem("lectern_gemini_model", geminiModel); } catch {} }, [geminiModel]);
-
-  // ============ AI PROVIDER (Anthropic Claude / Google Gemini / Local WebGPU AI) ============
-  // "anthropic" → call api.anthropic.com (needs key). Full quality, paid, online.
-  // "gemini" → call generativelanguage.googleapis.com (needs key). Frontier quality, free tier available.
-  // "webllm" → load a model into IndexedDB once, run inference locally via WebGPU. Free, offline, weaker quality.
-  // "shared" is the default: AI works as soon as you're signed in, with no key
-  // to find or paste. It routes through a Supabase Edge Function that holds one
-  // Gemini key as a server secret — the key never reaches the browser, because
-  // a key shipped in front-end JavaScript is public by definition.
+  // ============ API KEYS: REMOVED ============
+  // Study It no longer takes an API key. AI runs through a Supabase Edge
+  // Function holding one Gemini key as a server secret, so there is nothing to
+  // paste and nothing to protect.
   //
-  // Anyone who already picked a provider keeps it; only a fresh install lands
-  // on "shared". The anthropic / gemini / webllm routes all still work for
-  // anyone who prefers their own key or wants to run locally.
-  const [aiProvider, setAiProvider] = useState(() => {
-    try { return localStorage.getItem("lectern_ai_provider") || "shared"; } catch { return "shared"; }
-  });
-  const [localModel, setLocalModel] = useState(() => {
-    try { return localStorage.getItem("lectern_local_model") || "Llama-3.2-3B-Instruct-q4f16_1-MLC"; } catch { return "Llama-3.2-3B-Instruct-q4f16_1-MLC"; }
-  });
-  const webllmEngineRef = useRef(null);
-  const [webllmLoadedModel, setWebllmLoadedModel] = useState(""); // tracks which model is in the engine
-  const [webllmStatus, setWebllmStatus] = useState("");
-  const [webllmProgress, setWebllmProgress] = useState(0); // 0-1
-  const [webllmLoading, setWebllmLoading] = useState(false);
-  const [webgpuSupported, setWebgpuSupported] = useState(null); // null = checking, true/false
+  // These are inert stand-ins for the call sites that still read them; every
+  // such branch is unreachable. Declaring them beats rewriting fifty call sites,
+  // which is where a silent runtime crash would come from.
+  const anthropicApiKey = "";
+  const setAnthropicApiKey = () => {};
+  const anthropicApiKeyDraft = "";
+  const setAnthropicApiKeyDraft = () => {};
+  const aiKeyStatus = "";
+  const setAiKeyStatus = () => {};
+  const _claudeHeaders = () => ({ "Content-Type": "application/json" });
+  const geminiApiKey = "";
+  const setGeminiApiKey = () => {};
+  const geminiApiKeyDraft = "";
+  const setGeminiApiKeyDraft = () => {};
+  const geminiModel = "gemini-2.5-flash";
+  const setGeminiModel = () => {};
 
-  // Mobile detection — used to override inline styles where CSS media queries can't reach.
-  // 640px is our standard "phone" breakpoint, matching the modal-fullscreen breakpoint.
+  // Mobile detection — used to override inline styles where CSS media queries
+  // can't reach. 640px matches the modal-fullscreen breakpoint. This lived
+  // inside the old AI-provider block for no reason other than where it was
+  // typed; it has nothing to do with AI.
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth < 640;
@@ -1413,423 +1370,52 @@ function AppInner() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // ============ SMOLVLM (Transformers.js vision encoder) ============
-  // Separate from WebLLM: this is a vision-language model loaded via HuggingFace Transformers.js.
-  // We use it ONLY to describe uploaded images, then feed the description into the existing WebLLM
-  // (or Cloud AI) pipeline as text context. Two-stage: vision encode → text generation.
+  // ============ AI ============
+  // One route: a Supabase Edge Function holding a single Gemini key as a server
+  // secret. Signing in is the whole requirement.
   //
-  // Why this exists: WebLLM only has Phi-3.5-Vision (~3 GB, crashes Safari). SmolVLM-500M
-  // (~500 MB) fits Safari's WebGPU memory limits and works as a lightweight image describer.
+  // The Anthropic / Gemini-with-your-own-key / local WebGPU providers are gone,
+  // along with the model downloader, the cache manager, the benchmark and the
+  // local vision model.
   //
-  // Quality note: SmolVLM is significantly weaker than Claude vision. It's good for basic
-  // image descriptions and printed-text reading, less reliable for handwriting / complex diagrams.
-  const smolVLMRef = useRef({ processor: null, model: null });
-  const [smolVLMLoaded, setSmolVLMLoaded] = useState(false);
-  const [smolVLMLoading, setSmolVLMLoading] = useState(false);
-  const [smolVLMStatus, setSmolVLMStatus] = useState("");
-  const [smolVLMProgress, setSmolVLMProgress] = useState(0);
-  useEffect(() => { try { localStorage.setItem("lectern_ai_provider", aiProvider); } catch {} }, [aiProvider]);
-  useEffect(() => { try { localStorage.setItem("lectern_local_model", localModel); } catch {} }, [localModel]);
-
-  // Detect WebGPU availability once on mount
-  useEffect(() => {
-    (async () => {
-      try {
-        if (typeof navigator === "undefined" || !navigator.gpu) { setWebgpuSupported(false); return; }
-        const adapter = await navigator.gpu.requestAdapter();
-        setWebgpuSupported(!!adapter);
-      } catch { setWebgpuSupported(false); }
-    })();
-  }, []);
-
-  // Lazy-load WebLLM library + initialize an engine for the chosen local model.
-  // The library is ~30 MB; the model itself is 0.7–2.4 GB. Both are cached in IndexedDB after first load.
-  // IMPORTANT: progress callback is throttled to ~250ms intervals — WebLLM can fire it hundreds of
-  // times per second, and each call triggers a React re-render. On Safari (which has weaker WebGPU
-  // memory management than Chrome) the re-render churn was contributing to OOM crashes.
-  const initWebllm = async () => {
-    if (webllmEngineRef.current && webllmLoadedModel === localModel) return webllmEngineRef.current;
-    if (webgpuSupported === false) throw new Error("WebGPU not available in this browser. Use a recent Chrome/Edge on a desktop with a supported GPU.");
-    setWebllmLoading(true);
-    setWebllmStatus("Loading WebLLM runtime…");
-    setWebllmProgress(0);
-    try {
-      // Pinned version for stability. esm.run mirrors npm via jsDelivr.
-      const webllm = await import(/* @vite-ignore */ "https://esm.run/@mlc-ai/web-llm@0.2.79");
-      setWebllmStatus(`Downloading ${LOCAL_MODELS[localModel]?.label || localModel}… (first time only — cached after)`);
-      // Progress throttling state — preserve between callback fires
-      let lastUpdateTime = 0;
-      let lastText = "";
-      const engine = await webllm.CreateMLCEngine(localModel, {
-        initProgressCallback: (p) => {
-          const now = Date.now();
-          // Always update on text change (status messages are important and rare).
-          // Otherwise throttle to 4 Hz max (250ms) — sufficient for a visible progress bar.
-          if (p.text && p.text !== lastText) {
-            lastText = p.text;
-            setWebllmStatus(p.text);
-            setWebllmProgress(typeof p.progress === "number" ? p.progress : 0);
-            lastUpdateTime = now;
-          } else if (now - lastUpdateTime >= 250) {
-            setWebllmProgress(typeof p.progress === "number" ? p.progress : 0);
-            lastUpdateTime = now;
-          }
-        },
-      });
-      webllmEngineRef.current = engine;
-      setWebllmLoadedModel(localModel);
-      setWebllmStatus(`✓ ${LOCAL_MODELS[localModel]?.label || localModel} ready`);
-      setWebllmProgress(1);
-      track("action", "webllm_loaded", { model: localModel });
-      setTimeout(() => { setWebllmStatus(""); setWebllmLoading(false); }, 3500);
-      return engine;
-    } catch (e) {
-      setWebllmStatus(`Failed: ${e.message}`);
-      setWebllmLoading(false);
-      logError(e, "webllm init");
-      throw e;
-    }
-  };
-
-  // ============ CANCEL WEBLLM LOAD ============
-  // WebLLM's CreateMLCEngine doesn't expose an abort signal — once it's downloading, there's no
-  // clean way to cancel mid-flight. The cleanest approximation: reset our state (UI unblocks),
-  // null the engine ref (no partial engine sitting around), and optionally clear the cached shards
-  // (if the user wants to start fresh). The background fetch continues but is now harmless.
-  const cancelWebllmLoad = async (options = {}) => {
-    const { clearCache = false } = options;
-    // Unblock UI immediately
-    setWebllmLoading(false);
-    setWebllmStatus("");
-    setWebllmProgress(0);
-    // Null the engine so any partial state doesn't get reused
-    if (webllmEngineRef.current && webllmEngineRef.current.unload) {
-      try { await webllmEngineRef.current.unload(); } catch {}
-    }
-    webllmEngineRef.current = null;
-    setWebllmLoadedModel("");
-    // Optionally clear the cached shards (deleteCachedModel exists later in the file)
-    if (clearCache && localModel) {
-      try { await deleteCachedModel(localModel); } catch (e) { logError(e, "cancelWebllmLoad clearCache"); }
-    }
-    showToast(clearCache ? "Load cancelled + cache cleared. Try a different model." : "Load cancelled. You can pick a different model.");
-    track("action", "webllm_load_cancelled", { clearCache });
-  };
-
-  // ============ SMOLVLM LAZY-LOAD + IMAGE DESCRIBE ============
-  // Load Transformers.js + SmolVLM-500M-Instruct vision-language model. ~500 MB download cached
-  // in IndexedDB by Transformers.js after first load. Works on Safari (small enough for its WebGPU).
-  const initSmolVLM = async () => {
-    if (smolVLMRef.current.model && smolVLMRef.current.processor) return smolVLMRef.current;
-    if (webgpuSupported === false) throw new Error("WebGPU not available — SmolVLM requires WebGPU.");
-    setSmolVLMLoading(true);
-    setSmolVLMStatus("Loading Transformers.js runtime…");
-    setSmolVLMProgress(0);
-    try {
-      // Pinned version for stability. Use CDN since the project doesn't bundle Transformers.js.
-      const tf = await import(/* @vite-ignore */ "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.3.3");
-      setSmolVLMStatus("Downloading SmolVLM-500M (first time only — cached after)");
-      const modelId = "HuggingFaceTB/SmolVLM-500M-Instruct";
-      // Throttled progress callback (same pattern as WebLLM)
-      let lastUpdateTime = 0;
-      const progressCb = (p) => {
-        const now = Date.now();
-        if (now - lastUpdateTime < 250) return;
-        lastUpdateTime = now;
-        if (p && typeof p.progress === "number") setSmolVLMProgress(p.progress / 100);
-        if (p && p.status) setSmolVLMStatus(p.file ? `${p.status}: ${p.file}` : p.status);
-      };
-      const processor = await tf.AutoProcessor.from_pretrained(modelId, { progress_callback: progressCb });
-      const model = await tf.AutoModelForVision2Seq.from_pretrained(modelId, {
-        dtype: { embed_tokens: "fp16", vision_encoder: "q4", decoder_model_merged: "q4" },
-        device: "webgpu",
-        progress_callback: progressCb,
-      });
-      smolVLMRef.current = { processor, model, tf };
-      setSmolVLMLoaded(true);
-      setSmolVLMStatus("✓ SmolVLM ready");
-      setSmolVLMProgress(1);
-      track("action", "smolvlm_loaded");
-      setTimeout(() => { setSmolVLMStatus(""); setSmolVLMLoading(false); }, 3500);
-      return smolVLMRef.current;
-    } catch (e) {
-      setSmolVLMStatus(`Failed: ${e.message}`);
-      setSmolVLMLoading(false);
-      logError(e, "smolvlm init");
-      throw e;
-    }
-  };
-
-  // Convert uploaded images to plain-text descriptions via SmolVLM. Used to bridge images into
-  // text-only WebLLM models (and as a fallback when Cloud AI isn't configured on Safari).
-  // Returns a single newline-joined string of all image descriptions, or null on failure.
-  const describeImagesWithSmolVLM = async (imageArr, queryHint) => {
-    if (!imageArr || imageArr.length === 0) return null;
-    const ctx = await initSmolVLM();
-    if (!ctx || !ctx.model || !ctx.processor) return null;
-    const { processor, model, tf } = ctx;
-    const descriptions = [];
-    for (let i = 0; i < imageArr.length; i++) {
-      try {
-        const img = imageArr[i];
-        // SmolVLM expects an image input — convert our base64 to an HTMLImage via load_image
-        const dataUrl = img.preview || `data:${img.mediaType || "image/jpeg"};base64,${img.data}`;
-        const rawImage = await tf.load_image(dataUrl);
-        const messages = [{
-          role: "user",
-          content: [
-            { type: "image" },
-            { type: "text", text: queryHint ? `Describe this image in detail. Context: ${queryHint}` : "Describe this image in detail, including any text visible." },
-          ],
-        }];
-        const prompt = processor.apply_chat_template(messages, { add_generation_prompt: true });
-        const inputs = await processor(prompt, [rawImage], { return_tensors: "pt" });
-        const generatedIds = await model.generate({ ...inputs, max_new_tokens: 256, do_sample: false });
-        const generatedTexts = processor.batch_decode(generatedIds.slice(null, [inputs.input_ids.dims.at(-1), null]), { skip_special_tokens: true });
-        descriptions.push(`[Image ${i + 1}]: ${(generatedTexts[0] || "").trim()}`);
-      } catch (e) {
-        logError(e, "smolvlm describe");
-        descriptions.push(`[Image ${i + 1}]: (could not be described — ${e.message})`);
-      }
-    }
-    return descriptions.join("\n\n");
-  };
-
-  // Safari detection — Safari's WebGPU is newer and has weaker memory management than Chrome's.
-  // Large models (1B+) often crash the tab on Safari with "a problem occurred repeatedly" errors.
-  // We warn users BEFORE they try to load a model so they can switch browsers or pick smaller.
-  const isSafariBrowser = typeof navigator !== "undefined" &&
-    /^((?!chrome|android).)*safari/i.test(navigator.userAgent || "");
-
-  // Inference stats — surfaced live during streaming generation
-  const [webllmStats, setWebllmStats] = useState({ tokensPerSec: 0, totalTokens: 0, firstTokenMs: 0, running: false });
-  // Conversation history for local tutor chat (within session only)
-  const webllmHistoryRef = useRef([]);
-
-  // Run inference on the local model — OpenAI-compatible API with real upgrades:
-  //   • Streaming via stream: true + onChunk callback
-  //   • JSON mode via response_format when the calling code needs structured output
-  //   • Per-call temperature (0.3 for deterministic, 0.8 for creative — caller decides)
-  //   • Tokens/sec + first-token latency tracking surfaced via webllmStats
-  //   • Honest context-window truncation for small models (most are 4k-8k)
-  //   • Optional conversation history for tutor chat continuity
-  const callWebllm = async (prompt, systemPrompt, opts = {}) => {
-    const engine = await initWebllm();
-
-    // ============ CONTEXT WINDOW HANDLING ============
-    // Most local models top out at 4k-8k context. If the system+user prompt is too big, truncate
-    // the system prompt's notebook-source block first (preserves the task instructions). Honest:
-    // this means local AI on huge notebooks won't see all sources. A 24k-source clause becomes ~6k.
-    const MAX_CONTEXT_CHARS = 18000; // ~4.5k tokens — safe for 8k-context models with room for output
-    let trimmedSystem = systemPrompt || "";
-    let trimmedPrompt = prompt;
-    const totalLen = (trimmedSystem.length + trimmedPrompt.length);
-    if (totalLen > MAX_CONTEXT_CHARS) {
-      // Trim the source-grounding block (largest variable section) before trimming task instructions
-      const sourceBlockMatch = trimmedSystem.match(/NOTEBOOK SOURCES[\s\S]+?END OF NOTEBOOK SOURCES\./);
-      if (sourceBlockMatch) {
-        const sourceBlock = sourceBlockMatch[0];
-        const budget = Math.max(1500, MAX_CONTEXT_CHARS - (trimmedSystem.length - sourceBlock.length) - trimmedPrompt.length - 500);
-        const trimmedSourceBlock = sourceBlock.slice(0, budget) + "\n[…truncated for local model context window]\nEND OF NOTEBOOK SOURCES.";
-        trimmedSystem = trimmedSystem.replace(sourceBlock, trimmedSourceBlock);
-      }
-      // If still too long, hard-truncate
-      if ((trimmedSystem.length + trimmedPrompt.length) > MAX_CONTEXT_CHARS) {
-        trimmedSystem = trimmedSystem.slice(0, MAX_CONTEXT_CHARS - trimmedPrompt.length - 200) + "\n[truncated]";
-      }
-    }
-
-    const messages = [];
-    if (trimmedSystem) messages.push({ role: "system", content: trimmedSystem });
-    // If conversation history is enabled (tutor chat mode), prepend prior turns
-    if (opts.useHistory && webllmHistoryRef.current.length > 0) {
-      messages.push(...webllmHistoryRef.current.slice(-6)); // last 3 turns (6 messages)
-    }
-
-    // ============ VISION INPUT (when on a vision-capable local model + images attached) ============
-    // Phi-3.5-vision and other multimodal locals accept image_url content blocks like OpenAI.
-    // Convert any attached images to base64 data URLs and structure the user message as multi-part content.
-    const modelIsVision = LOCAL_MODELS[localModel]?.tier === "vision";
-    if (modelIsVision && opts.images && opts.images.length > 0) {
-      const content = [
-        ...opts.images.map((img) => ({
-          type: "image_url",
-          image_url: { url: `data:${img.mediaType || "image/png"};base64,${img.data}` },
-        })),
-        { type: "text", text: trimmedPrompt },
-      ];
-      messages.push({ role: "user", content });
-    } else {
-      messages.push({ role: "user", content: trimmedPrompt });
-    }
-
-    // Per-call temperature — caller can override; otherwise default 0.7 for generic
-    const temperature = typeof opts.temperature === "number" ? opts.temperature : 0.7;
-    const max_tokens = Math.min(opts.maxTokens || 2000, 4000);
-
-    const requestOpts = {
-      messages, max_tokens, temperature,
-      ...(opts.jsonMode ? { response_format: { type: "json_object" } } : {}),
-    };
-
-    // ============ STREAMING PATH ============
-    if (opts.onChunk && typeof opts.onChunk === "function") {
-      const callStart = Date.now();
-      let firstTokenAt = 0;
-      let fullText = "";
-      let chunks = 0;
-      setWebllmStats({ tokensPerSec: 0, totalTokens: 0, firstTokenMs: 0, running: true });
-      try {
-        const stream = await engine.chat.completions.create({ ...requestOpts, stream: true });
-        for await (const part of stream) {
-          const delta = part.choices?.[0]?.delta?.content || "";
-          if (delta) {
-            if (!firstTokenAt) firstTokenAt = Date.now();
-            fullText += delta;
-            chunks++;
-            opts.onChunk(delta, fullText);
-            // Update stats every ~10 chunks to avoid excessive React renders
-            if (chunks % 10 === 0) {
-              const elapsedSec = (Date.now() - firstTokenAt) / 1000;
-              const tps = elapsedSec > 0 ? (chunks / elapsedSec) : 0; // approximate — chunks ≈ tokens
-              setWebllmStats({ tokensPerSec: Math.round(tps * 10) / 10, totalTokens: chunks, firstTokenMs: firstTokenAt - callStart, running: true });
-            }
-          }
-        }
-        const finalElapsedSec = firstTokenAt > 0 ? (Date.now() - firstTokenAt) / 1000 : 0;
-        const finalTps = finalElapsedSec > 0 ? chunks / finalElapsedSec : 0;
-        setWebllmStats({ tokensPerSec: Math.round(finalTps * 10) / 10, totalTokens: chunks, firstTokenMs: firstTokenAt - callStart, running: false });
-        // Track conversation history if requested
-        if (opts.useHistory) {
-          webllmHistoryRef.current = [...webllmHistoryRef.current, { role: "user", content: trimmedPrompt }, { role: "assistant", content: fullText }].slice(-12);
-        }
-        return fullText;
-      } catch (e) {
-        setWebllmStats({ tokensPerSec: 0, totalTokens: 0, firstTokenMs: 0, running: false });
-        throw e;
-      }
-    }
-
-    // ============ NON-STREAMING PATH ============
-    const callStart = Date.now();
-    setWebllmStats({ tokensPerSec: 0, totalTokens: 0, firstTokenMs: 0, running: true });
-    try {
-      const completion = await engine.chat.completions.create(requestOpts);
-      const text = completion.choices?.[0]?.message?.content || "";
-      const elapsedSec = (Date.now() - callStart) / 1000;
-      // Approximate token count from char count (4 chars ≈ 1 token for English)
-      const approxTokens = Math.round(text.length / 4);
-      const tps = elapsedSec > 0 ? approxTokens / elapsedSec : 0;
-      setWebllmStats({ tokensPerSec: Math.round(tps * 10) / 10, totalTokens: approxTokens, firstTokenMs: 0, running: false });
-      if (opts.useHistory) {
-        webllmHistoryRef.current = [...webllmHistoryRef.current, { role: "user", content: trimmedPrompt }, { role: "assistant", content: text }].slice(-12);
-      }
-      return text;
-    } catch (e) {
-      setWebllmStats({ tokensPerSec: 0, totalTokens: 0, firstTokenMs: 0, running: false });
-      throw e;
-    }
-  };
-
-  // Reset conversation history (e.g. when user starts a new topic in tutor chat)
-  const resetWebllmHistory = () => { webllmHistoryRef.current = []; };
-
-  // ============ BENCHMARK ============
-  // Run a fixed 50-token prompt against the currently-loaded model and report tokens/sec + first-token latency.
-  // Lets the user evaluate their hardware before committing to using a model for real work.
-  const [benchmarkResult, setBenchmarkResult] = useState(null);
-  const [benchmarkRunning, setBenchmarkRunning] = useState(false);
-  const runBenchmark = async () => {
-    setBenchmarkRunning(true);
-    setBenchmarkResult(null);
-    try {
-      const engine = await initWebllm();
-      const benchPrompt = "List 5 study techniques. One sentence each. Number them 1-5.";
-      const callStart = Date.now();
-      let firstTokenAt = 0;
-      let chunks = 0;
-      const stream = await engine.chat.completions.create({
-        messages: [{ role: "user", content: benchPrompt }],
-        max_tokens: 200, temperature: 0.5, stream: true,
-      });
-      for await (const part of stream) {
-        const delta = part.choices?.[0]?.delta?.content || "";
-        if (delta) {
-          if (!firstTokenAt) firstTokenAt = Date.now();
-          chunks++;
-        }
-      }
-      const firstTokenMs = firstTokenAt - callStart;
-      const generationMs = Date.now() - firstTokenAt;
-      const tps = generationMs > 0 ? (chunks / (generationMs / 1000)) : 0;
-      setBenchmarkResult({
-        model: localModel,
-        modelLabel: LOCAL_MODELS[localModel]?.label || localModel,
-        firstTokenMs, tokensPerSec: Math.round(tps * 10) / 10,
-        totalTokens: chunks, totalMs: Date.now() - callStart,
-      });
-      track("action", "webllm_benchmark", { model: localModel, tps });
-    } catch (e) {
-      setBenchmarkResult({ error: e.message });
-      logError(e, "webllm benchmark");
-    } finally {
-      setBenchmarkRunning(false);
-    }
-  };
-
-  // ============ CACHE MANAGEMENT ============
-  // List cached models in IndexedDB (WebLLM stores model shards in "webllm-cache").
-  // Returns array of { modelId, bytesApprox } so user can see disk usage + delete unused models.
-  const [cachedModels, setCachedModels] = useState([]);
-  const refreshCachedModels = async () => {
-    try {
-      if (!window.indexedDB || !navigator.storage?.estimate) {
-        setCachedModels([]);
-        return;
-      }
-      // List all databases (Chrome 75+ supports this)
-      const cached = [];
-      if (indexedDB.databases) {
-        const dbs = await indexedDB.databases();
-        const webllmDbs = dbs.filter((db) => db.name && (db.name.includes("webllm") || db.name.includes("MLC")));
-        // Try to identify which models are cached by checking known model IDs against cached database names
-        for (const modelId of Object.keys(LOCAL_MODELS)) {
-          const matching = webllmDbs.find((db) => db.name.includes(modelId.split("-").slice(0, 3).join("-")));
-          if (matching) {
-            cached.push({ modelId, dbName: matching.name });
-          }
-        }
-      }
-      // Get total storage usage estimate
-      const estimate = await navigator.storage.estimate();
-      setCachedModels(cached.map((c) => ({ ...c, totalCacheBytes: estimate.usage || 0 })));
-    } catch (e) { logError(e, "list cached models"); setCachedModels([]); }
-  };
-  const deleteCachedModel = async (modelId) => {
-    if (!confirm(`Delete cached ${LOCAL_MODELS[modelId]?.label || modelId}? You'll need to re-download (~${LOCAL_MODELS[modelId]?.size || "?"}) to use it again.`)) return;
-    try {
-      // Find and delete matching IndexedDB databases
-      if (indexedDB.databases) {
-        const dbs = await indexedDB.databases();
-        const matching = dbs.filter((db) => db.name && db.name.includes(modelId.split("-").slice(0, 3).join("-")));
-        for (const db of matching) {
-          await new Promise((resolve, reject) => {
-            const req = indexedDB.deleteDatabase(db.name);
-            req.onsuccess = resolve;
-            req.onerror = reject;
-            req.onblocked = resolve; // unblock after current tabs close
-          });
-        }
-      }
-      // Also clear the engine if this was the loaded model
-      if (webllmLoadedModel === modelId) {
-        webllmEngineRef.current = null;
-        setWebllmLoadedModel("");
-      }
-      showToast(`Deleted ${LOCAL_MODELS[modelId]?.label || modelId} cache`);
-      refreshCachedModels();
-    } catch (e) { logError(e, "delete cached model"); showToast("Couldn't delete cache — try clearing site data in browser settings"); }
-  };
+  // The values below are inert stand-ins, not features. Roughly fifty call
+  // sites still read them; rather than rewrite every one — which is where a
+  // silent runtime crash would come from — they are declared as constants that
+  // make each of those branches unreachable. They are cheap, they are honest
+  // about being placeholders, and nothing can be undeclared at runtime.
+  const aiProvider = "shared";
+  const setAiProvider = () => {};
+  const localModel = "";
+  const setLocalModel = () => {};
+  const LOCAL_MODELS = {};
+  const webllmEngineRef = { current: null };
+  const webllmLoadedModel = "";
+  const setWebllmLoadedModel = () => {};
+  const webllmStatus = "";
+  const setWebllmStatus = () => {};
+  const webllmProgress = 0;
+  const setWebllmProgress = () => {};
+  const webllmLoading = false;
+  const setWebllmLoading = () => {};
+  const webllmStats = { running: false, tokensPerSec: 0 };
+  const setWebllmStats = () => {};
+  const webgpuSupported = false;
+  const smolVLMLoaded = false;
+  const setSmolVLMLoaded = () => {};
+  const smolVLMLoading = false;
+  const smolVLMProgress = 0;
+  const smolVLMStatus = "";
+  const cachedModels = [];
+  const setCachedModels = () => {};
+  const isSafariBrowser = false;
+  const initWebllm = async () => {};
+  const cancelWebllmLoad = async () => {};
+  const initSmolVLM = async () => {};
+  const describeImagesWithSmolVLM = async () => "";
+  const resetWebllmHistory = () => {};
+  const runBenchmark = async () => {};
+  const refreshCachedModels = async () => {};
+  const deleteCachedModel = async () => {};
 
   const [sources, setSources] = useState([]);
   const [thinkingStage, setThinkingStage] = useState("");
@@ -3349,434 +2935,32 @@ function AppInner() {
    * @returns {Promise<string>} The model's response text (full content, post-streaming if applicable)
    */
   /**
-   * The shared AI route — no API key required.
+   * The one AI call. Everything in the app goes through here.
    *
-   * Calls a Supabase Edge Function ("ai") which holds one Gemini key as a
-   * server secret, verifies the caller's session, meters usage per account per
-   * day, and returns plain text. Signing in is the whole requirement.
+   * A single route: a Supabase Edge Function holding one Gemini key as a server
+   * secret. Signing in is the whole requirement — no key to find, paste or
+   * protect, and no local model to download.
    *
-   * Study It, Lectern and CodeQuest all call the same function with the same
-   * account, so a learner sets nothing up in any of them.
+   * Two honest consequences of dropping the other providers: AI needs an
+   * account and a connection, so there is no offline mode; and there is no
+   * fallback, so if the shared service is down or over its daily cap the app
+   * says so rather than degrading quietly.
    *
-   * Two honest limits, deliberately not hidden:
-   *  - It does NOT stream. The function returns a finished answer, so callers
-   *    that would have streamed just get the whole thing at once.
-   *  - It does NOT send images or PDFs. Materials still need a personal key
-   *    (Settings → AI Provider), and this says so rather than silently
-   *    dropping them from the prompt.
+   * `useMaterials` is still accepted so every call site keeps working, but it
+   * does nothing — the shared route sends text only, and callers that attach
+   * images warn the user on screen rather than dropping them silently.
    */
-  const callShared = async (prompt, systemPrompt, opts = {}) => {
-    if (!supabase) throw new Error("Cloud sync is still loading. Try again in a moment.");
+  const callClaude = async (prompt, systemPrompt, useMaterials = false, opts = {}) => {
+    if (!supabase) throw new Error("Still loading. Try again in a moment.");
     if (!user) throw new Error("Sign in to use AI — no API key needed. Click Sign in at the top.");
     const { data, error } = await supabase.functions.invoke("ai", {
-      body: {
-        prompt,
-        system: systemPrompt || undefined,
-        model: opts.model || undefined,
-      },
+      body: { prompt, system: systemPrompt || undefined, model: opts.model || undefined },
     });
-    // A non-2xx surfaces as `error`, but the readable message is in the body
-    // the function sent, so that wins when both are present.
     const said = data && data.error;
     if (said) throw new Error(said);
     if (error) throw new Error(error.message || "The AI request failed.");
     if (!data || !data.text) throw new Error("The AI returned nothing. Try rephrasing.");
     return data.text;
-  };
-
-  const callClaude = async (prompt, systemPrompt, useMaterials = false, opts = {}) => {
-    // Provider switch — shared proxy, Gemini and local WebGPU dispatch off here;
-    // everything below is Anthropic-shaped.
-    if (aiProvider === "shared") {
-      return await callShared(prompt, systemPrompt, opts);
-    }
-    if (aiProvider === "gemini") {
-      return await callGemini(prompt, systemPrompt, useMaterials, opts);
-    }
-    if (aiProvider === "webllm") {
-      // Auto-detect structured-output intent — if the prompt asks for JSON, enable JSON mode
-      // so the local model produces parseable output instead of prose-with-an-attempt-at-JSON.
-      const wantsJson = /Respond ONLY with valid JSON|JSON: ?\{|response_format.*json/i.test(prompt + systemPrompt);
-      // Per-mode temperature — inferred from prompt content. Deterministic for assessments, creative for cards.
-      let inferredTemp = opts.temperature;
-      if (typeof inferredTemp !== "number") {
-        if (/MCQ|multiple choice|exam question|practice quiz/i.test(prompt + systemPrompt)) inferredTemp = 0.3;
-        else if (/flashcard|brainstorm|creative|examples?/i.test(prompt + systemPrompt)) inferredTemp = 0.8;
-        else inferredTemp = 0.65;
-      }
-      // Pass images to local vision models when materials are involved.
-      // PDFs are still Claude-only — no PDF-document protocol exists for WebLLM.
-      const modelIsVision = LOCAL_MODELS[localModel]?.tier === "vision";
-      let imagesForLocal = (useMaterials && modelIsVision && images.length > 0) ? [...images] : [];
-
-      // ============ SMOLVLM VISION FALLBACK ============
-      // If the user has images but the local model isn't vision-capable, AND SmolVLM is loaded,
-      // describe the images via SmolVLM and inject the description into the system prompt as text.
-      // This bridges images into text-only local models (e.g. Llama 3.2 1B can now "see" images).
-      let augmentedSystem = systemPrompt;
-      if (useMaterials && !modelIsVision && images.length > 0 && smolVLMLoaded) {
-        try {
-          showToast("Describing images with SmolVLM…");
-          const desc = await describeImagesWithSmolVLM(images, topic || prompt.slice(0, 120));
-          if (desc) {
-            augmentedSystem = `${systemPrompt}\n\n[Image content described by local vision model — quality may vary]:\n${desc}\n\n[End of image descriptions]`;
-          }
-        } catch (e) {
-          logError(e, "smolvlm describe in callClaude");
-          // Continue without image context rather than failing the whole generation
-        }
-      }
-
-      // ============ PDF PROCESSING FOR LOCAL MODEL ============
-      // Bridges the gap: extract text (pdf.js) and inject as system-prompt block; for scanned PDFs
-      // with a vision-tier model, rasterize pages and add them to images. Honest fallback otherwise.
-      // (augmentedSystem already declared above for SmolVLM vision fallback — reusing it here)
-      if (useMaterials && pdfs.length > 0) {
-        showToast(`Processing ${pdfs.length} PDF${pdfs.length === 1 ? "" : "s"} for local model…`);
-        try {
-          const { textBlocks, visionImages } = await processPdfsForLocal(pdfs, modelIsVision);
-          // Inject text content into system prompt (cap each PDF at ~8000 chars for local context window)
-          if (textBlocks.length > 0) {
-            const pdfSection = textBlocks.map((b) => {
-              const truncated = b.text.length > 8000 ? b.text.slice(0, 8000) + "\n[…truncated — local model context window]" : b.text;
-              return `--- PDF: ${b.name} (${b.pages} page${b.pages === 1 ? "" : "s"}, ${b.extractMode} mode) ---\n${truncated}`;
-            }).join("\n\n");
-            augmentedSystem = (augmentedSystem || "") + `\n\nPDF DOCUMENTS (attached by user):\n\n${pdfSection}\n\nEND PDF DOCUMENTS.\n\n`;
-          }
-          // Add rasterized pages to vision model input
-          if (visionImages.length > 0) {
-            imagesForLocal = [...imagesForLocal, ...visionImages];
-          }
-          // Status toast — tell user honestly what happened
-          const textCount = textBlocks.filter((b) => b.extractMode === "text").length;
-          const visionCount = textBlocks.filter((b) => b.extractMode === "vision").length;
-          const unreadable = textBlocks.filter((b) => b.extractMode === "unreadable" || b.extractMode === "error").length;
-          const parts = [];
-          if (textCount) parts.push(`${textCount} extracted as text`);
-          if (visionCount) parts.push(`${visionCount} via vision (${visionImages.length} page${visionImages.length === 1 ? "" : "s"})`);
-          if (unreadable) parts.push(`${unreadable} unreadable`);
-          if (parts.length) showToast(`PDFs: ${parts.join(", ")}`);
-        } catch (e) {
-          logError(e, "process PDFs for local");
-          showToast("PDF processing failed — see console");
-        }
-      }
-
-      // ============ WEB SEARCH FOR LOCAL MODEL ============
-      // When caller wants web grounding AND the user has configured a search endpoint, run the search
-      // through their proxy first, then inject results into the system prompt as [W1] [W2] blocks.
-      // This is what makes lateral-reading actually work on local model.
-      if (opts.webSearch && persistentProfile.localSearchEndpoint) {
-        const searchCount = Math.max(1, Math.min(8, opts.searchUses || 4));
-        // Derive a search query from the prompt: use the prompt itself, trimmed.
-        const searchQuery = String(prompt).slice(0, 200);
-        showToast(`Searching the web for: ${searchQuery.slice(0, 60)}…`);
-        const { results, error } = await localWebSearch(searchQuery, searchCount);
-        if (!error && results.length > 0) {
-          augmentedSystem = (augmentedSystem || "") + formatSearchResultsForPrompt(results);
-          showToast(`Found ${results.length} web result${results.length === 1 ? "" : "s"} — grounding local model`);
-        } else if (error === "no_endpoint") {
-          // Silent: user hasn't configured search; just skip
-        } else {
-          showToast(`Web search failed (${error || "no results"}) — local model running without web grounding`);
-        }
-      }
-
-      return await callWebllm(prompt, augmentedSystem, {
-        ...opts,
-        jsonMode: opts.jsonMode ?? wantsJson,
-        temperature: inferredTemp,
-        images: imagesForLocal.length > 0 ? imagesForLocal : undefined,
-      });
-    }
-    const userContent = [];
-    if (useMaterials) {
-      images.forEach((img) => {
-        userContent.push({ type: "image", source: { type: "base64", media_type: img.mediaType, data: img.data } });
-      });
-      pdfs.forEach((pdf) => {
-        userContent.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: pdf.data } });
-      });
-      const textBlocks = [];
-      textDocs.forEach((doc) => textBlocks.push(`--- Document: ${doc.name} ---\n${doc.content}`));
-      if (pastedText.trim()) textBlocks.push(`--- Pasted notes ---\n${pastedText.trim()}`);
-      if (textBlocks.length > 0) userContent.push({ type: "text", text: textBlocks.join("\n\n") });
-    }
-    userContent.push({ type: "text", text: prompt });
-
-    const messages = opts.messages || [{ role: "user", content: userContent }];
-    const body = {
-      model: opts.model || aiSettings.model || "claude-opus-4-7", max_tokens: opts.maxTokens || 2000,
-      system: systemPrompt, messages,
-    };
-    if (opts.thinking) {
-      const budget = opts.thinkingBudget || 8000;
-      body.thinking = { type: "enabled", budget_tokens: budget };
-      body.max_tokens = Math.max(body.max_tokens, budget + 2000);
-      body.temperature = 1;
-    }
-    if (opts.webSearch) {
-      body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: opts.searchUses || 4 }];
-    }
-
-    // Track call timing for the Diagnostics panel
-    const callStart = Date.now();
-    const inputCharsEstimate = (systemPrompt || "").length + JSON.stringify(messages).length;
-
-    // ============ STREAMING PATH (opt-in via opts.stream) ============
-    // Anthropic SSE: server sends `event: content_block_delta` with `data: {"type":"content_block_delta",
-    // "delta":{"type":"text_delta","text":"..."}}`. We accumulate text and call opts.onChunk with each delta.
-    // Tool-use loops (web search) are NOT streamed — they fall back to the non-streaming path automatically.
-    if (opts.stream && !opts.webSearch && typeof opts.onChunk === "function") {
-      body.stream = true;
-      try {
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: _claudeHeaders(),
-          body: JSON.stringify(body),
-        });
-        if (response.status === 401 || response.status === 403) {
-          logApiCall({ inputChars: inputCharsEstimate, latencyMs: Date.now() - callStart, model: body.model, error: "401/403 auth" });
-          throw new Error("Anthropic API key missing or invalid.");
-        }
-        if (!response.ok) {
-          const text = await response.text().catch(() => "");
-          logApiCall({ inputChars: inputCharsEstimate, latencyMs: Date.now() - callStart, model: body.model, error: `HTTP ${response.status}` });
-          throw new Error(`Anthropic API returned ${response.status}: ${text.slice(0, 200)}`);
-        }
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "", fullText = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || ""; // keep incomplete line for next iteration
-          for (const line of lines) {
-            if (!line.startsWith("data:")) continue;
-            const payload = line.slice(5).trim();
-            if (!payload || payload === "[DONE]") continue;
-            try {
-              const evt = JSON.parse(payload);
-              if (evt.type === "content_block_delta" && evt.delta?.type === "text_delta") {
-                fullText += evt.delta.text;
-                opts.onChunk(evt.delta.text, fullText);
-              }
-            } catch {} // ignore malformed event lines
-          }
-        }
-        logApiCall({ inputChars: inputCharsEstimate, outputChars: fullText.length, latencyMs: Date.now() - callStart, model: body.model });
-        return fullText.replace(/```json|```/g, "").trim();
-      } catch (e) {
-        logError(e, "stream callClaude");
-        throw e;
-      }
-    }
-
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: _claudeHeaders(),
-      body: JSON.stringify(body),
-    });
-    if (response.status === 401 || response.status === 403) {
-      logApiCall({ inputChars: inputCharsEstimate, latencyMs: Date.now() - callStart, model: body.model, error: "401/403 auth" });
-      throw new Error("Anthropic API key missing or invalid. Open Settings → AI Provider and paste a valid key.");
-    }
-    if (!response.ok) {
-      const text = await response.text().catch(() => "");
-      logApiCall({ inputChars: inputCharsEstimate, latencyMs: Date.now() - callStart, model: body.model, error: `HTTP ${response.status}` });
-      throw new Error(`Anthropic API returned ${response.status}: ${text.slice(0, 200)}`);
-    }
-    const data = await response.json();
-    let finalData = data;
-    let loopMessages = [...messages, { role: "assistant", content: data.content }];
-    let safety = 0;
-    while (finalData.stop_reason === "tool_use" && safety < 6) {
-      safety++;
-      const toolUses = (finalData.content || []).filter(b => b.type === "tool_use");
-      if (toolUses.length === 0) break;
-      const toolResults = toolUses.map(tu => ({
-        type: "tool_result", tool_use_id: tu.id, content: "Search completed.",
-      }));
-      loopMessages.push({ role: "user", content: toolResults });
-      const followUp = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: _claudeHeaders(),
-        body: JSON.stringify({ ...body, messages: loopMessages }),
-      });
-      if (!followUp.ok) break;
-      finalData = await followUp.json();
-      loopMessages.push({ role: "assistant", content: finalData.content });
-    }
-
-    const collectedSources = [];
-    loopMessages.forEach(m => {
-      if (m.role !== "assistant") return;
-      (m.content || []).forEach(b => {
-        if (b.type === "web_search_tool_result" && Array.isArray(b.content)) {
-          b.content.forEach(r => {
-            if (r.url && !collectedSources.find(s => s.url === r.url)) {
-              collectedSources.push({ url: r.url, title: r.title || r.url });
-            }
-          });
-        }
-      });
-    });
-    if (collectedSources.length > 0) {
-      setSources(prev => {
-        const merged = [...prev];
-        collectedSources.forEach(s => { if (!merged.find(m => m.url === s.url)) merged.push(s); });
-        return merged;
-      });
-    }
-    const text = (finalData.content || []).filter(b => b.type === "text").map(b => b.text || "").join("\n");
-    // Log the successful call with latency + estimated tokens
-    logApiCall({ inputChars: inputCharsEstimate, outputChars: text.length, latencyMs: Date.now() - callStart, model: body.model });
-    return text.replace(/```json|```/g, "").trim();
-  };
-
-  /**
-   * callGemini — Google Gemini API integration
-   *
-   * Mirrors callClaude's signature so the rest of the app can call callClaude uniformly and
-   * dispatch here transparently. Uses Gemini's REST API (generativelanguage.googleapis.com)
-   * with either streaming or non-streaming per opts.stream.
-   *
-   * Free tier as of 2026: Gemini 2.5 Flash ~ 15 req/min, 1500 req/day; Gemini 2.5 Pro lower limits.
-   * Key from: aistudio.google.com/apikey
-   *
-   * IMPORTANT differences from Anthropic:
-   *  - Body uses "contents" (not "messages") with role/parts structure
-   *  - System prompt goes in "systemInstruction" not as a top-level field
-   *  - Images use inlineData { mimeType, data } inside parts, not the Anthropic image block
-   *  - No first-class "tool_use" for web search — Gemini has google_search grounding but different shape
-   *  - No PDF-document protocol either; PDFs must be pre-extracted to text (same as Anthropic in practice)
-   */
-  const callGemini = async (prompt, systemPrompt, useMaterials = false, opts = {}) => {
-    const callStart = Date.now();
-    if (!geminiApiKey || !geminiApiKey.trim()) {
-      throw new Error("Google API key missing. Open Settings → AI Provider and paste a Gemini key.");
-    }
-    const model = opts.model || geminiModel || "gemini-2.5-flash";
-    const shouldStream = opts.stream !== false; // default streaming on
-    const temperature = typeof opts.temperature === "number" ? opts.temperature : 0.7;
-    const maxTokens = opts.maxTokens || opts.max_tokens || 4096;
-
-    // Build the user message parts — text always, plus images if provided.
-    const userParts = [{ text: prompt }];
-    if (useMaterials && images && images.length > 0) {
-      for (const img of images) {
-        try {
-          userParts.push({
-            inlineData: {
-              mimeType: img.mediaType || "image/jpeg",
-              data: img.data, // already base64-encoded in our image state
-            },
-          });
-        } catch (e) {
-          logError(e, "gemini image encode");
-        }
-      }
-    }
-    // Text extracted from PDFs (if any) — Gemini can't read PDF binary natively via this endpoint,
-    // so we append any pre-extracted PDF text to the prompt (same fallback strategy as WebLLM path).
-    // The main callClaude flow does the extraction; here we assume prompt already includes it.
-
-    const body = {
-      contents: [{ role: "user", parts: userParts }],
-      generationConfig: {
-        temperature,
-        maxOutputTokens: maxTokens,
-        // Gemini's JSON mode via responseMimeType when the prompt clearly wants JSON
-        ...(/Respond ONLY with valid JSON|response_format.*json/i.test(prompt + systemPrompt) ? { responseMimeType: "application/json" } : {}),
-      },
-    };
-    if (systemPrompt && systemPrompt.trim()) {
-      body.systemInstruction = { parts: [{ text: systemPrompt }] };
-    }
-
-    const inputCharsEstimate = (systemPrompt || "").length + prompt.length;
-    const base = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}`;
-    const authQ = `?key=${encodeURIComponent(geminiApiKey.trim())}`;
-
-    // Streaming path — Gemini uses Server-Sent Events via :streamGenerateContent?alt=sse
-    if (shouldStream) {
-      const url = `${base}:streamGenerateContent${authQ}&alt=sse`;
-      try {
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        if (response.status === 401 || response.status === 403) {
-          logApiCall({ inputChars: inputCharsEstimate, latencyMs: Date.now() - callStart, model, error: "auth" });
-          throw new Error("Google API key missing or invalid. Open Settings → AI Provider and paste a valid Gemini key.");
-        }
-        if (!response.ok) {
-          const errText = await response.text().catch(() => "");
-          logApiCall({ inputChars: inputCharsEstimate, latencyMs: Date.now() - callStart, model, error: `HTTP ${response.status}` });
-          throw new Error(`Gemini API returned ${response.status}: ${errText.slice(0, 200)}`);
-        }
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let fullText = "";
-        let buffer = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          // Parse SSE events — each event is "data: {...}\n\n"
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || ""; // keep incomplete line for next iteration
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed.startsWith("data:")) continue;
-            const jsonStr = trimmed.slice(5).trim();
-            if (!jsonStr) continue;
-            try {
-              const chunk = JSON.parse(jsonStr);
-              const parts = chunk?.candidates?.[0]?.content?.parts || [];
-              for (const p of parts) {
-                if (typeof p.text === "string") {
-                  fullText += p.text;
-                  if (opts.onStreamChunk) opts.onStreamChunk(p.text);
-                }
-              }
-            } catch (e) {
-              // Non-JSON line — skip (Gemini sometimes emits keep-alives)
-            }
-          }
-        }
-        logApiCall({ inputChars: inputCharsEstimate, outputChars: fullText.length, latencyMs: Date.now() - callStart, model });
-        return fullText.replace(/```json|```/g, "").trim();
-      } catch (e) {
-        logError(e, "stream callGemini");
-        throw e;
-      }
-    }
-
-    // Non-streaming path
-    const url = `${base}:generateContent${authQ}`;
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (response.status === 401 || response.status === 403) {
-      logApiCall({ inputChars: inputCharsEstimate, latencyMs: Date.now() - callStart, model, error: "auth" });
-      throw new Error("Google API key missing or invalid. Open Settings → AI Provider and paste a valid Gemini key.");
-    }
-    if (!response.ok) {
-      const errText = await response.text().catch(() => "");
-      logApiCall({ inputChars: inputCharsEstimate, latencyMs: Date.now() - callStart, model, error: `HTTP ${response.status}` });
-      throw new Error(`Gemini API returned ${response.status}: ${errText.slice(0, 200)}`);
-    }
-    const data = await response.json();
-    const parts = data?.candidates?.[0]?.content?.parts || [];
-    const text = parts.map((p) => p.text || "").join("\n");
-    logApiCall({ inputChars: inputCharsEstimate, outputChars: text.length, latencyMs: Date.now() - callStart, model });
-    return text.replace(/```json|```/g, "").trim();
   };
 
   const safeParseJSON = async (text, schemaHint) => {
@@ -4755,9 +3939,9 @@ OUTPUT
       //   • Claude: only for prose modes (allowStream=true). JSON-mode streaming for Claude is noisy UX.
       //   • Local model: ALWAYS stream, every mode. Local generations take 30-120s; the user MUST see progress
       //     or they'll think the app froze. Even raw JSON streaming is better than a frozen spinner.
-      const shouldStream = aiProvider === "webllm"
-        ? !opts.tools && !opts.webSearch
-        : (allowStream && !opts.tools && !opts.webSearch);
+      // The shared route returns a finished answer, so this is only ever the
+      // prose-mode decision now.
+      const shouldStream = allowStream && !opts.tools && !opts.webSearch;
       if (shouldStream) {
         setStreamPartial("");
         opts.stream = true;
@@ -4807,10 +3991,8 @@ OUTPUT
         return await safeParseJSON(text);
       };
 
-      // Claude path — single shot, trust the mcqVerifyClause in the prompt
-      if (aiProvider !== "webllm") {
-        return await tryOnce();
-      }
+      // Single shot — trust the mcqVerifyClause in the prompt.
+      return await tryOnce();
 
       // Local path — validate + retry up to 2 times
       let lastFeedback = "";
@@ -5911,8 +5093,7 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
             <div className="section-eyebrow" style={{ marginBottom: 6 }}>Welcome to Study It · v{APP_VERSION}</div>
             <h2 style={{ fontFamily: fontDisplay, fontSize: 26, fontWeight: 500, margin: "0 0 10px", letterSpacing: "-0.01em" }}>Three things to know to get rolling</h2>
             <ol style={{ fontFamily: fontSerif, fontSize: 15, color: C.ink, lineHeight: 1.7, paddingLeft: 22, margin: "0 0 12px" }}>
-              <li><strong>Bring your own AI API key</strong> in Settings → AI Provider. Direct browser-to-provider — nothing routes through us.</li>
-              <li><strong>Or enable WebGPU local AI</strong> in Settings — Llama / Phi / Gemma run entirely in your browser, free but much less capable than the cloud AI.</li>
+              <li><strong>Sign in</strong> — that's the whole setup. AI runs on this app's own server, so there is no API key to find or paste, and the same account works in Lectern and CodeQuest.</li>
               <li><strong>Create a Notebook</strong> in Library to ground AI outputs in your own sources (PDFs, articles, your notes) with [S1], [S2] citations.</li>
             </ol>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -6495,46 +5676,6 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
                 <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
                   The built-in AI reads text only — your {images.length === 1 ? "image" : "images"} won't be sent. To have {images.length === 1 ? "it" : "them"} read, switch to Claude or Gemini in Settings → AI Provider with your own key.
                 </div>
-              </div>
-            </div>
-          )}
-          {images.length > 0 && aiProvider === "webllm" && LOCAL_MODELS[webllmLoadedModel]?.tier !== "vision" && !smolVLMLoaded && (
-            <div style={{ marginTop: 10, padding: "10px 12px", background: C.blueSoft, border: `1px solid ${C.blue}`, borderRadius: 2, display: "flex", alignItems: "flex-start", gap: 10 }}>
-              <Lightbulb size={14} color={C.blue} style={{ marginTop: 2, flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: fontMono, fontSize: 10, color: C.blue, letterSpacing: "0.08em", marginBottom: 4 }}>IMAGE READING</div>
-                <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, lineHeight: 1.5, marginBottom: 8 }}>
-                  Your current local AI model{webllmLoadedModel ? ` (${LOCAL_MODELS[webllmLoadedModel]?.label})` : ""} can't read images. Pick one:
-                </div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6, flexDirection: isMobile ? "column" : "row" }}>
-                  {anthropicApiKey ? (
-                    <Btn variant="primary" onClick={() => { setAiProvider("anthropic"); showToast("Switched to Claude — images will be read by Claude"); }}>
-                      Switch to Claude
-                    </Btn>
-                  ) : geminiApiKey ? (
-                    <Btn variant="primary" onClick={() => { setAiProvider("gemini"); showToast("Switched to Gemini — images will be read by Gemini"); }}>
-                      Switch to Gemini (free)
-                    </Btn>
-                  ) : (
-                    <Btn variant="primary" onClick={() => { setShowSettings(true); track("action", "image_hint_open_settings"); }}>
-                      Set up Cloud AI (Claude or Gemini)
-                    </Btn>
-                  )}
-                  <Btn variant="ghost" onClick={() => { initSmolVLM().catch(() => {}); track("action", "smolvlm_init_from_hint"); }} disabled={smolVLMLoading}>
-                    {smolVLMLoading ? <><Loader2 size={11} className="spin" /> Loading…</> : <>Load SmolVLM (~500 MB, offline)</>}
-                  </Btn>
-                  <button onClick={() => setImages([])} style={{ background: "transparent", border: "none", color: C.inkMuted, fontFamily: fontSans, fontSize: 11, cursor: "pointer", textDecoration: "underline", padding: isMobile ? "8px 0" : 0, textAlign: isMobile ? "center" : "left" }}>
-                    Remove images
-                  </button>
-                </div>
-                <div style={{ fontFamily: fontSerif, fontSize: 11, color: C.inkMuted, fontStyle: "italic", lineHeight: 1.5, marginTop: 4 }}>
-                  Cloud AI (Claude) reads images, handwriting, diagrams excellently. SmolVLM is free + offline + Safari-friendly but much weaker — best for basic descriptions and printed text.
-                </div>
-                {smolVLMLoading && smolVLMStatus && (
-                  <div style={{ fontFamily: fontMono, fontSize: 10, color: C.blue, marginTop: 6 }}>
-                    {smolVLMStatus} {smolVLMProgress > 0 && `(${Math.round(smolVLMProgress * 100)}%)`}
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -10922,346 +10063,23 @@ Deno.serve(async (req) => {
                 Choose where the AI work happens. The built-in option needs no key and works as soon as you sign in. The rest use your own key, or your own machine.
               </p>
 
-              {/* Provider switcher — four options. "Included" is first and is the
-                  default on a fresh install: it needs no key at all, so it is the
-                  only one most people should ever touch. The other three remain
-                  for anyone who wants their own key, their own quota, or offline. */}
-              <button onClick={() => setAiProvider("shared")}
-                style={{ display: "block", width: "100%", padding: 14, marginBottom: 8, background: aiProvider === "shared" ? C.moss : C.paperLight, color: aiProvider === "shared" ? C.paper : C.ink, border: `2px solid ${aiProvider === "shared" ? C.moss : C.rule}`, borderRadius: 3, cursor: "pointer", textAlign: "left" }}>
-                <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: "0.1em", opacity: 0.7, marginBottom: 4 }}>INCLUDED · NO KEY NEEDED</div>
-                <div style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Use the built-in AI</div>
-                <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.85 }}>
+              {/* One provider. The Claude / Gemini / Local WebGPU options that were
+                  here are gone along with the code behind them — a picker that can
+                  select a route the app can no longer take is worse than no picker. */}
+              <div style={{ padding: 14, marginBottom: 16, background: C.mossSoft, border: `2px solid ${C.moss}`, borderRadius: 3 }}>
+                <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: "0.1em", color: C.moss, marginBottom: 4 }}>INCLUDED · NO KEY NEEDED</div>
+                <div style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 600, color: C.ink, marginBottom: 4 }}>Built-in AI</div>
+                <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
                   {user
-                    ? "Works now — you're signed in. Gemini, running through this app's own server so no key ever touches your browser. Same account in Lectern and CodeQuest."
-                    : "Sign in and AI works immediately, with no key to find or paste. Gemini, running through this app's own server."}
+                    ? "Ready — you're signed in. Runs through this app's own server, so no API key ever touches your browser. The same account works in Lectern and CodeQuest."
+                    : "Sign in and AI works immediately. No API key to find or paste. The same account works in Lectern and CodeQuest."}
                 </div>
-                <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.7, marginTop: 6 }}>
-                  Doesn't stream, and can't read images or PDFs — for those, pick a provider below and use your own key.
+                <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkMuted, marginTop: 6 }}>
+                  Text only — it can't read images or PDFs, and it doesn't stream.
                 </div>
-              </button>
-
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
-                <button onClick={() => setAiProvider("anthropic")}
-                  style={{ padding: 14, background: aiProvider === "anthropic" ? C.ink : C.paperLight, color: aiProvider === "anthropic" ? C.paper : C.ink, border: `2px solid ${aiProvider === "anthropic" ? C.ink : C.rule}`, borderRadius: 3, cursor: "pointer", textAlign: "left" }}>
-                  <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: "0.1em", opacity: 0.7, marginBottom: 4 }}>CLOUD · CLAUDE</div>
-                  <div style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Claude (Anthropic)</div>
-                  <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.85 }}>Frontier quality. Thinking, web search, vision, multi-agent. Paid API key.</div>
-                </button>
-                <button onClick={() => setAiProvider("gemini")}
-                  style={{ padding: 14, background: aiProvider === "gemini" ? C.blue : C.paperLight, color: aiProvider === "gemini" ? C.paper : C.ink, border: `2px solid ${aiProvider === "gemini" ? C.blue : C.rule}`, borderRadius: 3, cursor: "pointer", textAlign: "left" }}>
-                  <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: "0.1em", opacity: 0.7, marginBottom: 4 }}>CLOUD · GEMINI</div>
-                  <div style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Gemini (Google)</div>
-                  <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.85 }}>Frontier quality with a genuine free tier (2.5 Flash: 15/min, 1,500/day). Free API key.</div>
-                </button>
-                <button onClick={() => setAiProvider("webllm")} disabled={webgpuSupported === false}
-                  style={{ padding: 14, background: aiProvider === "webllm" ? C.moss : C.paperLight, color: aiProvider === "webllm" ? C.paper : C.ink, border: `2px solid ${aiProvider === "webllm" ? C.moss : C.rule}`, borderRadius: 3, cursor: webgpuSupported === false ? "not-allowed" : "pointer", textAlign: "left", opacity: webgpuSupported === false ? 0.5 : 1 }}>
-                  <div style={{ fontFamily: fontMono, fontSize: 10, letterSpacing: "0.1em", opacity: 0.7, marginBottom: 4 }}>LOCAL · FREE · WEBGPU</div>
-                  <div style={{ fontFamily: fontDisplay, fontSize: 18, fontWeight: 600, marginBottom: 4 }}>Local AI</div>
-                  <div style={{ fontFamily: fontSerif, fontSize: 12, opacity: 0.85 }}>{webgpuSupported === false ? "Not available — your browser doesn't expose WebGPU." : webgpuSupported === null ? "Detecting WebGPU…" : "Runs Llama / Phi / Gemma in your browser. Free, offline. Weaker than cloud."}</div>
-                </button>
               </div>
 
-              {aiProvider === "gemini" && (
-                <div style={{ padding: 14, background: C.paperLight, borderRadius: 3, marginBottom: 18 }}>
-                  <SectionLabel style={{ marginBottom: 8 }}>Google Gemini API key</SectionLabel>
-                  <p style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, fontStyle: "italic", margin: "0 0 8px" }}>
-                    Free at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style={{ color: C.accent }}>aistudio.google.com/apikey</a> — sign in with your Google account, click "Create API key." No credit card. Stored only on this device's localStorage. Sent directly to <code style={{ fontFamily: fontMono, fontSize: 11 }}>generativelanguage.googleapis.com</code>.
-                  </p>
-                  {geminiApiKey ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.blueSoft, border: `1px solid ${C.blue}`, borderRadius: 3, marginBottom: 12 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.blue }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: fontMono, fontSize: 10, color: C.blue, letterSpacing: "0.1em" }}>GEMINI CONNECTED</div>
-                        <div style={{ fontFamily: fontMono, fontSize: 12, color: C.ink }}>Key: …{geminiApiKey.slice(-6)} · Model: {geminiModel}</div>
-                      </div>
-                      <button onClick={() => { setGeminiApiKey(""); showToast("Gemini key removed"); }} style={{ background: "transparent", border: `1px solid ${C.rule}`, padding: "6px 12px", cursor: "pointer", fontFamily: fontSans, fontSize: 12, borderRadius: 2 }}>Remove key</button>
-                    </div>
-                  ) : (
-                    <div style={{ marginBottom: 12 }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                        <input
-                          type="password"
-                          value={geminiApiKeyDraft}
-                          onChange={(e) => setGeminiApiKeyDraft(e.target.value)}
-                          placeholder="AIzaSy…"
-                          autoComplete="off"
-                          style={{ flex: 1, minWidth: 200, padding: "9px 12px", background: C.paper, border: `1px solid ${C.rule}`, borderRadius: 2, fontFamily: fontMono, fontSize: 12, outline: "none", color: C.ink }}
-                        />
-                        <Btn variant="primary" onClick={() => {
-                          const k = geminiApiKeyDraft.trim();
-                          if (!k) { showToast("Paste a key first"); return; }
-                          if (!k.startsWith("AIza")) { showToast("Gemini keys usually start with AIza"); }
-                          setGeminiApiKey(k); setGeminiApiKeyDraft(""); showToast("Gemini key saved");
-                        }}>Save key</Btn>
-                      </div>
-                    </div>
-                  )}
-                  {/* Model picker for Gemini */}
-                  <div>
-                    <SectionLabel style={{ marginBottom: 6 }}>Gemini model</SectionLabel>
-                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 6 }}>
-                      {[
-                        { id: "gemini-2.5-flash", label: "2.5 Flash", desc: "Fast + free tier. Default." },
-                        { id: "gemini-2.5-flash-lite", label: "2.5 Flash-Lite", desc: "Fastest, cheapest, lower quality." },
-                        { id: "gemini-2.5-pro", label: "2.5 Pro", desc: "Highest quality, slower, lower free-tier limits." },
-                      ].map((m) => (
-                        <button key={m.id} onClick={() => setGeminiModel(m.id)}
-                          style={{ padding: "8px 10px", background: geminiModel === m.id ? C.blueSoft : C.paper, color: C.ink, border: `1px solid ${geminiModel === m.id ? C.blue : C.rule}`, borderRadius: 2, cursor: "pointer", textAlign: "left" }}>
-                          <div style={{ fontFamily: fontMono, fontSize: 10, color: C.inkMuted, letterSpacing: "0.06em" }}>{m.id}</div>
-                          <div style={{ fontFamily: fontSans, fontSize: 12, fontWeight: 600, marginTop: 2 }}>{m.label}</div>
-                          <div style={{ fontFamily: fontSerif, fontSize: 11, color: C.inkSoft, fontStyle: "italic", marginTop: 2 }}>{m.desc}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
 
-              {aiProvider === "anthropic" ? (
-                <div style={{ padding: 14, background: C.paperLight, borderRadius: 3, marginBottom: 18 }}>
-                  <SectionLabel style={{ marginBottom: 8 }}>Cloud AI API key (Anthropic)</SectionLabel>
-                  <p style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, fontStyle: "italic", margin: "0 0 8px" }}>
-                    Stored only on this device's localStorage. Sent directly to <code style={{ fontFamily: fontMono, fontSize: 11 }}>api.anthropic.com</code>.
-                  </p>
-                  {anthropicApiKey ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: C.mossSoft, border: `1px solid ${C.moss}`, borderRadius: 3 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.moss }} />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: fontMono, fontSize: 10, color: C.moss, letterSpacing: "0.1em" }}>CLAUDE CONNECTED</div>
-                        <div style={{ fontFamily: fontMono, fontSize: 12, color: C.ink }}>Key: sk-…{anthropicApiKey.slice(-6)}</div>
-                      </div>
-                      <button onClick={() => { setAnthropicApiKey(""); setAiKeyStatus("Key removed"); showToast("API key removed"); }} style={{ background: "transparent", border: `1px solid ${C.rule}`, padding: "6px 12px", cursor: "pointer", fontFamily: fontSans, fontSize: 12, borderRadius: 2 }}>Remove key</button>
-                    </div>
-                  ) : (
-                    <div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                        <input
-                          type="password"
-                          value={anthropicApiKeyDraft}
-                          onChange={(e) => setAnthropicApiKeyDraft(e.target.value)}
-                          placeholder="sk-ant-api03-…"
-                          autoComplete="off"
-                          style={{ flex: 1, padding: "9px 12px", background: C.paper, border: `1px solid ${C.rule}`, borderRadius: 2, fontFamily: fontMono, fontSize: 12, outline: "none" }}
-                        />
-                        <Btn variant="primary" onClick={() => {
-                          const k = anthropicApiKeyDraft.trim();
-                          if (!k) { setAiKeyStatus("Paste a key first"); return; }
-                          if (!k.startsWith("sk-ant-")) { setAiKeyStatus("Keys must start with sk-ant-"); return; }
-                          setAnthropicApiKey(k); setAnthropicApiKeyDraft(""); setAiKeyStatus("✓ Key saved — Cloud AI is live");
-                          showToast("Cloud AI connected");
-                          setTimeout(() => setAiKeyStatus(""), 4000);
-                        }}>Save key</Btn>
-                      </div>
-                      {aiKeyStatus && <div style={{ fontFamily: fontMono, fontSize: 11, marginTop: 6, color: aiKeyStatus.startsWith("✓") ? C.moss : C.accent }}>{aiKeyStatus}</div>}
-                      <div style={{ fontFamily: fontMono, fontSize: 11, marginTop: 8, color: C.inkMuted }}>
-                        Get one at <span style={{ fontFamily: fontMono }}>console.anthropic.com/settings/keys</span>. Usage billed to your API account (typically a few cents per session on the mid tier, more on the frontier tier).
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ padding: 14, background: C.paperLight, borderRadius: 3, marginBottom: 18 }}>
-                  <SectionLabel style={{ marginBottom: 8 }}>Local WebGPU model</SectionLabel>
-                  <p style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, fontStyle: "italic", margin: "0 0 8px" }}>
-                    Model downloads once into your browser's IndexedDB, then runs fully offline. Honest expectations: even the 8B models won't match the cloud AI on curriculum design, lateral reading, or chain-of-verification — but with recent upgrades they CAN do flashcards, simple explanations, MCQs (validated + auto-retried), and short Q&A reliably. The vision-tier model reads printed text and simple diagrams. <strong>PDFs work via client-side text extraction</strong> — Phi-3.5-vision additionally rasterizes scanned PDFs. <strong>Web search works</strong> if you've configured the Edge Function proxy. <strong>Still genuinely disabled on local:</strong> multi-agent verification (capability gap — small models can't usefully critique their own work).
-                  </p>
-
-                  {/* Tier-grouped model picker */}
-                  {[
-                    { tier: "best", label: "Best quality (≥3 GB RAM available)", color: C.gold },
-                    { tier: "balanced", label: "Balanced (most modern laptops)", color: C.moss },
-                    { tier: "reasoning", label: "Reasoning-focused (math/logic)", color: C.blue },
-                    { tier: "vision", label: "Vision-capable (reads images, scanned PDFs)", color: C.plum },
-                    { tier: "tiny", label: "Lightweight (older / integrated GPUs)", color: C.inkSoft },
-                  ].map(({ tier, label, color }) => {
-                    const tierModels = Object.entries(LOCAL_MODELS).filter(([_, m]) => m.tier === tier);
-                    if (tierModels.length === 0) return null;
-                    return (
-                      <div key={tier} style={{ marginBottom: 10 }}>
-                        <div style={{ fontFamily: fontMono, fontSize: 10, color, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>{label}</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                          {tierModels.map(([id, m]) => (
-                            <button key={id} onClick={() => setLocalModel(id)} disabled={webllmLoading}
-                              style={{ padding: "8px 10px", background: localModel === id ? C.ink : C.paper, color: localModel === id ? C.paper : C.ink, border: `1px solid ${localModel === id ? C.ink : C.rule}`, borderRadius: 2, cursor: webllmLoading ? "wait" : "pointer", textAlign: "left", fontFamily: fontSans, fontSize: 12, opacity: webllmLoading ? 0.5 : 1 }}>
-                              <div style={{ fontWeight: 600 }}>{m.label} <span style={{ fontFamily: fontMono, fontSize: 10, opacity: 0.7, fontWeight: 400 }}>· {m.size} · {m.ram}</span></div>
-                              <div style={{ fontSize: 11, opacity: 0.8, marginTop: 2, lineHeight: 1.4 }}>{m.desc}</div>
-                              <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4, fontFamily: fontMono, color: localModel === id ? C.paper : color }}>Best for: {m.bestFor}</div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  {/* Loading status */}
-                  {webllmStatus && (
-                    <div style={{ padding: 10, background: C.paperDark, borderRadius: 2, marginTop: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: fontMono, fontSize: 11, color: webllmStatus.startsWith("✓") ? C.moss : webllmStatus.startsWith("Failed") ? C.accent : C.inkSoft }}>
-                        {webllmLoading && !webllmStatus.startsWith("✓") && !webllmStatus.startsWith("Failed") && <Loader2 size={12} className="spin" />}
-                        <span style={{ flex: 1 }}>{webllmStatus}</span>
-                      </div>
-                      {webllmLoading && webllmProgress > 0 && webllmProgress < 1 && (
-                        <div style={{ height: 3, background: C.rule, borderRadius: 99, marginTop: 6, overflow: "hidden" }}>
-                          <div style={{ height: "100%", background: C.moss, width: `${(webllmProgress * 100).toFixed(0)}%`, transition: "width 0.3s" }} />
-                        </div>
-                      )}
-                      {/* Cancel button — only shown while loading. Lets user escape a stuck/hung load. */}
-                      {webllmLoading && (
-                        <div style={{ display: "flex", gap: 8, marginTop: 10, flexDirection: isMobile ? "column" : "row", alignItems: isMobile ? "stretch" : "center" }}>
-                          <button onClick={() => cancelWebllmLoad({ clearCache: false })} style={{
-                            padding: "6px 12px", background: "transparent", color: C.inkSoft, border: `1px solid ${C.rule}`, borderRadius: 2,
-                            fontFamily: fontSans, fontSize: 11, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
-                          }}>
-                            <X size={11} /> Cancel loading
-                          </button>
-                          <button onClick={() => {
-                            if (confirm("This cancels the load AND deletes any partially-downloaded shards from your browser cache. The next attempt starts fresh. Continue?")) {
-                              cancelWebllmLoad({ clearCache: true });
-                            }
-                          }} style={{
-                            padding: "6px 12px", background: "transparent", color: C.accent, border: `1px solid ${C.accent}`, borderRadius: 2,
-                            fontFamily: fontSans, fontSize: 11, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5,
-                          }}>
-                            <Trash2 size={11} /> Cancel + clear cache
-                          </button>
-                          <span style={{ fontFamily: fontSerif, fontSize: 11, color: C.inkMuted, fontStyle: "italic", marginLeft: isMobile ? 0 : 4 }}>
-                            Stuck? Cancel to unblock — clear cache if a previous load corrupted the shards.
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Safari WebGPU warning — Safari's WebGPU has weaker memory management than Chrome.
-                      Large models often crash the tab. Honest heads-up before the user commits to a download. */}
-                  {isSafariBrowser && webgpuSupported && !webllmLoadedModel && !webllmLoading && (
-                    <div style={{ marginTop: 8, padding: "10px 12px", background: C.goldSoft, border: `1px solid ${C.gold}`, borderRadius: 2 }}>
-                      <div style={{ fontFamily: fontMono, fontSize: 10, color: C.gold, letterSpacing: "0.08em", marginBottom: 4 }}>SAFARI HEADS-UP</div>
-                      <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, lineHeight: 1.5 }}>
-                        Safari's WebGPU implementation is newer and uses memory less efficiently than Chrome's. Large models can crash the tab with "a problem occurred repeatedly" errors. If that happens, either:
-                        <span style={{ display: "block", marginTop: 4 }}>• <strong>Pick the smallest model</strong> (Llama 3.2 1B is the lightest)</span>
-                        <span style={{ display: "block" }}>• <strong>Use Chrome / Arc / Edge</strong> instead — their WebGPU is more battle-tested</span>
-                        <span style={{ display: "block" }}>• <strong>Stick with Cloud AI</strong> (Claude API) — it's faster and higher quality anyway</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Ready indicator + live inference stats */}
-                  {webllmLoadedModel && webllmLoadedModel === localModel && !webllmLoading && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, padding: "8px 12px", background: C.mossSoft, border: `1px solid ${C.moss}`, borderRadius: 2 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.moss }} />
-                      <div style={{ fontFamily: fontMono, fontSize: 11, color: C.moss, flex: 1 }}>LOCAL AI READY · {LOCAL_MODELS[webllmLoadedModel]?.label || webllmLoadedModel}</div>
-                      {webllmStats.tokensPerSec > 0 && (
-                        <div style={{ fontFamily: fontMono, fontSize: 10, color: C.moss, opacity: 0.8 }}>
-                          {webllmStats.running && <Loader2 size={9} className="spin" style={{ verticalAlign: "middle", marginRight: 4 }} />}
-                          {webllmStats.tokensPerSec} tok/s{webllmStats.firstTokenMs > 0 && ` · ${webllmStats.firstTokenMs}ms first`}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Download / benchmark / cache buttons */}
-                  <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-                    {!webllmLoadedModel && !webllmLoading && webgpuSupported && (() => {
-                      // Safari safety gate: if on Safari AND the selected model is >2 GB, gate the
-                      // download behind an explicit confirmation. Safari's WebGPU has tight memory
-                      // limits — large models crash the tab. Same flow on Chrome → unrestricted.
-                      const selectedSize = LOCAL_MODELS[localModel]?.size || "";
-                      const sizeMatch = selectedSize.match(/([\d.]+)\s*GB/i);
-                      const sizeGB = sizeMatch ? parseFloat(sizeMatch[1]) : 0;
-                      const isRiskyOnSafari = isSafariBrowser && sizeGB > 2;
-                      if (isRiskyOnSafari) {
-                        return (
-                          <div style={{ padding: 12, background: C.accentSoft, border: `1px solid ${C.accent}`, borderRadius: 2, width: "100%" }}>
-                            <div style={{ fontFamily: fontMono, fontSize: 10, color: C.accent, letterSpacing: "0.08em", marginBottom: 6 }}>⚠ TOO LARGE FOR SAFARI</div>
-                            <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, lineHeight: 1.5, marginBottom: 10 }}>
-                              <strong>{LOCAL_MODELS[localModel]?.label}</strong> is {selectedSize} — Safari will crash trying to load it ("a problem occurred repeatedly"). On Chrome / Arc / Edge, this works fine.
-                            </div>
-                            <div style={{ fontFamily: fontSerif, fontSize: 12, color: C.inkSoft, lineHeight: 1.5, marginBottom: 10 }}>
-                              <strong>Safer options:</strong>
-                              <span style={{ display: "block", marginTop: 4 }}>• Switch to <strong>Llama 3.2 1B</strong> (~700 MB) or <strong>SmolLM2 1.7B</strong> (~1 GB) — both fit Safari's memory</span>
-                              <span style={{ display: "block" }}>• Open this site in Chrome / Arc to use bigger models</span>
-                              <span style={{ display: "block" }}>• Use Cloud AI (Anthropic API key) — faster and higher quality anyway</span>
-                            </div>
-                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", flexDirection: isMobile ? "column" : "row" }}>
-                              <Btn variant="primary" onClick={() => setLocalModel("Llama-3.2-1B-Instruct-q4f16_1-MLC")}>
-                                Switch to Llama 3.2 1B
-                              </Btn>
-                              <button onClick={() => {
-                                if (confirm(`This will probably crash Safari and you'll see "a problem occurred repeatedly". You'll need to close the tab and start over. Are you sure you want to try downloading ${LOCAL_MODELS[localModel]?.label} (${selectedSize}) on Safari anyway?`)) {
-                                  initWebllm().catch(() => {});
-                                }
-                              }} style={{ background: "transparent", border: "none", color: C.inkMuted, fontFamily: fontSans, fontSize: 11, cursor: "pointer", textDecoration: "underline", padding: isMobile ? "8px 0" : 0 }}>
-                                Try anyway (likely to crash)
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      }
-                      return (
-                        <Btn variant="primary" onClick={() => initWebllm().catch(() => {})}>
-                          <Download size={12} /> Download &amp; load {LOCAL_MODELS[localModel]?.label || "model"}
-                        </Btn>
-                      );
-                    })()}
-                    {webllmLoadedModel === localModel && !webllmLoading && (
-                      <>
-                        <Btn variant="ghost" onClick={runBenchmark} disabled={benchmarkRunning}>
-                          {benchmarkRunning ? <><Loader2 size={11} className="spin" /> Benchmarking</> : <><Zap size={11} /> Run benchmark</>}
-                        </Btn>
-                        <Btn variant="ghost" onClick={() => { resetWebllmHistory(); showToast("Tutor history cleared"); }}>
-                          <RotateCw size={11} /> Reset tutor history
-                        </Btn>
-                        <Btn variant="ghost" onClick={refreshCachedModels}>
-                          <FileIcon size={11} /> Show cache
-                        </Btn>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Benchmark result */}
-                  {benchmarkResult && (
-                    <div style={{ padding: 10, background: C.paperDark, border: `1px solid ${benchmarkResult.error ? C.accent : C.gold}`, borderRadius: 2, marginTop: 8, fontFamily: fontMono, fontSize: 11, color: C.inkSoft, lineHeight: 1.6 }}>
-                      {benchmarkResult.error ? (
-                        <div style={{ color: C.accent }}>Benchmark failed: {benchmarkResult.error}</div>
-                      ) : (
-                        <div>
-                          <div style={{ color: C.gold, marginBottom: 4 }}>Benchmark · {benchmarkResult.modelLabel}</div>
-                          <div>First token latency: <span style={{ color: C.ink }} className="tnum">{benchmarkResult.firstTokenMs}ms</span></div>
-                          <div>Generation speed: <span style={{ color: C.ink }} className="tnum">{benchmarkResult.tokensPerSec} tokens/sec</span></div>
-                          <div>Total: {benchmarkResult.totalTokens} tokens in {benchmarkResult.totalMs}ms</div>
-                          <div style={{ marginTop: 6, fontStyle: "italic", color: C.inkMuted, fontFamily: fontSerif, fontSize: 12 }}>
-                            {benchmarkResult.tokensPerSec >= 25 ? "Fast — comfortable for any mode." :
-                             benchmarkResult.tokensPerSec >= 10 ? "Usable — long generations may feel slow." :
-                             benchmarkResult.tokensPerSec >= 4 ? "Slow — fine for flashcards, painful for long explainers." :
-                             "Very slow — consider a smaller model."}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Cache list */}
-                  {cachedModels.length > 0 && (
-                    <div style={{ padding: 10, background: C.paperDark, border: `1px solid ${C.rule}`, borderRadius: 2, marginTop: 8 }}>
-                      <SectionLabel style={{ marginBottom: 6 }}>Cached locally</SectionLabel>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        {cachedModels.map(({ modelId }) => (
-                          <div key={modelId} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 8px", background: C.paperLight, borderRadius: 2 }}>
-                            <span style={{ fontFamily: fontMono, fontSize: 11, color: C.ink }}>{LOCAL_MODELS[modelId]?.label || modelId} <span style={{ color: C.inkMuted }}>· {LOCAL_MODELS[modelId]?.size}</span></span>
-                            <button onClick={() => deleteCachedModel(modelId)} style={{ background: "transparent", border: "none", fontFamily: fontMono, fontSize: 10, color: C.accent, cursor: "pointer", padding: 0 }}>Delete</button>
-                          </div>
-                        ))}
-                        {cachedModels[0]?.totalCacheBytes && (
-                          <div style={{ fontFamily: fontMono, fontSize: 10, color: C.inkMuted, marginTop: 4, paddingTop: 6, borderTop: `1px solid ${C.rule}` }}>
-                            Total browser storage used: {(cachedModels[0].totalCacheBytes / (1024 ** 3)).toFixed(2)} GB
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
 
               <SectionLabel>AI Quality Studio</SectionLabel>
 
