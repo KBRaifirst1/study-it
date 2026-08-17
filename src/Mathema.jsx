@@ -18086,8 +18086,30 @@ const TABS = [
   { id: "progress", label: "Progress", path: "#/progress", icon: "M5 19V10M12 19V5M19 19v-6" }
 ];
 
+/* Mathema keeps its own routes in the URL, and when it runs inside the hub the
+   hub is reading that same hash. Without a prefix the two routers fight: the
+   hub sees "#/progress", doesn't recognise it, and bounces back to the hub —
+   so every internal link in Mathema took you home.
+
+   ROUTE_BASE is that prefix. Empty when Mathema runs standalone, "math" when
+   it is mounted behind the hub, and every route it writes and reads goes
+   through it. */
+let ROUTE_BASE = "";
+function setRouteBase(b) { ROUTE_BASE = String(b || "").replace(/^#?\/*/, "").replace(/\/+$/, ""); }
+function withBase(path) {
+  const clean = String(path || "").replace(/^#\/?/, "");
+  return ROUTE_BASE ? "#/" + ROUTE_BASE + (clean ? "/" + clean : "") : "#/" + clean;
+}
+
 function parseRoute(hash) {
-  const raw = String(hash || "").replace(/^#\/?/, "");
+  let raw = String(hash || "").replace(/^#\/?/, "");
+  if (ROUTE_BASE) {
+    // Only routes under our own prefix belong to us. Anything else is the
+    // hub's business and is treated as our home screen.
+    if (raw === ROUTE_BASE) raw = "";
+    else if (raw.indexOf(ROUTE_BASE + "/") === 0) raw = raw.slice(ROUTE_BASE.length + 1);
+    else raw = "";
+  }
   const seg = raw.split("/").filter(Boolean).map(decodeURIComponent);
   if (!seg.length) return { name: "map", tab: "learn", depth: 0 };
   switch (seg[0]) {
@@ -18176,7 +18198,7 @@ function Toast({ text }) {
 /* ---------------------------------------------------------------------------
    PROGRESS — what's actually known, without inventing a score.
 --------------------------------------------------------------------------- */
-function Progress({ state, onOpenMiss, onOpen, onReset, onSettings }) {
+function Progress({ onPlacement, state, onOpenMiss, onOpen, onReset, onSettings }) {
   const strands = K.strands();
   const totals = React.useMemo(() => {
     let seen = 0, right = 0, started = 0, methods = 0, methodsTotal = 0;
@@ -18200,6 +18222,23 @@ function Progress({ state, onOpenMiss, onOpen, onReset, onSettings }) {
           ? "Nothing answered yet. Anything you do gets recorded here, including what you miss."
           : totals.right + " of " + totals.seen + " answered correctly, across " + totals.started + (totals.started === 1 ? " skill" : " skills") + "."}</p>
       </div>
+
+      {/* The placement test. It lives here rather than on the map because it is
+          about where you are, not what you are doing next — and it is offered
+          rather than pushed: nobody should have to sit a test to start using
+          the app. The wording changes once there is progress, because "where
+          do I start" and "check I haven't drifted" are different questions. */}
+      <button className="cont" onClick={onPlacement}>
+        <div>
+          <div className="cl">{totals.seen === 0 ? "New here?" : "Not sure what to do next?"}</div>
+          <div className="ct2">Find where to start</div>
+          <div className="cs">
+            About twenty questions, getting harder or easier as you go. It gives you what you're
+            ready to learn next, strand by strand — not a year group.
+          </div>
+        </div>
+        <div className="go2">›</div>
+      </button>
 
       {dueSkills(state).length > 0 && (
         <>
@@ -19245,7 +19284,8 @@ function MathemaApp() {
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
-  const go = React.useCallback((path, opts) => {
+  const go = React.useCallback((rawPath, opts) => {
+    const path = withBase(rawPath);
     const next = parseRoute(path);
     setDir(next.depth > depthRef.current ? "fwd" : next.depth < depthRef.current ? "back" : "fade");
     depthRef.current = next.depth;
@@ -19407,6 +19447,7 @@ function MathemaApp() {
     body = <Progress state={state}
       onOpen={openSkill}
       onOpenMiss={m2 => go("#/review/" + m2.skill + "/" + m2.seed + "/" + m2.difficulty)}
+      onPlacement={() => go("#/placement")}
       onSettings={() => go("#/settings")}
       onReset={() => setSheet(resetSheet)} />;
   } else if (route.name === "session") {
@@ -19457,7 +19498,11 @@ function MathemaApp() {
 }
 
 
-export default function Mathema() {
+/* `base` is the route prefix. The hub passes "math"; standalone it is empty.
+   Set before any state initialises, because parseRoute runs during the first
+   render and must already know the prefix. */
+export default function Mathema({ base } = {}) {
+  setRouteBase(base);
   return <MathemaApp />;
 }
 
