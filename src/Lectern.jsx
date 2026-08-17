@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 // Study It ships in this same repo. Lectern is the front door, and Study It is
 // one route in — see the router at the bottom of this file.
 import StudyIt from "./App";
+import Mathema from "./Mathema";
 
 /* ============================================================
    Lectern — idiomatic React (single-file component).
@@ -1221,21 +1222,39 @@ const CSS = `
     display:flex;align-items:center;justify-content:center;font-size:19px;flex:0 0 auto}
   .appbar .ti{font-size:18px;font-weight:800}
   .appbar .rt{margin-left:auto;display:flex;align-items:center}
-  /* Cross-app switcher. Compact in the header (icon only under 560px so it can
-     never squeeze the title), full width with labels on the sign-in screen. */
-  .appswitch{display:flex;align-items:center;gap:6px;flex:0 0 auto}
-  .appswitch .aswbtn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;
+  /* The apps launcher: one control in the header, a menu beneath it. Sized so
+     the button never squeezes the title — on a narrow screen the label goes and
+     the grid icon carries it alone. */
+  .applauncher{position:relative;flex:0 0 auto}
+  .applauncher .alkbtn{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 11px;
     border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);
-    font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;text-decoration:none;
-    white-space:nowrap;transition:.15s}
-  .appswitch .aswbtn:hover{border-color:var(--a);color:var(--ink);background:var(--a-tint)}
-  .appswitch .aswbtn:focus-visible{outline:2px solid var(--a);outline-offset:2px}
-  .appswitch .aswic{font-size:14px;line-height:1}
-  .obswitch{display:flex;justify-content:center;padding:14px 12px 0}
+    font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.15s}
+  .applauncher .alkbtn:hover{border-color:var(--a);color:var(--ink);background:var(--a-tint)}
+  .applauncher .alkbtn:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+  .applauncher .alkgrid{display:grid;grid-template-columns:1fr 1fr;gap:2px;width:13px;height:13px}
+  .applauncher .alkgrid i{background:currentColor;border-radius:1.5px;display:block}
+  .applauncher .alkmenu{position:absolute;right:0;top:38px;z-index:60;width:min(310px,calc(100vw - 28px));
+    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px;
+    box-shadow:var(--shadow)}
+  .applauncher .alkhead{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-faint);padding:6px 8px 8px}
+  .applauncher .alkitem{display:flex;align-items:center;gap:11px;width:100%;padding:10px;
+    border:none;border-radius:10px;background:transparent;font-family:inherit;cursor:pointer;
+    text-align:left;text-decoration:none;color:inherit;transition:.12s}
+  .applauncher .alkitem:hover{background:var(--a-tint)}
+  .applauncher .alkitem:focus-visible{outline:2px solid var(--a);outline-offset:-2px}
+  .applauncher .alkic{width:34px;height:34px;flex:0 0 auto;border-radius:9px;display:flex;
+    align-items:center;justify-content:center;font-size:17px;background:var(--a-tint);color:var(--a)}
+  .applauncher .alktx{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .applauncher .alktx b{font-size:14.5px;font-weight:750;color:var(--ink)}
+  .applauncher .alktx em{font-style:normal;font-size:11.5px;color:var(--ink-faint);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .applauncher .alkgo{margin-left:auto;color:var(--a);font-weight:800;flex:0 0 auto}
   @media (max-width:560px){
-    .appswitch.compact .aswlb{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-    .appswitch.compact .aswbtn{padding:0 9px}
+    .applauncher.compact .alklb{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+    .applauncher.compact .alkbtn{padding:0 10px}
   }
+  .obswitch{display:flex;justify-content:center;padding:14px 12px 0}
   .avatar{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;flex:0 0 auto;box-shadow:var(--shadow)}
   .avatar.tap{cursor:pointer}
   .avatar.tap:active{transform:scale(.94)}
@@ -1868,6 +1887,15 @@ const APPS = [
     blurb: "Notebooks, an AI tutor, flashcards and quizzes on spaced repetition.",
     icon: "📖",
     accent: "#2f6ff0", tint: "#dfeaff",
+    internal: true,
+  },
+  {
+    id: "mathema",
+    name: "Mathema",
+    kicker: "Practise",
+    blurb: "Maths from counting to calculus — every answer checked, never just marked.",
+    icon: "\u2211",
+    accent: "#c0293f", tint: "#ffe0e4",
     internal: true,
   },
   {
@@ -2982,7 +3010,7 @@ function AITeacher({ teach, title, aiAvailable, callModel, aiUnavailableReason }
 /* The Lectern app itself. Not the default export any more — the router at the
    bottom of this file is, because Lectern is now the hub and has to be able to
    hand over to Study It. */
-function LecternApp({ onOpenStudyIt } = {}) {
+function LecternApp({ onOpenStudyIt, onOpenMathema } = {}) {
   const [auth, setAuth] = useState(() => jget(AKEY, { users: [], current: null }));
   const [settings, setSettings] = useState(() => ({ sound: true, dark: false, autoTheme: false, haptics: true, textBig: false, ...jget(SKEY, {}) }));
   const [notes, setNotes] = useState({});
@@ -3819,10 +3847,11 @@ function LecternApp({ onOpenStudyIt } = {}) {
     // cloud sync (optional; local storage is still the source of truth)
     cloud, cloudSignIn, cloudSignUp, cloudSignOut, cloudSyncNow, cloudResolve,
     cloudMagicLink, cloudResetPassword,
-    // the hub: how to open Study It, which ships in this same deploy one route
-    // away. Undefined when Lectern runs standalone, and AppDoors drops the
-    // door in that case rather than showing a button that does nothing.
-    onOpenStudyIt
+    // The hub: how to reach the other apps that ship in this same deploy, each
+    // one route away. Undefined when Lectern runs standalone, and both the
+    // doors and the switcher drop a door in that case rather than showing a
+    // button that does nothing.
+    onOpenStudyIt, onOpenMathema
   };
 
   const d = depthOf(route); const dir = d > depthRef.current ? "fwd" : d < depthRef.current ? "back" : "fade"; depthRef.current = d;
@@ -3867,7 +3896,7 @@ function LecternApp({ onOpenStudyIt } = {}) {
               <div className="tiwhere">{locationLabel(app)}</div>
             </div>
             <div className="rt">
-              <AppSwitch app={app} compact />
+              <AppLauncher app={app} compact />
               {cur && <button className="iconbtn" aria-label="Search everything" title="Search (⌘K)" onClick={() => { haptic(5); setPalette(true); }}><Icon name="learn" size={18} /></button>}
               {cur && <button className="avatar tap" style={{ background: avatarColor(cur.name) }} aria-label="Your account" onClick={() => openSheet({ title: cur.name, body: cur.guest ? "Signed in as a guest on this device." : "Signed in on this device.", items: [
               { icon: "progress", label: "Your progress", on: () => go({ tab: "progress" }) },
@@ -4137,36 +4166,78 @@ function Dashboard({ app }) {
    Same rules as the doors: an internal app is a <button> (it changes route in
    this deploy), an external one is a real <a target="_blank"> so long-press and
    cmd-click work. A door with nowhere to go is dropped, not shown greyed out. */
-function AppSwitch({ app, compact }) {
-  const handlers = { studyit: app && app.onOpenStudyIt };
+/* The apps launcher.
+
+   One control, not one button per app. With four apps a row of cross-links was
+   already crowding the header on a phone, and it gets worse with every app
+   added — five apps means four buttons in every header, twenty links across
+   the suite. A launcher is one button everywhere, and adding an app changes
+   nothing but the list inside it.
+
+   The rules the doors follow apply here too: an app in this same deploy is a
+   <button> because it changes route, an app on its own deploy is a real <a>
+   so long-press and cmd-click work, and an app with nowhere to go is left out
+   rather than shown greyed. */
+function AppLauncher({ app, compact }) {
+  const handlers = { studyit: app && app.onOpenStudyIt, mathema: app && app.onOpenMathema };
   const doors = openDoors(handlers);
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  // Close on Escape and on a click outside — a menu that can only be dismissed
+  // by choosing something is a trap.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = e => { if (e.key === "Escape") setOpen(false); };
+    const onDown = e => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("mousedown", onDown);
+    return () => { window.removeEventListener("keydown", onKey); window.removeEventListener("mousedown", onDown); };
+  }, [open]);
+
   if (doors.length === 0) return null;
+
   return (
-    <div className={"appswitch" + (compact ? " compact" : "")}>
-      {doors.map(d => d.internal ? (
-        <button className="aswbtn" key={d.id} type="button"
-          style={{ "--a": d.accent, "--a-tint": d.tint }}
-          aria-label={"Open " + d.name} title={"Open " + d.name}
-          onClick={() => { haptic(6); handlers[d.id](); }}>
-          <span className="aswic" aria-hidden="true">{d.icon}</span>
-          <span className="aswlb">{d.name}</span>
-        </button>
-      ) : (
-        <a className="aswbtn" key={d.id} href={d.url} target="_blank" rel="noopener noreferrer"
-          style={{ "--a": d.accent, "--a-tint": d.tint }}
-          aria-label={"Open " + d.name + " — opens in a new tab"}
-          title={"Open " + d.name + " in a new tab"}
-          onClick={() => haptic(6)}>
-          <span className="aswic" aria-hidden="true">{d.icon}</span>
-          <span className="aswlb">{d.name}</span>
-        </a>
-      ))}
+    <div className={"applauncher" + (compact ? " compact" : "")} ref={wrapRef}>
+      <button className="alkbtn" type="button" aria-haspopup="menu" aria-expanded={open ? "true" : "false"}
+        aria-label="Switch app" title="Switch app"
+        onClick={() => { haptic(6); setOpen(!open); }}>
+        <span className="alkgrid" aria-hidden="true">
+          <i /><i /><i /><i />
+        </span>
+        <span className="alklb">Apps</span>
+      </button>
+
+      {open && (
+        <div className="alkmenu" role="menu">
+          <div className="alkhead">Go to</div>
+          {doors.map(d => d.internal ? (
+            <button className="alkitem" key={d.id} type="button" role="menuitem"
+              style={{ "--a": d.accent, "--a-tint": d.tint }}
+              onClick={() => { haptic(6); setOpen(false); handlers[d.id](); }}>
+              <span className="alkic" aria-hidden="true">{d.icon}</span>
+              <span className="alktx"><b>{d.name}</b><em>{d.blurb}</em></span>
+              <span className="alkgo" aria-hidden="true">{"\u203a"}</span>
+            </button>
+          ) : (
+            <a className="alkitem" key={d.id} role="menuitem" href={d.url}
+              target="_blank" rel="noopener noreferrer"
+              style={{ "--a": d.accent, "--a-tint": d.tint }}
+              aria-label={"Open " + d.name + " — opens in a new tab"}
+              onClick={() => { haptic(6); setOpen(false); }}>
+              <span className="alkic" aria-hidden="true">{d.icon}</span>
+              <span className="alktx"><b>{d.name}</b><em>{d.blurb}</em></span>
+              <span className="alkgo" aria-hidden="true">{"\u2197"}</span>
+            </a>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function AppDoors({ app }) {
-  const handlers = { studyit: app.onOpenStudyIt };
+  const handlers = { studyit: app.onOpenStudyIt, mathema: app.onOpenMathema };
   const doors = openDoors(handlers);
   if (doors.length === 0) return null;
   const inner = d => (
@@ -5561,7 +5632,7 @@ function Auth({ app }) {
   );
   return (
     <div className="ob" id="auth">
-      <div className="obswitch"><AppSwitch app={app} /></div>
+      <div className="obswitch"><AppLauncher app={app} /></div>
       <div className="obtop"><div className="obmk"><Icon name="lectern" size={44} /></div>
         {mode === "login" ? (
           <>
@@ -5631,7 +5702,7 @@ function Confetti({ trigger }) {
 
 // The routes this shell knows about. Anything else falls back to the hub, so a
 // stale or mistyped link lands somewhere real instead of a blank screen.
-const ROUTES = { "": "hub", "#": "hub", "#/": "hub", "#/study": "study" };
+const ROUTES = { "": "hub", "#": "hub", "#/": "hub", "#/study": "study", "#/math": "math" };
 
 export function routeFromHash(hash) {
   // Trailing slashes and query junk shouldn't break a route.
@@ -5704,7 +5775,7 @@ export default function Lectern() {
   // Navigating by changing the hash keeps the browser Back button honest:
   // Back out of Study It returns you to the hub, which is what a door should do.
   const go = useCallback(to => {
-    const next = to === "study" ? "#/study" : "#/";
+    const next = to === "study" ? "#/study" : to === "math" ? "#/math" : "#/";
     if (window.location.hash === next) setRoute(routeFromHash(next));
     else window.location.hash = next;
   }, []);
@@ -5716,10 +5787,21 @@ export default function Lectern() {
     // per-screen title ("Home · Lectern", "Learn · Lectern") which is more
     // useful than a flat app name — overriding it would be a downgrade, and it
     // would fight back on the next screen change anyway.
+    // Only the routes that are a different app rename the tab; on the hub,
+    // Lectern names each screen itself, which is more useful than a flat name.
     if (route === "study") document.title = "Study It";
+    else if (route === "math") document.title = "Mathema";
     setFavicon(route === "study" ? STUDY_ICON : APP_ICON);
   }, [route]);
 
+  if (route === "math") {
+    return (
+      <>
+        <Mathema />
+        <HubReturn onBack={() => go("hub")} />
+      </>
+    );
+  }
   if (route === "study") {
     return (
       <>
@@ -5728,5 +5810,5 @@ export default function Lectern() {
       </>
     );
   }
-  return <LecternApp onOpenStudyIt={() => go("study")} />;
+  return <LecternApp onOpenStudyIt={() => go("study")} onOpenMathema={() => go("math")} />;
 }
