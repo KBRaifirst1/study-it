@@ -2238,6 +2238,17 @@ const STUDY_ICON_FALLBACK = "data:image/svg+xml;charset=utf-8," + encodeURICompo
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">' +
   '<rect width="512" height="512" rx="116" fill="#1A1D22"/>' +
   '<path d="M146 72h220a30 30 0 0 1 30 30v338l-140-96-140 96V102a30 30 0 0 1 30-30Z" fill="#C9A56B"/></svg>');
+/* Mathema's mark: rotating squares with a logarithmic spiral, served as a real
+   file from public/ like Lectern's.
+
+   Measured at tab size it comes out around 40% ink, so it is unmistakably
+   THERE — but the fine spiral detail does collapse at 16px and it reads as a
+   shape and a colour rather than a diagram. That is the honest trade for this
+   design, and it is the right one: a favicon's job at that size is to be
+   distinguishable from its neighbours, which a dark tile with a pink-and-teal
+   mass is, from a book and from a gold bookmark. */
+const MATH_ICON = "/mathema-icon.png";
+
 const STUDY_ICON = (() => {
   try {
     if (typeof document === "undefined") return STUDY_ICON_FALLBACK;
@@ -5791,7 +5802,7 @@ export default function Lectern() {
     // Lectern names each screen itself, which is more useful than a flat name.
     if (route === "study") document.title = "Study It";
     else if (route === "math") document.title = "Mathema";
-    setFavicon(route === "study" ? STUDY_ICON : APP_ICON);
+    setFavicon(route === "study" ? STUDY_ICON : route === "math" ? MATH_ICON : APP_ICON);
   }, [route]);
 
   if (route === "math") {
