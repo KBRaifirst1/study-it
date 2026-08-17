@@ -5715,10 +5715,18 @@ function Confetti({ trigger }) {
 // stale or mistyped link lands somewhere real instead of a blank screen.
 const ROUTES = { "": "hub", "#": "hub", "#/": "hub", "#/study": "study", "#/math": "math" };
 
+/* An app mounted inside the hub keeps its own routes in the same hash, so the
+   hub has to hand over everything beneath that app's prefix rather than only
+   the bare route. Without this, Mathema writing "#/math/progress" would fall
+   through to the hub's default and bounce the learner home on every tap. */
+const NESTED = { math: "math" };
+
 export function routeFromHash(hash) {
   // Trailing slashes and query junk shouldn't break a route.
   const clean = String(hash || "").trim().replace(/\?.*$/, "").replace(/\/+$/, "") || "";
   if (Object.prototype.hasOwnProperty.call(ROUTES, clean)) return ROUTES[clean];
+  const seg = clean.replace(/^#\/?/, "").split("/")[0];
+  if (NESTED[seg]) return NESTED[seg];
   return "hub";
 }
 
@@ -5808,7 +5816,7 @@ export default function Lectern() {
   if (route === "math") {
     return (
       <>
-        <Mathema />
+        <Mathema base="math" />
         <HubReturn onBack={() => go("hub")} />
       </>
     );
