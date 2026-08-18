@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 // one route in — see the router at the bottom of this file.
 import StudyIt from "./App";
 import Mathema from "./Mathema";
+import Elements from "./Elements";
 
 /* ============================================================
    Lectern — idiomatic React (single-file component).
@@ -69,7 +70,7 @@ const Academy = (function () {
      "one letter away", not "just a typo", and a near miss is still wrong. */
   function editDistance(a, b) {
     // Damerau (optimal string alignment): insert, delete, substitute, and
-    // swapping two neighbouring characters all count as ONE edit. The swap
+    // swapping two neighboring characters all count as ONE edit. The swap
     // matters — "hoal" for "hola" is the commonest typing slip there is, and
     // plain Levenshtein would score it 2 and miss it.
     if (a === b) return 0;
@@ -379,16 +380,16 @@ const Academy = (function () {
         ] },
       { title: "Light & Sound",
         teach: ["Light and sound both travel as waves, but they are not the same kind of thing, and one difference explains almost everything else. Sound needs something to travel through — air, water, a wall. Light does not. That is why the Sun can reach us across empty space and why space itself is silent: there is nothing out there for sound to move through.",
-                "Light is also far faster. Light covers about 300,000 kilometres every second; sound manages roughly 340 metres. You can measure the gap yourself in a thunderstorm. The flash and the bang happen at the same moment, but the light arrives almost instantly while the sound is still on its way. Count the seconds between them and divide by three for the rough distance in kilometres.",
-                "White light is not plain — it is every colour together. A prism or a raindrop bends each colour by a slightly different amount and fans them apart, which is exactly what a rainbow is. And an object's colour is simply the light it fails to absorb: a leaf looks green because it absorbs the other colours and bounces green back at your eye."],
+                "Light is also far faster. Light covers about 300,000 kilometres every second; sound manages roughly 340 meters. You can measure the gap yourself in a thunderstorm. The flash and the bang happen at the same moment, but the light arrives almost instantly while the sound is still on its way. Count the seconds between them and divide by three for the rough distance in kilometres.",
+                "White light is not plain — it is every color together. A prism or a raindrop bends each color by a slightly different amount and fans them apart, which is exactly what a rainbow is. And an object's color is simply the light it fails to absorb: a leaf looks green because it absorbs the other colors and bounces green back at your eye."],
         ex: [
           mc("Why is space silent?", "Sound needs a material to travel through, and space is nearly empty", ["Sound is too quiet out there", "Space absorbs all sound", "Sound freezes in the cold"], "No air, no water, no solid — nothing for the wave to move through."),
-          mc("Which travels faster?", "light", ["sound", "they are the same", "it depends on the colour"], "Light: about 300,000 km per second against sound's 340 metres."),
+          mc("Which travels faster?", "light", ["sound", "they are the same", "it depends on the color"], "Light: about 300,000 km per second against sound's 340 meters."),
           mc("In a storm you see the flash before you hear the thunder because...", "light reaches you much sooner than sound", ["lightning happens first", "thunder starts later", "your eyes are faster than your ears"], "Both happen at once; the light simply arrives first."),
           ty("Roughly how many seconds between flash and bang for each kilometre of distance? Type the digit.", ["3", "three"], "3", "Sound covers about a third of a kilometre per second."),
-          mc("What is white light actually made of?", "all the colours together", ["no colour at all", "only yellow", "light with the colour removed"], "A prism fans white light back into its colours."),
-          mc("Why does a leaf look green?", "It absorbs the other colours and reflects green", ["It makes green light", "Green is the only colour in sunlight", "Its shape bends light"], "The colour you see is the light the object did not absorb."),
-          mc("A rainbow forms because raindrops...", "bend each colour by a different amount", ["are green underneath", "glow in sunlight", "reflect the sky"], "Each colour bends slightly differently, so they fan apart.")
+          mc("What is white light actually made of?", "all the colors together", ["no color at all", "only yellow", "light with the color removed"], "A prism fans white light back into its colors."),
+          mc("Why does a leaf look green?", "It absorbs the other colors and reflects green", ["It makes green light", "Green is the only color in sunlight", "Its shape bends light"], "The color you see is the light the object did not absorb."),
+          mc("A rainbow forms because raindrops...", "bend each color by a different amount", ["are green underneath", "glow in sunlight", "reflect the sky"], "Each color bends slightly differently, so they fan apart.")
         ] }
     ],
 
@@ -408,7 +409,7 @@ const Academy = (function () {
       { title: "Capitals of Europe",
         teach: ["A capital city is where a country's government is based and its leaders work. It is not always the biggest or most famous city, but it is the country's official center.",
                 "Some European capitals to know: France → Paris, the United Kingdom → London, Germany → Berlin, Italy → Rome, Spain → Madrid, and Greece → Athens, one of the oldest cities in the world and the birthplace of democracy.",
-                "Capitals rarely landed where they are by accident. Most began as the safest or best-connected spot available: London and Paris both grew at the lowest bridging point of a major river, close enough to the sea for trade but far enough inland to be defended. Madrid is the odd one out — it sits almost exactly in the geographic centre of Spain, chosen in 1561 partly for that neutrality.",
+                "Capitals rarely landed where they are by accident. Most began as the safest or best-connected spot available: London and Paris both grew at the lowest bridging point of a major river, close enough to the sea for trade but far enough inland to be defended. Madrid is the odd one out — it sits almost exactly in the geographic center of Spain, chosen in 1561 partly for that neutrality.",
                 "Berlin shows how politics can move a capital. When Germany was divided after the Second World War the capital moved to Bonn, and only after reunification in 1990 did it return to Berlin. A capital city is a decision, and decisions can be revisited."],
         ex: [
           ty("Type the capital city of France.", ["paris"], "Paris", "Paris is the capital of France."),
@@ -417,14 +418,14 @@ const Academy = (function () {
           mc("What is the capital of Spain?", "Madrid", ["Barcelona", "Seville", "Valencia"], "Madrid is Spain's capital."),
           ty("Type the capital of the United Kingdom.", ["london"], "London", "London is the UK's capital."),
           mc("Athens, one of the world's oldest cities, is the capital of...", "Greece", ["Turkey", "Italy", "Egypt"], "Athens is the capital of Greece."),
-          mc("Why did cities like London and Paris grow where they did?", "At the lowest bridging point of a river, near trade but defensible", ["At the highest mountain pass", "Wherever the king was born", "At the exact centre of the country"], "River crossings gave both trade access and defence."),
-          mc("Which capital was chosen partly for sitting at its country's geographic centre?", "Madrid", ["London", "Rome", "Berlin"], "Madrid sits near the centre of Spain, chosen in 1561 partly for that neutrality."),
+          mc("Why did cities like London and Paris grow where they did?", "At the lowest bridging point of a river, near trade but defensible", ["At the highest mountain pass", "Wherever the king was born", "At the exact center of the country"], "River crossings gave both trade access and defense."),
+          mc("Which capital was chosen partly for sitting at its country's geographic center?", "Madrid", ["London", "Rome", "Berlin"], "Madrid sits near the center of Spain, chosen in 1561 partly for that neutrality."),
           mc("Germany's capital moved to Bonn and back to Berlin because of...", "division after the war, then reunification in 1990", ["a flood", "a royal decree", "a change of language"], "A capital is a political decision, and decisions can be revisited.")
         ] },
       { title: "Capitals Around the World",
         teach: ["Capitals can be surprising. The biggest or most famous city is often NOT the capital. Australia's capital is Canberra, not Sydney. Canada's is Ottawa, not Toronto. Brazil's is Brasília, not Rio de Janeiro. The United States' capital is Washington, D.C., not New York City.",
                 "A few more to know: Japan → Tokyo, China → Beijing, Egypt → Cairo, and Kenya → Nairobi.",
-                "There is a pattern behind those surprises. Canberra, Ottawa, Brasília and Washington were all chosen or built deliberately, usually to settle a rivalry between two larger cities or to pull a country's centre of gravity inland. Canberra was a compromise between Sydney and Melbourne; Brasília was built from empty ground in 1960 to draw people away from the crowded coast.",
+                "There is a pattern behind those surprises. Canberra, Ottawa, Brasília and Washington were all chosen or built deliberately, usually to settle a rivalry between two larger cities or to pull a country's center of gravity inland. Canberra was a compromise between Sydney and Melbourne; Brasília was built from empty ground in 1960 to draw people away from the crowded coast.",
                 "So when a capital seems like the wrong answer, it is often the point: the country picked a city that belonged to nobody in particular. A handful of countries go further and run more than one capital — South Africa has three, splitting its government, courts and parliament between Pretoria, Bloemfontein and Cape Town."],
         ex: [
           mc("What is the capital of Australia?", "Canberra", ["Sydney", "Melbourne", "Perth"], "Canberra is the capital — a common trick, since Sydney is bigger."),
@@ -434,7 +435,7 @@ const Academy = (function () {
           ty("Type the capital of Egypt.", ["cairo"], "Cairo", "Cairo is Egypt's capital."),
           mc("What is the capital of the United States?", "Washington, D.C.", ["New York City", "Los Angeles", "Boston"], "Washington, D.C. is the U.S. capital."),
           mc("Why was Canberra made Australia's capital?", "As a compromise between Sydney and Melbourne", ["It was the largest city", "It has the best harbour", "It was the first city founded"], "Neither rival city could have it, so a new one was chosen."),
-          mc("Brasília was built from empty ground in 1960 mainly to...", "draw people inland, away from the crowded coast", ["escape a war", "be nearer the sea", "replace a city lost to fire"], "Planned capitals often pull a country's centre of gravity inland."),
+          mc("Brasília was built from empty ground in 1960 mainly to...", "draw people inland, away from the crowded coast", ["escape a war", "be nearer the sea", "replace a city lost to fire"], "Planned capitals often pull a country's center of gravity inland."),
           mc("Which country runs its government from three different capitals?", "South Africa", ["Japan", "Egypt", "Kenya"], "Pretoria, Bloemfontein and Cape Town hold the government, courts and parliament.")
         ] },
       { title: "Wonders of the World",
@@ -479,8 +480,8 @@ const Academy = (function () {
           mc("What was the Mercator projection designed for?", "Navigation at sea, so directions stay true", ["Showing country sizes fairly", "Teaching in schools", "Measuring populations"], "It preserves direction, which is what sailors needed."),
           mc("On a Mercator map, Greenland looks about the size of Africa. In reality Africa is...", "about fourteen times larger", ["about the same", "slightly smaller", "twice as large"], "Areas near the poles are stretched enormously."),
           ty("The kind of map that keeps country sizes honest is called an equal-___ projection. Type the word.", ["area"], "area", "Equal-area projections preserve size and distort shape instead."),
-          mc("What do equal-area maps give up in exchange?", "Accurate shapes", ["Accurate colours", "The equator", "All direction and size"], "Every projection trades one kind of accuracy for another."),
-          mc("The best habit when reading any map is to ask...", "what it was made for", ["who printed it", "how old the paper is", "whether it is in colour"], "The purpose tells you which distortions it accepted."),
+          mc("What do equal-area maps give up in exchange?", "Accurate shapes", ["Accurate colors", "The equator", "All direction and size"], "Every projection trades one kind of accuracy for another."),
+          mc("The best habit when reading any map is to ask...", "what it was made for", ["who printed it", "how old the paper is", "whether it is in color"], "The purpose tells you which distortions it accepted."),
           mc("Distortion on a world map is worst...", "near the poles", ["at the equator", "over oceans", "in the middle of continents"], "The further from the equator, the more a flat map stretches.")
         ] }
     ],
@@ -511,7 +512,7 @@ const Academy = (function () {
       { title: "Colors & Everyday Things",
         teach: ["Colors (los colores): rojo (red), azul (blue), verde (green), amarillo (yellow), negro (black), and blanco (white).",
                 "Some everyday words you'll use constantly: agua (water), casa (house), gato (cat), perro (dog), and libro (book). In Spanish, most words that end in -o are masculine (el gato) and most ending in -a are feminine (la casa).",
-                "Two things about colours will surprise an English speaker. First, the colour goes AFTER the thing: not 'red house' but 'casa roja'. Second, the colour changes to match the noun. Rojo becomes roja for a feminine noun, and adds -s in the plural: el libro rojo, la casa roja, los libros rojos, las casas rojas. Colours already ending in -e or a consonant — verde, azul — do not change for gender, only for number: la casa verde, las casas verdes."],
+                "Two things about colors will surprise an English speaker. First, the color goes AFTER the thing: not 'red house' but 'casa roja'. Second, the color changes to match the noun. Rojo becomes roja for a feminine noun, and adds -s in the plural: el libro rojo, la casa roja, los libros rojos, las casas rojas. Colors already ending in -e or a consonant — verde, azul — do not change for gender, only for number: la casa verde, las casas verdes."],
         ex: [
           ty("Type the Spanish word for 'water'.", ["agua"], "agua", "Agua = water."),
           mc("What does 'rojo' mean?", "red", ["blue", "green", "black"], "Rojo = red."),
@@ -519,9 +520,9 @@ const Academy = (function () {
           mc("What does 'casa' mean?", "house", ["dog", "book", "water"], "Casa = house."),
           ty("Type the Spanish word for 'dog'.", ["perro"], "perro", "Perro = dog."),
           mc("What does 'azul' mean?", "blue", ["yellow", "white", "red"], "Azul = blue."),
-          mc("How do you say 'the red house'?", "la casa roja", ["la roja casa", "el casa rojo", "la casa rojo"], "The colour follows the noun and matches it: casa is feminine, so roja."),
-          ty("Complete: 'los libros ___' for 'the red books'.", ["rojos"], "rojos", "Masculine plural noun, so the colour takes -os."),
-          mc("Why does 'verde' stay the same for a house and a book?", "Colours ending in -e don't change for gender", ["Verde is not a real colour word", "Both nouns are feminine", "It changes only in speech"], "Verde and azul change only in the plural, not for gender.")
+          mc("How do you say 'the red house'?", "la casa roja", ["la roja casa", "el casa rojo", "la casa rojo"], "The color follows the noun and matches it: casa is feminine, so roja."),
+          ty("Complete: 'los libros ___' for 'the red books'.", ["rojos"], "rojos", "Masculine plural noun, so the color takes -os."),
+          mc("Why does 'verde' stay the same for a house and a book?", "Colors ending in -e don't change for gender", ["Verde is not a real color word", "Both nouns are feminine", "It changes only in speech"], "Verde and azul change only in the plural, not for gender.")
         ] },
       { title: "Family & People",
         teach: ["Family is 'la familia'. The core members: madre (mother), padre (father), hermano (brother), hermana (sister), abuela (grandmother), and abuelo (grandfather). A friend is 'amigo' (for a boy) or 'amiga' (for a girl).",
@@ -604,8 +605,8 @@ const Academy = (function () {
       { title: "Colors & Everyday Things",
         teach: ["Colors (les couleurs): rouge (red), bleu (blue), vert (green), jaune (yellow), noir (black), and blanc (white).",
                 "Everyday words: eau (water), maison (house), chat (cat), chien (dog), and livre (book). French nouns are masculine or feminine, shown by 'le' or 'la' — le chat (the cat), la maison (the house).",
-                "As in Spanish, a French colour comes after the noun and agrees with it: une maison blanche (a white house), un livre vert (a green book). The feminine usually adds -e, which often wakes up a silent consonant — vert is said 'vair', but verte is said 'vairt'. So the agreement you can barely hear in the masculine becomes clearly audible in the feminine.",
-                "A few colours refuse to change. Rouge and jaune already end in -e, so they stay put: une maison rouge, un livre rouge. Blanc is the irregular one worth memorising — its feminine is blanche, not 'blance'."],
+                "As in Spanish, a French color comes after the noun and agrees with it: une maison blanche (a white house), un livre vert (a green book). The feminine usually adds -e, which often wakes up a silent consonant — vert is said 'vair', but verte is said 'vairt'. So the agreement you can barely hear in the masculine becomes clearly audible in the feminine.",
+                "A few colors refuse to change. Rouge and jaune already end in -e, so they stay put: une maison rouge, un livre rouge. Blanc is the irregular one worth memorising — its feminine is blanche, not 'blance'."],
         ex: [
           ty("Type the French word for 'water'.", ["eau"], "eau", "Eau = water."),
           mc("What does 'rouge' mean?", "red", ["blue", "green", "black"], "Rouge = red."),
@@ -613,9 +614,9 @@ const Academy = (function () {
           mc("What does 'maison' mean?", "house", ["dog", "book", "water"], "Maison = house."),
           ty("Type the French word for 'dog'.", ["chien"], "chien", "Chien = dog."),
           mc("What does 'bleu' mean?", "blue", ["yellow", "white", "red"], "Bleu = blue."),
-          mc("How do you say 'a white house'?", "une maison blanche", ["une blanche maison", "un maison blanc", "une maison blanc"], "The colour follows the noun; maison is feminine, so blanc becomes blanche."),
+          mc("How do you say 'a white house'?", "une maison blanche", ["une blanche maison", "un maison blanc", "une maison blanc"], "The color follows the noun; maison is feminine, so blanc becomes blanche."),
           mc("What happens to the final consonant of 'vert' in the feminine?", "It becomes audible: verte", ["It disappears", "It doubles", "Nothing changes"], "Adding -e wakes up the silent consonant."),
-          mc("Why doesn't 'rouge' change for a feminine noun?", "It already ends in -e", ["Red has no gender", "It is borrowed from English", "It changes only in the plural"], "Colours already ending in -e stay as they are.")
+          mc("Why doesn't 'rouge' change for a feminine noun?", "It already ends in -e", ["Red has no gender", "It is borrowed from English", "It changes only in the plural"], "Colors already ending in -e stay as they are.")
         ] },
       { title: "Family & People",
         teach: ["Family is 'la famille'. The core members: mère (mother), père (father), frère (brother), sœur (sister), grand-mère (grandmother), and grand-père (grandfather). A friend is 'ami' (boy) or 'amie' (girl).",
@@ -819,7 +820,7 @@ const Academy = (function () {
         ] },
       { title: "Building a Sentence",
         teach: ["Mandarin sentences follow the same basic order as English: who, then the action, then the thing. 我 wǒ means I, 是 shì means am/is/are, and 人 rén means person. Put them together and 我是人 wǒ shì rén means 'I am a person'.",
-                "Here is the good news for a learner: Chinese verbs never change. 是 shì is the same word for I am, you are, she is and they are. There is no am/is/are to sort out, no past-tense form to memorise, no agreement to get wrong. 我是 wǒ shì, 你是 nǐ shì, 他是 tā shì — one word throughout.",
+                "Here is the good news for a learner: Chinese verbs never change. 是 shì is the same word for I am, you are, she is and they are. There is no am/is/are to sort out, no past-tense form to memorize, no agreement to get wrong. 我是 wǒ shì, 你是 nǐ shì, 他是 tā shì — one word throughout.",
                 "你 nǐ means you and 他 tā means he (她 tā, written differently but said identically, means she). To make something negative, put 不 bù in front of the verb: 我不是 wǒ bù shì means 'I am not'. The word order stays exactly where it was."],
         ex: [
           mc("What does 是 (shì) mean?", "am, is, are", ["to go", "to have", "very"], "是 shì covers all forms of 'to be'."),
@@ -1314,7 +1315,7 @@ const CSS = `
   .secttl{font-size:13px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-faint);margin:22px 4px 2px}
   /* Hub doors. Two shapes: a <button> for Study It (same deploy, one route in)
      and an <a> for CodeQuest (a separate site). .cont was written for a button,
-     so the anchor needs the link bits back: no underline, inherited colour. Both
+     so the anchor needs the link bits back: no underline, inherited color. Both
      need a min-width:0 middle column so a long blurb wraps instead of pushing
      the arrow off a narrow phone. */
   .cont.door{margin-top:10px}
@@ -1608,7 +1609,7 @@ const CSS = `
   .steprow{display:flex;align-items:center;gap:10px;margin-top:14px}
   /* ===================== professional pass =====================
      Line icons on the baseline, a tighter type scale, calmer weights, less
-     rounding and softer shadow. Nothing here changes behaviour. */
+     rounding and softer shadow. Nothing here changes behavior. */
   .ico{display:block;flex:0 0 auto}
   .intro{gap:0}
   .introdots{display:flex;gap:7px;justify-content:center;margin:20px 0 6px}
@@ -1892,10 +1893,19 @@ const APPS = [
   {
     id: "mathema",
     name: "Mathema",
-    kicker: "Practise",
-    blurb: "Maths from counting to calculus — every answer checked, never just marked.",
+    kicker: "Practice",
+    blurb: "Math from counting to calculus — every answer checked, never just marked.",
     icon: "\u2211",
     accent: "#c0293f", tint: "#ffe0e4",
+    internal: true,
+  },
+  {
+    id: "elements",
+    name: "Elements",
+    kicker: "Investigate",
+    blurb: "Physics and chemistry — answers checked as quantities, so any correct unit passes.",
+    icon: "\u269b",
+    accent: "#0f766e", tint: "#d6f0ec",
     internal: true,
   },
   {
@@ -2173,7 +2183,7 @@ function speak(text, lang) {
    Drawn to survive a browser tab. At 16px it measures ~26% ink and — the bit
    that actually matters — the gutter between the two pages stays open, so it
    still reads as a book rather than a white blob. The fine rules dissolve
-   cleanly at small sizes instead of smearing into grey.
+   cleanly at small sizes instead of smearing into gray.
 
    Three layers of paper, deliberately: a plain white block underneath, crisp
    rules along its bottom edge where the sheets stack, leaves fanned along the
@@ -2243,11 +2253,35 @@ const STUDY_ICON_FALLBACK = "data:image/svg+xml;charset=utf-8," + encodeURICompo
 
    Measured at tab size it comes out around 40% ink, so it is unmistakably
    THERE — but the fine spiral detail does collapse at 16px and it reads as a
-   shape and a colour rather than a diagram. That is the honest trade for this
+   shape and a color rather than a diagram. That is the honest trade for this
    design, and it is the right one: a favicon's job at that size is to be
-   distinguishable from its neighbours, which a dark tile with a pink-and-teal
+   distinguishable from its neighbors, which a dark tile with a pink-and-teal
    mass is, from a book and from a gold bookmark. */
 const MATH_ICON = "/mathema-icon.png";
+
+/* Elements' mark: an atom on the same deep-ink tile, in the app's own teal so
+   it is distinguishable from a book, a bookmark and a spiral at tab size.
+   Inlined rather than served as a file because it is three ellipses and a dot
+   — small enough that a round trip to fetch it would cost more than it saves. */
+const SCIENCE_ICON = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">' +
+  /* Contrast, measured rather than eyeballed:
+       rings #5eead4 on #04141a  = 12.7:1   (was 9.9:1 on the old darker teal)
+     The nucleus is a DARK disc, not a bright one. A white or amber center
+     measured 1.5:1 and 1.1:1 against the rings it sits on — it would have
+     melted into them at tab size however bright it looked at 512px. Punching
+     a hole in the ring crossings instead gives 12.7:1 exactly where the eye
+     needs it, and the small teal core inside reads as the nucleus. */
+  '<rect width="512" height="512" rx="116" fill="#04141a"/>' +
+  // Stroke width 50, not 26: at 26 the rings measured 3.3% ink at 16px and the
+  // whole mark read as an empty tile — the same near-blank failure the first
+  // Lectern icon had. At 50 it measures 43% and is plainly an atom in a tab.
+  '<g fill="none" stroke="#5eead4" stroke-width="50">' +
+  '<ellipse cx="256" cy="256" rx="180" ry="76"/>' +
+  '<ellipse cx="256" cy="256" rx="180" ry="76" transform="rotate(60 256 256)"/>' +
+  '<ellipse cx="256" cy="256" rx="180" ry="76" transform="rotate(120 256 256)"/></g>' +
+  '<circle cx="256" cy="256" r="86" fill="#04141a"/>' +
+  '<circle cx="256" cy="256" r="46" fill="#5eead4"/></svg>');
 
 const STUDY_ICON = (() => {
   try {
@@ -2479,7 +2513,7 @@ const STEP_LOOK = {
 };
 
 /* bottom sheet — replaces browser confirm()/menus with a native-feeling panel */
-/* A small set of line icons. Stroke-drawn, inherit the current colour, and
+/* A small set of line icons. Stroke-drawn, inherit the current color, and
    sized in ems so they sit on the text baseline wherever they're used. */
 function Icon({ name, size = 20 }) {
   const p = {
@@ -3021,7 +3055,7 @@ function AITeacher({ teach, title, aiAvailable, callModel, aiUnavailableReason }
 /* The Lectern app itself. Not the default export any more — the router at the
    bottom of this file is, because Lectern is now the hub and has to be able to
    hand over to Study It. */
-function LecternApp({ onOpenStudyIt, onOpenMathema } = {}) {
+function LecternApp({ onOpenStudyIt, onOpenMathema, onOpenElements } = {}) {
   const [auth, setAuth] = useState(() => jget(AKEY, { users: [], current: null }));
   const [settings, setSettings] = useState(() => ({ sound: true, dark: false, autoTheme: false, haptics: true, textBig: false, ...jget(SKEY, {}) }));
   const [notes, setNotes] = useState({});
@@ -3862,7 +3896,7 @@ function LecternApp({ onOpenStudyIt, onOpenMathema } = {}) {
     // one route away. Undefined when Lectern runs standalone, and both the
     // doors and the switcher drop a door in that case rather than showing a
     // button that does nothing.
-    onOpenStudyIt, onOpenMathema
+    onOpenStudyIt, onOpenMathema, onOpenElements
   };
 
   const d = depthOf(route); const dir = d > depthRef.current ? "fwd" : d < depthRef.current ? "back" : "fade"; depthRef.current = d;
@@ -4144,7 +4178,7 @@ function Dashboard({ app }) {
       {app.weakIds.length > 0 && (
         <button className="cont" style={{ "--a": "#f08c00", "--a-tint": "#fff0d6" }} onClick={() => { haptic(6); app.go({ tab: "learn", scr: "weak" }); }}>
           <div className="cic" style={{ background: "#fff0d6" }}>🎯</div>
-          <div><div className="cl">Trouble spots</div><div className="ct2">{app.weakIds.length === 1 ? "1 question you keep missing" : app.weakIds.length + " questions you keep missing"}</div><div className="cs">Practise just those</div></div>
+          <div><div className="cl">Trouble spots</div><div className="ct2">{app.weakIds.length === 1 ? "1 question you keep missing" : app.weakIds.length + " questions you keep missing"}</div><div className="cs">Practice just those</div></div>
           <div className="go2">›</div>
         </button>
       )}
@@ -4190,7 +4224,7 @@ function Dashboard({ app }) {
    so long-press and cmd-click work, and an app with nowhere to go is left out
    rather than shown greyed. */
 function AppLauncher({ app, compact }) {
-  const handlers = { studyit: app && app.onOpenStudyIt, mathema: app && app.onOpenMathema };
+  const handlers = { studyit: app && app.onOpenStudyIt, mathema: app && app.onOpenMathema, elements: app && app.onOpenElements };
   const doors = openDoors(handlers);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef(null);
@@ -4248,7 +4282,7 @@ function AppLauncher({ app, compact }) {
 }
 
 function AppDoors({ app }) {
-  const handlers = { studyit: app.onOpenStudyIt, mathema: app.onOpenMathema };
+  const handlers = { studyit: app.onOpenStudyIt, mathema: app.onOpenMathema, elements: app.onOpenElements };
   const doors = openDoors(handlers);
   if (doors.length === 0) return null;
   const inner = d => (
@@ -4459,7 +4493,7 @@ function ClassChapters({ app, s }) {
       </div>
       {cls.steps.length > 0 && (
         <button className="btn go big" onClick={() => app.openStep(s.id, resume)}>
-          {totalDone === 0 ? "Start " + s.name + " \u203a" : totalDone === cls.steps.length ? "Practise again \u203a" : "Continue \u203a"}
+          {totalDone === 0 ? "Start " + s.name + " \u203a" : totalDone === cls.steps.length ? "Practice again \u203a" : "Continue \u203a"}
         </button>
       )}
       {totalDone < cls.steps.length && (
@@ -5041,7 +5075,7 @@ function ProgressScreen({ app }) {
       {app.weakIds.length > 0 && (
         <button className="cont" style={{ "--a": "#f08c00", "--a-tint": "#fff0d6", marginTop: 14 }} onClick={() => { haptic(6); app.go({ tab: "learn", scr: "weak" }); }}>
           <div className="cic" style={{ background: "#fff0d6" }}>🎯</div>
-          <div><div className="cl">Trouble spots</div><div className="ct2">{app.weakIds.length === 1 ? "1 question you keep missing" : app.weakIds.length + " questions you keep missing"}</div><div className="cs">Practise just those</div></div>
+          <div><div className="cl">Trouble spots</div><div className="ct2">{app.weakIds.length === 1 ? "1 question you keep missing" : app.weakIds.length + " questions you keep missing"}</div><div className="cs">Practice just those</div></div>
           <div className="go2">›</div>
         </button>
       )}
@@ -5713,7 +5747,7 @@ function Confetti({ trigger }) {
 
 // The routes this shell knows about. Anything else falls back to the hub, so a
 // stale or mistyped link lands somewhere real instead of a blank screen.
-const ROUTES = { "": "hub", "#": "hub", "#/": "hub", "#/study": "study", "#/math": "math" };
+const ROUTES = { "": "hub", "#": "hub", "#/": "hub", "#/study": "study", "#/math": "math", "#/science": "science" };
 
 /* An app mounted inside the hub keeps its own routes in the same hash, so the
    hub has to hand over everything beneath that app's prefix rather than only
@@ -5737,11 +5771,11 @@ export function routeFromHash(hash) {
 
    Deliberate choices:
    - Bottom LEFT. Study It's own floating things (toasts, the scroll-to-top
-     button) sit bottom-centre at left:50%, so this can't collide with them.
+     button) sit bottom-center at left:50%, so this can't collide with them.
    - z-index 190. Above Study It's page content, but BELOW its toasts (200) and
      its modals (260-270), so an open dialog covers this rather than having a
      stray button floating on top of it.
-   - No theme colours. Study It has a light and a dark palette and swaps them
+   - No theme colors. Study It has a light and a dark palette and swaps them
      live; a pill that read the saved theme would go stale the moment someone
      toggled it. This is a self-contained high-contrast pill instead, legible on
      both papers, with nothing to keep in sync.
@@ -5794,7 +5828,8 @@ export default function Lectern() {
   // Navigating by changing the hash keeps the browser Back button honest:
   // Back out of Study It returns you to the hub, which is what a door should do.
   const go = useCallback(to => {
-    const next = to === "study" ? "#/study" : to === "math" ? "#/math" : "#/";
+    const next = to === "study" ? "#/study" : to === "math" ? "#/math"
+      : to === "science" ? "#/science" : "#/";
     if (window.location.hash === next) setRoute(routeFromHash(next));
     else window.location.hash = next;
   }, []);
@@ -5810,9 +5845,19 @@ export default function Lectern() {
     // Lectern names each screen itself, which is more useful than a flat name.
     if (route === "study") document.title = "Study It";
     else if (route === "math") document.title = "Mathema";
-    setFavicon(route === "study" ? STUDY_ICON : route === "math" ? MATH_ICON : APP_ICON);
+    else if (route === "science") document.title = "Elements";
+    setFavicon(route === "study" ? STUDY_ICON : route === "math" ? MATH_ICON
+      : route === "science" ? SCIENCE_ICON : APP_ICON);
   }, [route]);
 
+  if (route === "science") {
+    return (
+      <>
+        <Elements />
+        <HubReturn onBack={() => go("hub")} />
+      </>
+    );
+  }
   if (route === "math") {
     return (
       <>
@@ -5829,5 +5874,6 @@ export default function Lectern() {
       </>
     );
   }
-  return <LecternApp onOpenStudyIt={() => go("study")} onOpenMathema={() => go("math")} />;
+  return <LecternApp onOpenStudyIt={() => go("study")} onOpenMathema={() => go("math")}
+    onOpenElements={() => go("science")} />;
 }
