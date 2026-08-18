@@ -77,6 +77,8 @@ const CHK = (function () {
   // as 15000 mN was refused as unreadable — which is a checker telling someone
   // they are wrong for using a unit it had simply never been taught.
   mN: { s: 1e-3, d: dim({ kg: 1, m: 1, s: -2 }) }, MN: { s: 1e6, d: dim({ kg: 1, m: 1, s: -2 }) },
+  uN: { s: 1e-6, d: dim({ kg: 1, m: 1, s: -2 }) },
+  "V/m": { s: 1, d: dim({ kg: 1, m: 1, s: -3, A: -1 }) },
   mJ: { s: 1e-3, d: dim({ kg: 1, m: 2, s: -2 }) },
   mW: { s: 1e-3, d: dim({ kg: 1, m: 2, s: -3 }) }, GW: { s: 1e9, d: dim({ kg: 1, m: 2, s: -3 }) },
   kV: { s: 1e3, d: dim({ kg: 1, m: 2, s: -3, A: -1 }) },
@@ -143,11 +145,32 @@ const CHK = (function () {
     const low = t.toLowerCase();
     if (ALIAS[low]) return ALIAS[low];
     if (ALIAS[t]) return ALIAS[t];
-    /* No case-insensitive fallback. In SI, case IS the meaning: mS is
-       millisiemens and ms is milliseconds; K is kelvin and k is kilo. Accepting
-       a near-miss on case would silently mark a wrong unit correct, which is
-       worse than refusing to read it. Spelled-out words are handled by ALIAS
-       above, where the intent is unambiguous. */
+    /* SI PREFIXES, handled generically.
+
+       Three separate bugs shipped from enumerating prefixed units by hand —
+       mol/dm^3, uC and uN — each one a topic whose every question failed its
+       own answer because a unit had never been typed into the table. Listing
+       all ninety prefix-and-base combinations would be the same mistake with
+       more rows.
+
+       So: when the exact name is unknown, strip a known prefix and look the
+       REMAINDER up as a base unit. The exact table is consulted first, so
+       deliberate entries (min, mol, nm) still win over any prefix reading.
+
+       Still no case-insensitive fallback. In SI, case IS the meaning: mS is
+       millisiemens and ms is milliseconds; K is kelvin and k is kilo. */
+    var PREFIX = { n: 1e-9, u: 1e-6, "\u00b5": 1e-6, m: 1e-3, c: 1e-2, d: 1e-1,
+                   k: 1e3, M: 1e6, G: 1e9 };
+    var BASEU = ["N", "J", "W", "V", "A", "C", "F", "Hz", "Pa", "m", "g", "s",
+                 "L", "mol", "ohm", "T", "K"];
+    if (t.length > 1) {
+      var pfx = t.charAt(0), rest = t.slice(1);
+      if (PREFIX[pfx] && BASEU.indexOf(rest) !== -1 && UNITS[rest]) {
+        var bu = UNITS[rest];
+        UNITS[t] = { s: bu.s * PREFIX[pfx], d: bu.d.slice() };   // cached
+        return t;
+      }
+    }
     return null;
   }
 
@@ -2082,6 +2105,136 @@ const BATCH5 = [
   }
 ];
 
+/* More AP. The band was seven topics of forty-five, which made "elementary to
+   AP" thinner at the top than the range implies. These are the ones where the
+   work is deciding WHICH relation applies and carrying a quantity through
+   several stages — not arithmetic. */
+const AP2 = [
+  {
+    id: "projectile", name: "Projectiles", subject: "Physics", strand: "Motion",
+    needs: ["accel", "circular"],
+    teach: "Horizontal and vertical motion are independent. Sideways, nothing accelerates the object, so it travels at a steady speed. Downwards, gravity acts as it would on anything dropped. A bullet fired level and one dropped from the same height hit the ground together.",
+    gen: function (r, d) {
+      if (d === 1) {
+        const t = ri(r, 1, 4), h = 0.5 * 9.81 * t * t;
+        return q({ ask: "An object is dropped and falls for " + t +
+            " s (g = 9.81 m/s^2). How far does it fall, to 3 significant figures?",
+          expect: sigText(h, 3) + " m", sigFigs: 3, tol: 0.01,
+          steps: [step("h = ½gt²."), step("t² = " + (t * t)),
+                  step("½ × 9.81 × " + (t * t) + " = " + sigText(h, 3) + " m")],
+          hints: ["Square the time first.", "h = ½gt²."] });
+      }
+      if (d === 2) {
+        const h = ri(r, 5, 60), t = Math.sqrt(2 * h / 9.81);
+        return q({ ask: "A ball rolls off a table " + h +
+            " m high (g = 9.81 m/s^2). How long before it lands, to 3 significant figures?",
+          expect: sigText(t, 3) + " s", sigFigs: 3, tol: 0.01,
+          steps: [step("Only the VERTICAL motion decides the time — the sideways speed does not."),
+                  step("h = ½gt², so t = √(2h ÷ g)"),
+                  step("√(2 × " + h + " ÷ 9.81) = " + sigText(t, 3) + " s")],
+          hints: ["Does the horizontal speed change how long it falls?",
+                  "t = √(2h/g)."] });
+      }
+      const h = ri(r, 5, 45), u = ri(r, 3, 20), t = Math.sqrt(2 * h / 9.81), x = u * t;
+      return q({ ask: "A ball leaves a table " + h + " m high at " + u +
+          " m/s horizontally (g = 9.81 m/s^2). How far from the table does it land, to 3 significant figures?",
+        expect: sigText(x, 3) + " m", sigFigs: 3, tol: 0.01,
+        steps: [step("Time in the air comes from the DROP alone: t = √(2h/g) = " + sig(t, 4) + " s"),
+                step("Sideways there is no acceleration, so distance = speed × time."),
+                step(u + " × " + sig(t, 4) + " = " + sigText(x, 3) + " m"),
+                step("The two directions never mix — that is the whole method.")],
+        hints: ["Find the time from the vertical drop, then use it sideways.",
+                "Horizontal distance = u × t."] });
+    }
+  },
+  {
+    id: "efield", name: "Electric fields", subject: "Physics", strand: "Electricity",
+    needs: ["capacitor"],
+    teach: "Between two parallel plates the field is uniform, and its strength is simply the voltage divided by the gap. A charge placed in it feels a force of qE, whichever way the plates are turned.",
+    gen: function (r, d) {
+      if (d === 1) {
+        const V = ri(r, 2, 12) * 100, dd = ri(r, 1, 9) / 100;
+        return q({ ask: V + " V is applied across plates " + dd +
+            " m apart. What is the field strength, to 3 significant figures?",
+          expect: sigText(V / dd, 3) + " V/m", sigFigs: 3, tol: 0.01,
+          steps: [step("E = V ÷ d."), step(V + " ÷ " + dd + " = " + sigText(V / dd, 3) + " V/m")],
+          hints: ["Voltage over the gap.", "E = V ÷ d."] });
+      }
+      if (d === 2) {
+        const E = ri(r, 2, 9) * 1000, dd = ri(r, 1, 9) / 100;
+        return q({ ask: "A uniform field of " + E + " V/m exists between plates " + dd +
+            " m apart. What voltage is across them, to 3 significant figures?",
+          expect: sigText(E * dd, 3) + " V", sigFigs: 3, tol: 0.01,
+          steps: [step("E = V ÷ d, so V = Ed."),
+                  step(E + " × " + dd + " = " + sigText(E * dd, 3) + " V")],
+          hints: ["Rearrange for the voltage.", "V = E × d."] });
+      }
+      const V = ri(r, 2, 12) * 100, dd = ri(r, 1, 9) / 100, q2 = ri(r, 2, 9);
+      const F = (V / dd) * (q2 * 1e-6);
+      return q({ ask: "A charge of " + q2 + " uC sits between plates " + dd + " m apart with " +
+          V + " V across them. What force acts on it, in uN, to 3 significant figures?",
+        expect: sigText(F * 1e6, 3) + " uN", sigFigs: 3, tol: 0.01,
+        steps: [step("Field first: E = " + V + " ÷ " + dd + " = " + sig(V / dd, 4) + " V/m"),
+                step("Then F = qE, with the charge in coulombs: " + (q2 * 1e-6) + " C"),
+                step("= " + sigText(F * 1e6, 3) + " µN")],
+        hints: ["Two steps: find the field, then the force on the charge.",
+                "F = qE, and mind the microcoulombs."] });
+    }
+  },
+  {
+    id: "gibbs", name: "Free energy and feasibility", subject: "Chemistry", strand: "Reactions",
+    needs: ["enthalpy"],
+    teach: "A reaction is feasible when the free energy change is negative. Enthalpy is only half the story: entropy matters too, and it is weighted by temperature — which is why some reactions that will not go when cold will go when hot.",
+    gen: function (r, d) {
+      if (d === 1) {
+        const H = -(ri(r, 2, 9) * 10), T = 298, S = ri(r, 20, 200);
+        const G = H * 1000 - T * S;
+        return q({ ask: "A reaction has an enthalpy change of " + H +
+            " kJ/mol and an entropy change of +" + S + " J/mol K at " + T +
+            " K. What is the free energy change, in kJ/mol, to 3 significant figures?",
+          expect: sigText(G / 1000, 3) + "", sigFigs: 3, tol: 0.02,
+          steps: [step("ΔG = ΔH − TΔS."),
+                  step("Work in joules: ΔH = " + (H * 1000) + " J/mol"),
+                  step("TΔS = " + T + " × " + S + " = " + (T * S)),
+                  step((H * 1000) + " − " + (T * S) + " = " + sig(G, 4) + " J/mol = " + sigText(G / 1000, 3) + " kJ/mol")],
+          hints: ["Get both terms into the same units before subtracting.",
+                  "ΔG = ΔH − TΔS."] });
+      }
+      if (d === 2) {
+        const H = ri(r, 2, 9) * 10, S = ri(r, 50, 300), T = Math.round(H * 1000 / S);
+        return q({ ask: "A reaction has ΔH = +" + H + " kJ/mol and ΔS = +" + S +
+            " J/mol K. Above what temperature does it become feasible, in K, to 3 significant figures?",
+          expect: sigText(H * 1000 / S, 3) + " K", sigFigs: 3, tol: 0.02,
+          steps: [step("Feasible means ΔG < 0, so the turning point is ΔG = 0."),
+                  step("0 = ΔH − TΔS, so T = ΔH ÷ ΔS"),
+                  step((H * 1000) + " ÷ " + S + " = " + sigText(H * 1000 / S, 3) + " K"),
+                  step("Above that, TΔS outweighs ΔH and the reaction goes.")],
+          hints: ["Set ΔG to zero and solve for T.",
+                  "T = ΔH ÷ ΔS, in matching units."] });
+      }
+      const sets = [{ ask: "A reaction has ΔH negative and ΔS positive. When is it feasible?",
+                      options: [{ t: "At all temperatures" },
+                                { t: "Only when hot", why: "Both terms already favor it — heating is not needed." },
+                                { t: "Only when cold", why: "Cooling would not help; nothing here opposes the reaction." }], correct: 0,
+                      steps: ["ΔG = ΔH − TΔS.",
+                              "A negative ΔH and a positive ΔS both push ΔG negative, whatever T is."] },
+                    { ask: "A reaction has ΔH positive and ΔS positive. When is it feasible?",
+                      options: [{ t: "Never", why: "The entropy term can win if T is large enough." },
+                                { t: "Only above a certain temperature" },
+                                { t: "At all temperatures", why: "When T is small, TΔS is too small to overcome a positive ΔH." }], correct: 1,
+                      steps: ["The TΔS term grows with temperature.",
+                              "Once it exceeds ΔH, the free energy change turns negative."] }];
+      const c = pick(r, sets);
+      return q({ ask: c.ask, options: c.options, correct: c.correct,
+        steps: c.steps.map(function (x) { return step(x); }),
+        hints: ["Which way does each term push ΔG?",
+                "Only the entropy term depends on temperature."] });
+    }
+  }
+];
+
+SKILLS.push.apply(SKILLS, AP2);
+
 SKILLS.push.apply(SKILLS, BATCH5);
 
 SKILLS.push.apply(SKILLS, AP_SKILLS);
@@ -2127,6 +2280,7 @@ const LEVEL_OF = {
   // AP: multi-stage reasoning where the method itself is the difficulty.
   empirical: "AP", titration: "AP", circular: "AP", idealgas: "AP",
   capacitor: "AP", equilibrium: "AP", enthalpy: "AP",
+  projectile: "AP", efield: "AP", gibbs: "AP",
 };
 
 function levelOf(skillId) { return LEVEL_OF[skillId] || "High school"; }
@@ -2327,6 +2481,18 @@ const RELATIONS = {
   capacitor: { name: "charge = capacitance × voltage", vars: { Q: "C", C_: "F", V: "V" },
                solve: { Q: g => g.C_ * g.V, C_: g => g.Q / g.V, V: g => g.Q / g.C_ },
                check: g => g.C_ * g.V - g.Q },
+  efield:    { name: "electric field strength = voltage ÷ separation", vars: { E: "V/m", V: "V", d: "m" },
+               solve: { E: g => g.V / g.d, V: g => g.E * g.d, d: g => g.V / g.E },
+               check: g => g.E * g.d - g.V },
+  gibbs:     { name: "free energy change = enthalpy change − temperature × entropy change",
+               vars: { G: "J", H: "J", T: "K", S_: "J/K" },
+               solve: { G: g => g.H - g.T * g.S_, H: g => g.G + g.T * g.S_,
+                        S_: g => (g.H - g.G) / g.T, T: g => (g.H - g.G) / g.S_ },
+               check: g => g.H - g.T * g.S_ - g.G },
+  projectile:{ name: "height fallen = ½ × g × time²", vars: { h: "m", g_: "m/s^2", t: "s" },
+               solve: { h: g => 0.5 * g.g_ * g.t * g.t, t: g => Math.sqrt(2 * g.h / g.g_),
+                        g_: g => 2 * g.h / (g.t * g.t) },
+               check: g => 0.5 * g.g_ * g.t * g.t - g.h },
   charge:    { name: "charge = current × time", vars: { Q: "C", I: "A", t: "s" },
                solve: { Q: g => g.I * g.t, I: g => g.Q / g.t, t: g => g.Q / g.I },
                check: g => g.I * g.t - g.Q },
@@ -2854,6 +3020,90 @@ function applyAnswer(rec, skillId, tier, correct, question, helped) {
   return { skills: skills, misses: misses };
 }
 
+/* ------------------------------ LEVEL CHECK ---------------------------
+   "Which band should I be working in?"
+
+   The level filter says what EXISTS at each band. Nothing said which band the
+   learner belongs in, and with 45 topics across four of them that is the first
+   question anyone has.
+
+   WHY THIS IS NOT MATHEMA'S PLACEMENT TEST
+
+   Mathema walks a 182-skill prerequisite graph and returns a frontier. Elements
+   has a shallow graph — most topics need nothing first — so that machinery
+   would be a lot of ceremony for very little signal. What Elements has instead
+   is a declared level per topic, so the useful question is narrower and the
+   test can be much shorter: work UP from the bottom, stop when a band stops
+   holding.
+
+   WHAT IT REPORTS
+
+   The highest band where most answers were right, and the first band that
+   wasn't. Not a score, not a percentage, and explicitly not a verdict on the
+   learner — a band is where to start reading, and it says so.
+
+   Two questions per band, eight in total. That is deliberately few: this is a
+   signpost, not an exam, and a long test at the front door is a good way to
+   make someone close the tab.
+   ---------------------------------------------------------------------- */
+const CHECK_PER_BAND = 2;
+
+/* Build the check: a couple of questions from each band, easiest band first,
+   drawn from topics that band actually has. Seeded so a retry gives the same
+   paper rather than a different one — a different result from a different draw
+   would be indistinguishable from having learned something. */
+function buildLevelCheck(seed) {
+  const out = [];
+  let n = seed || 1;
+  const next = function () { n = (n * 1103515245 + 12345) & 0x7fffffff; return n; };
+  LEVELS.forEach(function (L) {
+    const inBand = SKILLS.filter(function (sk) { return levelOf(sk.id) === L; });
+    if (!inBand.length) return;
+    for (let i = 0; i < CHECK_PER_BAND; i++) {
+      const sk = inBand[next() % inBand.length];
+      // Middle tier: the question should ask whether the topic is there at all,
+      // not whether its hardest form is.
+      let q;
+      try { q = build(sk.id, next(), 2); } catch (e) { continue; }
+      if (q && q.ask) out.push({ level: L, skill: sk.id, q: q });
+    }
+  });
+  return out;
+}
+
+/* Read the answers.
+
+   `solid` is the highest band where the learner got most right AND every band
+   below it held too — a good score at AP means nothing if middle school did
+   not hold, and reporting it would be flattering rather than useful.
+
+   Refusals to answer count as not-yet, which is the truthful reading: a
+   question you would rather skip is not one you are secure on. */
+function readLevelCheck(results) {
+  const byBand = {};
+  results.forEach(function (r) {
+    const b = byBand[r.level] || (byBand[r.level] = { right: 0, asked: 0 });
+    b.asked++; if (r.correct) b.right++;
+  });
+
+  let solid = null, firstShaky = null;
+  for (let i = 0; i < LEVELS.length; i++) {
+    const L = LEVELS[i], b = byBand[L];
+    if (!b || !b.asked) continue;
+    const held = b.right / b.asked >= 0.5;
+    if (held && firstShaky === null) solid = L;
+    else if (!held && firstShaky === null) { firstShaky = L; }
+  }
+  return {
+    byBand: byBand,
+    solid: solid,
+    startAt: firstShaky || solid || LEVELS[0],
+    // Said plainly, because eight questions is eight questions.
+    caveat: "Eight questions is a signpost, not a verdict. Nothing here is saved " +
+      "against your record, and you can work at any level you like."
+  };
+}
+
 /* ---------------------------- WHAT COMES FIRST ------------------------
    Every skill declares what it rests on. Until now that was decoration — the
    data was there and nothing read it, which is the same flaw as recording
@@ -3064,6 +3314,10 @@ const CSS = `
   font-size:12.5px;line-height:1.55;color:#53389e;margin-bottom:14px}
 .el .genwarn b{display:block;margin-bottom:3px}
 .el .askbtn.record{border-style:solid;border-color:var(--line)}
+/* Quieter once there is a record: still there, no longer the loudest thing on
+   the screen. */
+.el .askbtn.quiet .nm{font-size:13.5px;font-weight:650;color:var(--ink-soft)}
+.el .askbtn.quiet .st{font-size:11.5px}
 .el .next{display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;
   background:var(--a);border:1px solid var(--a);border-radius:var(--r);padding:14px 15px;
   margin-bottom:12px;font-family:inherit;color:#fff}
@@ -3392,6 +3646,93 @@ function Progress({ rec, onExit, onOpen, topicName, topics, onRestore }) {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/* The level check screen. */
+function LevelCheck({ onExit, onPick }) {
+  const [seed] = React.useState(() => Math.floor(Math.random() * 1e9));
+  const paper = React.useMemo(() => buildLevelCheck(seed), [seed]);
+  const [i, setI] = React.useState(0);
+  const [results, setResults] = React.useState([]);
+  const [given, setGiven] = React.useState("");
+  const [note, setNote] = React.useState(null);
+  const item = paper[i];
+
+  const record = (correct) => {
+    const next = results.concat([{ level: item.level, skill: item.skill, correct: correct }]);
+    setResults(next); setGiven(""); setNote(null); setI(i + 1);
+  };
+
+  const submit = () => {
+    if (item.q.options) return;
+    if (!given.trim()) return;
+    const r = mark(item.q, given);
+    // Unreadable says nothing about the science, so it is re-asked rather than
+    // counted — the same rule as everywhere else in the app.
+    if (r.ok === undefined) { setNote(r.why || "That couldn't be read."); setGiven(""); return; }
+    record(r.ok === true);
+  };
+
+  if (i >= paper.length) {
+    const out = readLevelCheck(results);
+    return (
+      <div className="wrap">
+        <button className="back" onClick={onExit}>‹ All topics</button>
+        <h1>Where to start</h1>
+        <p className="sub">
+          {out.solid
+            ? "You were solid up to " + out.solid + "."
+            : "The earlier questions didn't hold, so the best place to start is the beginning."}
+          {" "}Try <b>{out.startAt}</b> first.
+        </p>
+        <div className="card">
+          {LEVELS.map(L => {
+            const b = out.byBand[L];
+            if (!b) return null;
+            return <p className="muted" key={L}><b>{L}</b> — {b.right} of {b.asked} right</p>;
+          })}
+        </div>
+        <div className="row">
+          <button className="btn primary" onClick={() => onPick(out.startAt)}>
+            Show me {out.startAt}
+          </button>
+          <button className="btn" onClick={() => onPick(null)}>Show everything</button>
+        </div>
+        <p className="muted" style={{ marginTop: 14 }}>{out.caveat}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="wrap">
+      <button className="back" onClick={onExit}>‹ All topics</button>
+      <h1>Where to start</h1>
+      <p className="sub">Question {i + 1} of {paper.length}. Skipping is fine — it just counts as not yet.</p>
+      <div className="muted" style={{ marginBottom: 8 }}>{BY_ID[item.skill].subject} · {item.level}</div>
+      <p className="ask">{item.q.ask}</p>
+
+      {item.q.options ? (
+        <div className="opts" role="radiogroup" aria-label={item.q.ask}>
+          {item.q.options.map((o, k) => (
+            <button key={k} className="opt" role="radio" aria-checked="false"
+              onClick={() => record(k === item.q.correct)}>{o.t}</button>
+          ))}
+        </div>
+      ) : (
+        <input className="ans" value={given} placeholder="Your answer, with its unit"
+          aria-label={"Your answer to: " + item.q.ask}
+          onChange={e => setGiven(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") submit(); }} />
+      )}
+
+      {note && <div className="fb hm" role="status" aria-live="polite">{note} Nothing was counted — try again.</div>}
+
+      <div className="row">
+        {!item.q.options && <button className="btn primary" onClick={submit}>Answer</button>}
+        <button className="btn" onClick={() => record(false)}>Skip</button>
+      </div>
     </div>
   );
 }
@@ -3735,7 +4076,7 @@ function Topic({ skillId, tierHint, onExit, onRecord, rec }) {
   );
 }
 
-function Home({ onOpen, rec, onReview, onAsk, topics, onOpenGen, onProgress, level, onLevel }) {
+function Home({ onOpen, rec, onReview, onAsk, topics, onOpenGen, onProgress, level, onLevel, onCheck }) {
   return (
     <div className="wrap">
       <h1>Elements</h1>
@@ -3802,6 +4143,29 @@ function Home({ onOpen, rec, onReview, onAsk, topics, onOpenGen, onProgress, lev
           <span className="go">›</span>
         </button>
       ); })()}
+
+      {/* Offered prominently to someone with no record, and still reachable
+          afterwards — just quieter. Hiding it the moment a single question is
+          answered meant a learner could never re-check their level, which is
+          exactly the thing you want to do again after a few weeks. */}
+      {(() => {
+        const t = totals(rec);
+        return (
+          <button className={"askbtn" + (t.seen > 0 ? " quiet" : "")} onClick={onCheck}>
+            <div>
+              <div className="nm">
+                {t.seen > 0 ? "Check your level again" : "Not sure where to start?"}
+              </div>
+              <div className="st">
+                {t.seen > 0
+                  ? "Eight questions, and it changes nothing you have done."
+                  : "Eight quick questions to find your level. Nothing is saved."}
+              </div>
+            </div>
+            <span className="go">›</span>
+          </button>
+        );
+      })()}
 
       <button className="askbtn" onClick={onAsk}>
         <div>
@@ -3898,7 +4262,10 @@ export default function Elements() {
   return (
     <div className="el">
       <style>{CSS}</style>
-      {view === "ask"
+      {view === "check"
+        ? <LevelCheck onExit={() => setView(null)}
+            onPick={(L) => { setLevel(L); setView(null); }} />
+        : view === "ask"
         ? <AskTopic onExit={() => setView(null)} topics={topics}
             onMade={(t) => { setTopics(ts => [t].concat(ts)); setView({ gen: t }); }}
             onOpenExisting={(d) => {
@@ -3945,7 +4312,7 @@ export default function Elements() {
               if (made) setView({ gen: made }); else setOpen({ id: d.skill, tier: d.tier });
             }}
                 onAsk={() => setView("ask")} onOpenGen={(t) => setView({ gen: t })}
-                onProgress={() => setView("progress")} />}
+                onProgress={() => setView("progress")} onCheck={() => setView("check")} />}
     </div>
   );
 }
