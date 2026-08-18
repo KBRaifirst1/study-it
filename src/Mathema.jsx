@@ -17,7 +17,7 @@ import React from "react";
 
      2. NOTHING IS EXPLAINED BY GUESSWORK. Questions are built backwards from
         their own answers, recording each move. Played in reverse, those moves
-        ARE the worked solution. No language model writes the maths, so no
+        ARE the worked solution. No language model writes the math, so no
         explanation here can be invented.
 
         That rule has a cost, and the solver below is the answer to it: a
@@ -1070,7 +1070,7 @@ const K = (function (S) {
      learner sees THEIR sum written out, not a stand-in. */
   /* Worked steps are display text, and they sat beside prompts that use a proper
      minus while printing an ASCII hyphen themselves: "x \u2212 9 = 0" above
-     "So x = -9". Normalising here fixes every step at once rather than in each
+     "So x = -9". Normalizing here fixes every step at once rather than in each
      of the 138 generators. */
   function tidyMinus(t) {
     if (typeof t !== "string") return t;
@@ -1473,7 +1473,7 @@ const K = (function (S) {
       teach: "Multiplying fractions needs no common denominator \u2014 multiply across the top and across the bottom. Taking 2/3 of 3/4 means taking a part of a part, which is why the result is smaller than both.",
       gen: function (r, d) {
         if (d >= 2) {
-          // Cancelling first keeps the numbers small. Built so a factor really
+          // Canceling first keeps the numbers small. Built so a factor really
           // does cross between the two fractions, or there is nothing to cancel.
           var k2 = ri(r, 2, 3 + 2 * d);                 // the shared factor
           var a2 = ri(r, 1, 3 + d), e2 = ri(r, 2, 3 + 2 * d);
@@ -1490,7 +1490,7 @@ const K = (function (S) {
             step("That gives " + (b2 * e2 / g0 === 1 ? String(a2 * c2 / g0) : (a2 * c2 / g0) + "/" + (b2 * e2 / g0)) +
               " \u2014 already in its simplest form, with no big numbers to reduce at the end.")],
             hints: ["A top and a bottom may share a factor even across two different fractions.",
-            "Cancelling first is the same answer with smaller arithmetic."]
+            "Canceling first is the same answer with smaller arithmetic."]
           };
         }
         var a = ri(r, 1, 3 + 2 * d), b = ri(r, 2, 5 + 2 * d), c = ri(r, 1, 3 + 2 * d), e = ri(r, 2, 5 + 2 * d);
@@ -1922,7 +1922,7 @@ const K = (function (S) {
       gen: function (r, d) {
         // Backwards: build numerator and denominator from shared factors.
         if (d >= 2) {
-          // Nothing cancels until both parts are factorised. Cancelling a term
+          // Nothing cancels until both parts are factorised. Canceling a term
           // rather than a factor is the classic error the tier exists to teach.
           var a2 = ri(r, 2, 3 + 3 * d);
           // (x\u00B2 \u2212 a\u00B2) / (x \u2212 a)  =  x + a, but only once you spot the difference of squares
@@ -2028,8 +2028,8 @@ const K = (function (S) {
               return [step(row.deg + "\u00B0 is past 90\u00B0, so it lands in the " + q + " quadrant."),
               step("The matching first-quadrant angle is " + ref + "\u00B0, which gives the same size of coordinate."),
               step(which === "cos"
-                ? (negCos ? "That quadrant is left of the centre, so the across-coordinate is negative." : "That quadrant is right of the centre, so the across-coordinate stays positive.")
-                : (negSin ? "That quadrant is below the centre, so the up-coordinate is negative." : "That quadrant is above the centre, so the up-coordinate stays positive.")),
+                ? (negCos ? "That quadrant is left of the center, so the across-coordinate is negative." : "That quadrant is right of the center, so the across-coordinate stays positive.")
+                : (negSin ? "That quadrant is below the center, so the up-coordinate is negative." : "That quadrant is above the center, so the up-coordinate stays positive.")),
               step("That gives " + row[which] + ".")];
             })(),
           hints: d === 1 ? ["Where does " + row.deg + "\u00B0 land on the unit circle?", which === "cos" ? "Cosine reads across." : "Sine reads up."]
@@ -2286,7 +2286,7 @@ const K = (function (S) {
             steps: [step("Integrate as usual: " + lead(k2, "x") + " integrates to " + lead(k2 / 2, "x\u00B2") + "."),
             step("At x = " + hi2 + " that is " + (k2 / 2 * hi2 * hi2) + ", and at x = " + numTxt(lo2) + " it is also " + (k2 / 2 * lo2 * lo2) + ", because squaring removes the sign."),
             step("Subtracting gives " + (k2 / 2 * hi2 * hi2) + " \u2212 " + (k2 / 2 * lo2 * lo2) + " = 0."),
-            step("The integral is zero, but the AREA is not: the part below the axis counted as negative and cancelled the part above.")],
+            step("The integral is zero, but the AREA is not: the part below the axis counted as negative and canceled the part above.")],
             hints: ["Work it out as an ordinary definite integral first.",
             "Then ask whether the curve stays above the axis throughout."]
           };
@@ -2438,7 +2438,7 @@ const K = (function (S) {
         for (var i = 0; i < n; i++) vals.push(ri(r, 1, 40));
         var sorted = vals.slice().sort(function (a, b) { return a - b; });
         var mid = n % 2 ? sorted[(n - 1) / 2] : (sorted[n / 2 - 1] + sorted[n / 2]) / 2;
-        var wantRange = d >= 2;   // tier 2 is spread rather than centre
+        var wantRange = d >= 2;   // tier 2 is spread rather than center
         if (wantRange) return {
           ask: "The range of " + vals.join(", ") + "?",
           criterion: { kind: "numeric", value: sorted[n - 1] - sorted[0], tol: 1e-9 },
@@ -3747,7 +3747,7 @@ const K = (function (S) {
     /* ===================== STATISTICS ===================== */
     {
       id: "mode", name: "Mode", strand: "Statistics", needs: ["median"],
-      teach: "The mode is the value that appears most often, and it is the only average that works on things that aren't numbers — the most common colour, or the most popular size. In 4, 7, 4, 9, 4 the mode is 4, even though the mean is 5.6 and the median is 4.",
+      teach: "The mode is the value that appears most often, and it is the only average that works on things that aren't numbers — the most common color, or the most popular size. In 4, 7, 4, 9, 4 the mode is 4, even though the mean is 5.6 and the median is 4.",
       gen: function (r, d) {
         if (d >= 2) {
           // With grouped data no single value repeats, so you name the CLASS with
@@ -3988,7 +3988,7 @@ const K = (function (S) {
       teach: "To find the largest or smallest a quantity can be, write it as a function of one variable, differentiate, and set that to zero. A rectangle with perimeter 40 has area x(20 − x), whose derivative 20 − 2x is zero at x = 10 — a square, giving the largest area of 100.",
       gen: function (r, d) {
         if (d >= 2) {
-          // The reverse problem: area fixed, perimeter minimised. The square wins
+          // The reverse problem: area fixed, perimeter minimized. The square wins
           // again, but for the opposite reason, and that is worth meeting.
           var side2 = ri(r, 3, 15 + 15 * d);
           var area2 = side2 * side2;
@@ -4084,10 +4084,10 @@ const K = (function (S) {
           ask: "Which quadrant is (" + x + ", " + y + ") in?  Answer 1, 2, 3 or 4.",
           criterion: { kind: "numeric", value: quad, tol: 1e-9 },
           widget: { kind: "grapher", points: [[x, y]], line: { m: 0, c: 0 } },
-          steps: [step("Across is " + x + ", so it's to the " + (x > 0 ? "right" : "left") + " of the centre."),
+          steps: [step("Across is " + x + ", so it's to the " + (x > 0 ? "right" : "left") + " of the center."),
           step("Up is " + y + ", so it's " + (y > 0 ? "above" : "below") + " it."),
           step("Quadrants are numbered anticlockwise from the top right, so that's quadrant " + quad + ".")],
-          hints: ["Which side of the centre is it, and is it above or below?"]
+          hints: ["Which side of the center is it, and is it above or below?"]
         };
         // Backwards: choose the point, then ask for the coordinate the plot shows.
         var which = r() < 0.5;
@@ -4256,7 +4256,7 @@ const K = (function (S) {
           return {
             ask: "A circle is centred on the origin and passes through (" + trip[0] + ", " + trip[1] + "). What is r\u00B2 in x\u00B2 + y\u00B2 = r\u00B2?",
             criterion: { kind: "numeric", value: trip[2] * trip[2], tol: 1e-9 },
-            steps: [step("Every point on the circle is the same distance from the centre."),
+            steps: [step("Every point on the circle is the same distance from the center."),
             step("That distance comes from Pythagoras: " + trip[0] + "\u00B2 + " + trip[1] + "\u00B2 = " + (trip[0] * trip[0] + trip[1] * trip[1]) + "."),
             step("So r\u00B2 = " + trip[2] * trip[2] + ", and the radius itself is " + trip[2] + ".")],
             hints: ["The equation is just Pythagoras applied to every point.", "Substitute the point in and see what r\u00B2 must be."]
@@ -4315,7 +4315,7 @@ const K = (function (S) {
 
     {
       id: "special-seq", name: "Special sequences", strand: "Algebra", needs: ["sequence"],
-      teach: "Some sequences turn up so often that they are worth recognising on sight, because naming the pattern gives you the next term immediately.",
+      teach: "Some sequences turn up so often that they are worth recognizing on sight, because naming the pattern gives you the next term immediately.",
       gen: function (r, d) {
         var kinds = d === 1
           ? [{ name: "square", f: function (n) { return n * n; } }, { name: "triangular", f: function (n) { return n * (n + 1) / 2; } }]
@@ -4335,7 +4335,7 @@ const K = (function (S) {
             criterion: { kind: "numeric", value: seq[start + 5], tol: 1e-9 },
             steps: [step("This is the Fibonacci sequence: each term is the two before it added together."),
             step(shown[3] + " + " + shown[4] + " = " + seq[start + 5] + ".")],
-            hints: ["Try adding two neighbouring terms and see what you get."]
+            hints: ["Try adding two neighboring terms and see what you get."]
           };
         }
         var from = ri(r, 1, 3 + 4 * d);   // start further along, for more variety
@@ -4411,7 +4411,7 @@ const K = (function (S) {
       gen: function (r, d) {
         if (d >= 2) {
           // Estimating a DIVISION means choosing numbers that divide nicely,
-          // which is a different judgement from rounding to one figure.
+          // which is a different judgment from rounding to one figure.
           var b2 = pick(r, [2, 3, 4, 5, 6, 8]);
           // Estimating 7 \u00F7 2 is pointless \u2014 the numbers must be big enough that
           // the estimate is doing real work.
@@ -4513,7 +4513,7 @@ const K = (function (S) {
         }
         var a = ri(r, 2, 4 + 2 * d), b = ri(r, 2, 3 + 2 * d);
         var c = d >= 3 ? ri(r, 2, 4) : 1;
-        var nouns = pick(r, [["shirts", "trousers", "hats"], ["starters", "mains", "puddings"], ["colours", "sizes", "styles"]]);
+        var nouns = pick(r, [["shirts", "trousers", "hats"], ["starters", "mains", "puddings"], ["colors", "sizes", "styles"]]);
         return {
           ask: "There are " + a + " " + nouns[0] + " and " + b + " " + nouns[1] +
             (c > 1 ? " and " + c + " " + nouns[2] : "") + ". How many different combinations are there?",
@@ -4602,13 +4602,13 @@ const K = (function (S) {
       teach: "In inverse proportion, doubling one quantity halves the other, so it is their product that stays fixed rather than their ratio. If 4 people take 6 hours, the job is 24 person-hours, so 3 people take 8 hours. Treating it as direct proportion is the classic error, and it gives an answer that moves the wrong way.",
       gen: function (r, d) {
         if (d >= 2) {
-          // Recognising WHICH kind of proportion it is, before doing anything.
+          // Recognizing WHICH kind of proportion it is, before doing anything.
           var isInverse = r() < 0.5;
           var a2 = ri(r, 2, 4 + 2 * d), b2 = ri(r, 2, 6 + 4 * d);
           return {
             ask: isInverse
               ? "It takes " + a2 + " people " + b2 + " hours. With more people, does the time go UP?  1 for yes, 0 for no."
-              : "It takes " + a2 + " hours to travel " + (a2 * b2) + " km. Travelling further at the same speed, does the time go UP?  1 for yes, 0 for no.",
+              : "It takes " + a2 + " hours to travel " + (a2 * b2) + " km. Traveling further at the same speed, does the time go UP?  1 for yes, 0 for no.",
             criterion: { kind: "numeric", value: isInverse ? 0 : 1, tol: 1e-9 },
             steps: [step(isInverse
               ? "More people sharing the same job means less time each, so the two quantities move in OPPOSITE directions."
@@ -4639,7 +4639,7 @@ const K = (function (S) {
     {
       id: "units", name: "Converting units", strand: "Fractions", needs: ["mul", "decimals"],
       method: "Multiply by the conversion factor",
-      teach: "Converting units means multiplying or dividing by the factor between them, and the direction is decided by whether the new unit is bigger or smaller. There are 1000 metres in a kilometre, so 2.5 km is 2500 m; going the other way, 4500 m is 4.5 km. If the number gets bigger when the unit gets smaller, you have gone the right way.",
+      teach: "Converting units means multiplying or dividing by the factor between them, and the direction is decided by whether the new unit is bigger or smaller. There are 1000 meters in a kilometre, so 2.5 km is 2500 m; going the other way, 4500 m is 4.5 km. If the number gets bigger when the unit gets smaller, you have gone the right way.",
       gen: function (r, d) {
         var conv = pick(r, d === 1
           ? [["cm", "mm", 10], ["m", "cm", 100], ["km", "m", 1000]]
@@ -4687,12 +4687,12 @@ const K = (function (S) {
           // Converting the units of a compound measure, where both parts change.
           var kmh = ri(r, 2, 8 + 6 * d) * 9;
           return {
-            ask: kmh + " km per hour is how many metres per second?",
+            ask: kmh + " km per hour is how many meters per second?",
             criterion: { kind: "numeric", value: Math.round(kmh * 1000 / 3600 * 1000) / 1000, tol: 0.002 },
             steps: [step("Both parts of the unit change, not just one."),
-            step("A kilometre is 1000 metres, so " + kmh + " km becomes " + (kmh * 1000) + " metres."),
+            step("A kilometre is 1000 meters, so " + kmh + " km becomes " + (kmh * 1000) + " meters."),
             step("An hour is 3600 seconds, so divide by 3600: " + (kmh * 1000) + " ÷ 3600."),
-            step("That gives " + (Math.round(kmh * 1000 / 3600 * 1000) / 1000) + " metres per second.")],
+            step("That gives " + (Math.round(kmh * 1000 / 3600 * 1000) / 1000) + " meters per second.")],
             hints: ["The unit has a top and a bottom, and both need converting.",
             "How many seconds are there in an hour?"]
           };
@@ -5276,7 +5276,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     {
       id: "circle-theorems", name: "Circle theorems", strand: "Geometry", needs: ["angles", "circle"],
       method: "The angle rules of a circle",
-      teach: "A handful of rules govern angles in circles. The angle at the centre is twice the angle at the circumference on the same arc, so 80\u00B0 at the centre gives 40\u00B0 at the edge. An angle in a semicircle is always 90\u00B0. Opposite angles of a cyclic quadrilateral add to 180\u00B0, and a tangent meets a radius at 90\u00B0.",
+      teach: "A handful of rules govern angles in circles. The angle at the center is twice the angle at the circumference on the same arc, so 80\u00B0 at the center gives 40\u00B0 at the edge. An angle in a semicircle is always 90\u00B0. Opposite angles of a cyclic quadrilateral add to 180\u00B0, and a tangent meets a radius at 90\u00B0.",
       gen: function (r, d) {
         if (d >= 2) {
           // Two theorems in one question, which is how they actually appear.
@@ -5299,9 +5299,9 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
         if (k.q === "centre") {
           var edge = ri(r, 20, 70);
           return {
-            ask: "The angle at the centre of a circle is " + (2 * edge) + "\u00B0. What is the angle at the circumference on the same arc?",
+            ask: "The angle at the center of a circle is " + (2 * edge) + "\u00B0. What is the angle at the circumference on the same arc?",
             criterion: { kind: "numeric", value: edge, tol: 1e-9 },
-            steps: [step("The angle at the centre is twice the angle at the circumference."),
+            steps: [step("The angle at the center is twice the angle at the circumference."),
             step((2 * edge) + " \u00F7 2 = " + edge + "\u00B0.")],
             hints: ["Which of the two is the bigger one?"]
           };
@@ -5820,7 +5820,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
           var pop = Math.round(first * second / marked);
           return {
             ask: first + " fish are tagged and released. Later " + second + " are caught, of which " + marked + " are tagged. Estimate the population.",
-            // A tolerance of 1 whole fish accepts a neighbouring wrong answer, so
+            // A tolerance of 1 whole fish accepts a neighboring wrong answer, so
             // the estimate is rounded and then required exactly.
             criterion: { kind: "numeric", value: pop, tol: 0.5 },
             steps: [step("The population cannot be counted directly, so the sample has to stand in for it."),
@@ -6076,7 +6076,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       teach: "The identity sin\u00B2\u03B8 + cos\u00B2\u03B8 = 1 comes straight from Pythagoras on the unit circle, where the coordinates are cos and sin and the radius is 1. It lets you find one ratio from the other: if sin\u03B8 = 0.6 then cos\u00B2\u03B8 = 1 \u2212 0.36 = 0.64, so cos\u03B8 = 0.8. The identity tan\u03B8 = sin\u03B8 \u00F7 cos\u03B8 then gives the third.",
       gen: function (r, d) {
         // More triples, and scaled, or forcing the tan tier leaves too few
-        // distinct questions to practise against.
+        // distinct questions to practice against.
         var base = pick(r, [[3, 4, 5], [5, 12, 13], [8, 15, 17], [7, 24, 25], [20, 21, 29], [9, 40, 41], [12, 35, 37], [28, 45, 53]]);
         var kk = ri(r, 1, 1 + d);
         var trip = [base[0] * kk, base[1] * kk, base[2] * kk];
@@ -6102,7 +6102,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     {
       id: "first-principles", name: "Differentiation from first principles", strand: "Calculus", needs: ["limit", "deriv-power"],
       method: "The gradient of a shrinking chord",
-      teach: "A derivative is the limit of a chord's gradient as its width shrinks to nothing. For y = x\u00B2 the chord from x to x + h has gradient ((x + h)\u00B2 \u2212 x\u00B2) \u00F7 h = 2x + h, and letting h go to 0 leaves 2x. This is where the power rule comes from, which is why it can be trusted rather than merely memorised.",
+      teach: "A derivative is the limit of a chord's gradient as its width shrinks to nothing. For y = x\u00B2 the chord from x to x + h has gradient ((x + h)\u00B2 \u2212 x\u00B2) \u00F7 h = 2x + h, and letting h go to 0 leaves 2x. This is where the power rule comes from, which is why it can be trusted rather than merely memorized.",
       gen: function (r, d) {
         if (d >= 2) {
           // Doing it algebraically rather than numerically is what makes it a
@@ -6407,11 +6407,11 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { method: "Symmetry gives the turning point", teach: "A parabola is symmetrical, so its turning point sits exactly halfway between the 2 crossings. With roots at 1 and 7 the lowest point is at x = 4, found without differentiating anything. That is quicker than calculus and available long before it is taught.", why: "The roots give the equation; the symmetry between them gives the vertex, which is a different reading of the same graph.", evidence: ["halfway between"] }
     ],
     "area-under": [
-      { method: "Area is the distance", teach: "On a speed-time graph the area underneath is the distance travelled, because speed multiplied by time is distance. A steady 20 m/s for 30 s makes a rectangle of area 600, so 600 metres are covered. The units confirm it: metres per second times seconds leaves metres.", evidence: ["area under a speed-time graph"] },
-      { method: "When the speed changes", teach: "If the speed rises steadily the shape is a trapezium rather than a rectangle, and its area is the average of the 2 parallel sides times the width. Going from 10 to 30 m/s over 4 s covers (10 + 30) ÷ 2 × 4 = 80 metres. Using either end speed alone would be wrong, because the speed was only briefly equal to it.", why: "A constant speed gives a rectangle and a single multiplication. A changing one needs the average, which is where most of the error creeps in.", evidence: ["trapezium"] }
+      { method: "Area is the distance", teach: "On a speed-time graph the area underneath is the distance traveled, because speed multiplied by time is distance. A steady 20 m/s for 30 s makes a rectangle of area 600, so 600 meters are covered. The units confirm it: meters per second times seconds leaves meters.", evidence: ["area under a speed-time graph"] },
+      { method: "When the speed changes", teach: "If the speed rises steadily the shape is a trapezium rather than a rectangle, and its area is the average of the 2 parallel sides times the width. Going from 10 to 30 m/s over 4 s covers (10 + 30) ÷ 2 × 4 = 80 meters. Using either end speed alone would be wrong, because the speed was only briefly equal to it.", why: "A constant speed gives a rectangle and a single multiplication. A changing one needs the average, which is where most of the error creeps in.", evidence: ["trapezium"] }
     ],
     "circle-tangent": [
-      { method: "Tangent meets radius at 90°", teach: "A tangent touches a circle at exactly 1 point and is always perpendicular to the radius drawn there. That is true for every circle and every tangent, and it follows because the radius is the shortest distance from the centre to the line, and the shortest distance is always perpendicular: at the point (3, 4) on a circle of radius 5, the radius and the tangent meet at exactly 90°.", evidence: ["perpendicular to the radius"] },
+      { method: "Tangent meets radius at 90°", teach: "A tangent touches a circle at exactly 1 point and is always perpendicular to the radius drawn there. That is true for every circle and every tangent, and it follows because the radius is the shortest distance from the center to the line, and the shortest distance is always perpendicular: at the point (3, 4) on a circle of radius 5, the radius and the tangent meet at exactly 90°.", evidence: ["perpendicular to the radius"] },
       { method: "Finding its gradient", teach: "The perpendicular property turns into a calculation. At the point (3, 4) on a circle centred on the origin, the radius has gradient 4/3, so the tangent has gradient −3/4 — the negative reciprocal. No calculus is needed at all, which is worth knowing before implicit differentiation arrives.", why: "Knowing the angle is 90° is a fact. Turning that into a gradient uses the perpendicular rule, and gives an equation you can actually work with.", evidence: ["negative reciprocal"] }
     ],
     "set-notation": [
@@ -6444,7 +6444,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ],
     "compound-measures": [
       { method: "One quantity per another", teach: "A compound measure is one quantity divided by another, and the unit tells you which: kilometres per hour is distance ÷ time, grams per cm³ is mass ÷ volume. Because they are all the same shape, 240 km in 3 hours is 80 km/h, and at 80 km/h for 5 hours you cover 400 km.", evidence: [["divided by", "÷"]] },
-      { method: "Converting compound units", teach: "Changing the units of a compound measure means converting BOTH parts. To turn 72 km/h into metres per second, the 72 km becomes 72000 metres and the hour becomes 3600 seconds, giving 20 m/s. Converting only the top is the usual error and leaves the answer 3600 times too large.", why: "A simple unit conversion changes one number. A compound one changes a top and a bottom, and forgetting the bottom is invisible in the working.", evidence: ["Both parts"] }
+      { method: "Converting compound units", teach: "Changing the units of a compound measure means converting BOTH parts. To turn 72 km/h into meters per second, the 72 km becomes 72000 meters and the hour becomes 3600 seconds, giving 20 m/s. Converting only the top is the usual error and leaves the answer 3600 times too large.", why: "A simple unit conversion changes one number. A compound one changes a top and a bottom, and forgetting the bottom is invisible in the working.", evidence: ["Both parts"] }
     ],
     scale: [
       { method: "Multiply by the scale", teach: "A scale of 1 : 50000 means every centimetre on the map is 50000 cm in real life, which is 500 m. To go from map to ground you multiply by the scale, and from ground to map you divide. Getting the direction wrong gives answers that are absurdly large or small, which is a useful check in itself.", evidence: [["on the map is", "on the ground is"]] },
@@ -6468,7 +6468,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ],
     "tree-diagram": [
       { method: "Multiply along, add between", teach: "A tree diagram splits a sequence of events into branches: multiply along a path, add between paths. With a 1/2 chance twice over, both happening is 1/4, and exactly one happening is 1/4 + 1/4 = 1/2. Multiplying along works because the branches happen one after the other.", evidence: ["multiply"] },
-      { method: "At least one", teach: "Asking for at least one covers several paths, and adding them all is slow and easy to get wrong. It is far quicker to find the one case it is NOT — failing every time — and subtract from 1. With a 1/3 chance tried twice, failing both is 2/3 × 2/3 = 4/9, so at least once is 1 − 4/9 = 5/9.", why: "Adding paths works but multiplies the chances of error. Recognising when the complement is a single path is what turns three calculations into one.", evidence: ["at least once UNLESS"] }
+      { method: "At least one", teach: "Asking for at least one covers several paths, and adding them all is slow and easy to get wrong. It is far quicker to find the one case it is NOT — failing every time — and subtract from 1. With a 1/3 chance tried twice, failing both is 2/3 × 2/3 = 4/9, so at least once is 1 − 4/9 = 5/9.", why: "Adding paths works but multiplies the chances of error. Recognizing when the complement is a single path is what turns three calculations into one.", evidence: ["at least once UNLESS"] }
     ],
     conditional: [
       { method: "The second pick has fewer left", teach: "When something is not replaced, the second probability changes because the total has shrunk. From 5 red and 3 blue, red first is 5/8, but with that red kept out there are 4 red among 7, so a second red is 4/7. Both reds together is 5/8 × 4/7 = 20/56.", evidence: ["kept out"] },
@@ -6499,12 +6499,12 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { method: "Using congruence to find lengths", teach: "Once two triangles are known to be congruent, every matching part is simply equal, so an unknown length can be read straight across without calculating anything. If a side opposite a 40° angle measures 7 in one triangle, it measures 7 in the other. The angles are what tell you which sides correspond.", why: "The first tier decides whether triangles are congruent; this uses that fact to transfer a measurement, which is what congruence is actually for.", evidence: ["matching part"] }
     ],
     "circle-theorems": [
-      { method: "The angle rules of a circle", teach: "A handful of rules govern angles in circles. The angle at the centre is twice the angle at the circumference on the same arc, so 80° at the centre gives 40° at the edge. An angle in a semicircle is always 90°, and opposite angles of a cyclic quadrilateral add to 180°.", evidence: [["circumference", "semicircle", "cyclic quadrilateral", "tangent"]] },
+      { method: "The angle rules of a circle", teach: "A handful of rules govern angles in circles. The angle at the center is twice the angle at the circumference on the same arc, so 80° at the center gives 40° at the edge. An angle in a semicircle is always 90°, and opposite angles of a cyclic quadrilateral add to 180°.", evidence: [["circumference", "semicircle", "cyclic quadrilateral", "tangent"]] },
       { method: "Combining with other angle facts", teach: "Real questions rarely use a circle theorem alone. A triangle drawn on the diameter has a right angle from the semicircle rule, and then the ordinary 180° triangle total finishes it: with one other angle of 35°, the third is 180 − 90 − 35 = 55°. The theorem supplies a fact that unlocks the standard angle work, because a right angle is enough to make the rest ordinary. ", why: "One theorem gives one angle. Getting to the answer usually needs that angle plus a rule you already knew, and spotting which theorem starts it is the skill.", evidence: ["Two facts were needed"] }
     ],
     constructions: [
       { method: "The set of points that fit a rule", teach: "A locus is every point obeying a rule, and each rule gives a recognisable shape. All points 5 cm from a fixed point form a circle of radius 5. All points equidistant from two points form the perpendicular bisector of the line joining them: with the points 8 cm apart, that bisector crosses exactly 4 cm along, which is why the compass construction works.", evidence: [["Every point the same distance", "equidistant"]] },
-      { method: "Two conditions at once", teach: "When a point must satisfy 2 rules, the region is where the two loci overlap. Within 4 cm of A and nearer to A than to B, with B 10 cm away, gives a circle of radius 4 cut by the bisector at 5 cm — so along AB the region stops at 4 cm, whichever limit bites first. Sketching both and shading the overlap is the whole method.", why: "One condition gives a line or a circle. Two give a region, and deciding which constraint stops you first is a judgement the single case never requires.", evidence: ["both loci overlap"] }
+      { method: "Two conditions at once", teach: "When a point must satisfy 2 rules, the region is where the two loci overlap. Within 4 cm of A and nearer to A than to B, with B 10 cm away, gives a circle of radius 4 cut by the bisector at 5 cm — so along AB the region stops at 4 cm, whichever limit bites first. Sketching both and shading the overlap is the whole method.", why: "One condition gives a line or a circle. Two give a region, and deciding which constraint stops you first is a judgment the single case never requires.", evidence: ["both loci overlap"] }
     ],
     bearings: [
       { method: "Three figures, clockwise from north", teach: "A bearing is measured clockwise from north and always written with 3 figures, so east is 090° and south-west is 225°. The bearing back the other way differs by 180°: if A is on a bearing of 070° from B, then B is on 250° from A, and past 360 you subtract a full turn.", evidence: ["180° different"] },
@@ -6536,7 +6536,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ],
     "deriv-quotient": [
       { method: "The quotient rule", teach: "For a fraction of two functions, the derivative is (bottom \u00D7 derivative of top \u2212 top \u00D7 derivative of bottom) over the bottom squared. For x/(x + 3) that gives ((x + 3) \u2212 x)/(x + 3)\u00B2 = 3/(x + 3)\u00B2. The order of the subtraction matters, unlike in the product rule.", evidence: ["Top is"] },
-      { method: "When not to use it", teach: "The quotient rule is not always the right tool. If the bottom is a single power of x you can split the fraction instead: (3x\u00B2 + 4)/x becomes 3x + 4x\u207B\u00B9, which differentiates term by term to 3 \u2212 4x\u207B\u00B2 in one line. Reaching for the rule automatically costs time and creates chances to slip, because every extra step is another place to lose a sign.", why: "Knowing a rule is not the same as knowing when it helps, and here recognising the simpler route is the actual skill.", evidence: ["not needed here"] }
+      { method: "When not to use it", teach: "The quotient rule is not always the right tool. If the bottom is a single power of x you can split the fraction instead: (3x\u00B2 + 4)/x becomes 3x + 4x\u207B\u00B9, which differentiates term by term to 3 \u2212 4x\u207B\u00B2 in one line. Reaching for the rule automatically costs time and creates chances to slip, because every extra step is another place to lose a sign.", why: "Knowing a rule is not the same as knowing when it helps, and here recognizing the simpler route is the actual skill.", evidence: ["not needed here"] }
     ],
     "second-deriv": [
       { method: "Differentiate twice", teach: "The second derivative is just the derivative of the derivative, found by differentiating twice in a row. For y = x\u00B3 the first derivative is 3x\u00B2 and the second is 6x, which measures how fast the gradient itself is changing rather than how fast y is.", evidence: ["again"] },
@@ -6544,7 +6544,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ],
     optimise: [
       { method: "Fixed perimeter, largest area", teach: "With a fixed amount of fence, the largest rectangle is always a square. For a perimeter of 40 the sides sum to 20, and 10 by 10 gives 100 while 15 by 5 gives only 75. Writing the area as x(20 \u2212 x) and differentiating shows why: it turns exactly halfway along.", evidence: ["If one side is x"] },
-      { method: "Fixed area, smallest perimeter", teach: "Turn the problem round and the square wins again, for the opposite reason. With an area of 36 fixed, the perimeter 2x + 72/x is smallest when x = 6, giving 24, whereas a 36 by 1 rectangle of the same area needs a perimeter of 74, because stretching one side forces the other to grow much faster. The quantity being fixed and the quantity being optimised have swapped places.", why: "The same shape is the answer, but what is constrained and what is minimised are reversed, so the expression you differentiate is entirely different.", evidence: ["AREA fixed"] }
+      { method: "Fixed area, smallest perimeter", teach: "Turn the problem round and the square wins again, for the opposite reason. With an area of 36 fixed, the perimeter 2x + 72/x is smallest when x = 6, giving 24, whereas a 36 by 1 rectangle of the same area needs a perimeter of 74, because stretching one side forces the other to grow much faster. The quantity being fixed and the quantity being optimised have swapped places.", why: "The same shape is the answer, but what is constrained and what is minimized are reversed, so the expression you differentiate is entirely different.", evidence: ["AREA fixed"] }
     ],
     "integral-parts": [
       { method: "Integration by parts", teach: "By parts handles a product: \u222B u dv = uv \u2212 \u222B v du. For \u222B x\u00B7e\u02e3 dx, taking u = x and dv = e\u02e3 dx gives xe\u02e3 \u2212 \u222B e\u02e3 dx = xe\u02e3 \u2212 e\u02e3 + C. For \u222B 3x\u00B7e\u02e3 dx you differentiate the 3x to get 3, so the new integral is simply \u222B 3e\u02e3 dx. It works because it trades one integral for another that is easier.", evidence: ["gets simpler"] },
@@ -6612,11 +6612,11 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ],
     "simplify-rational": [
       { method: "Factorise and cancel", teach: "An algebraic fraction simplifies when top and bottom share a bracket. Factorise both, then cancel what matches: (x\u00B2 + 5x + 6)/(x + 2) becomes (x + 2)(x + 3)/(x + 2), leaving x + 3. You can only cancel whole brackets, never single terms, because a bracket is one quantity while a single term is just part of one.", evidence: ["Factorise the top"] },
-      { method: "Difference of two squares", teach: "When the top has no x term at all, sum-and-product will not help \u2014 but x\u00B2 \u2212 4 is the difference of two squares and factorises to (x \u2212 2)(x + 2). So (x\u00B2 \u2212 4)/(x \u2212 2) cancels to x + 2. Recognising the pattern a\u00B2 \u2212 b\u00B2 saves hunting for factors that do not exist.", why: "The usual method looks for two numbers adding to the x coefficient, and there is no x term to work from, so the pattern has to be recognised instead.", evidence: ["no x term"] }
+      { method: "Difference of two squares", teach: "When the top has no x term at all, sum-and-product will not help \u2014 but x\u00B2 \u2212 4 is the difference of two squares and factorises to (x \u2212 2)(x + 2). So (x\u00B2 \u2212 4)/(x \u2212 2) cancels to x + 2. Recognizing the pattern a\u00B2 \u2212 b\u00B2 saves hunting for factors that do not exist.", why: "The usual method looks for two numbers adding to the x coefficient, and there is no x term to work from, so the pattern has to be recognized instead.", evidence: ["no x term"] }
     ],
     logs: [
-      { method: "What power gives this", teach: "A logarithm asks what power you need. Since 10\u00B3 = 1000, log\u2081\u2080 1000 = 3, and solving 10^x = 100 means recognising 100 as 10\u00B2, so x = 2. Reading it as a question about powers keeps it concrete.", evidence: [["multiplied by itself", "to what power"]] },
-      { method: "When the answer is not whole", teach: "If the target is not a whole power of the base, no whole number works: 2^x = 7 sits between 2 and 3. Taking logs of both sides brings the power down to the front, giving x \u00D7 log 2 = log 7, so x = log 7 \u00F7 log 2 = 2.8074. This is what logarithms are actually for \u2014 releasing an exponent so it can be divided out.", why: "Recognising a whole power works only when there is one; this handles every other case, and it needs the law that brings the power to the front.", evidence: ["Take logs of both sides"] }
+      { method: "What power gives this", teach: "A logarithm asks what power you need. Since 10\u00B3 = 1000, log\u2081\u2080 1000 = 3, and solving 10^x = 100 means recognizing 100 as 10\u00B2, so x = 2. Reading it as a question about powers keeps it concrete.", evidence: [["multiplied by itself", "to what power"]] },
+      { method: "When the answer is not whole", teach: "If the target is not a whole power of the base, no whole number works: 2^x = 7 sits between 2 and 3. Taking logs of both sides brings the power down to the front, giving x \u00D7 log 2 = log 7, so x = log 7 \u00F7 log 2 = 2.8074. This is what logarithms are actually for \u2014 releasing an exponent so it can be divided out.", why: "Recognizing a whole power works only when there is one; this handles every other case, and it needs the law that brings the power to the front.", evidence: ["Take logs of both sides"] }
     ],
     "func-compose": [
       { method: "Innermost first", teach: "fg(x) means do g first, then f \u2014 the function nearest the x acts first. With f(x) = 2x + 1 and g(x) = x\u00B2, fg(3) is g(3) = 9 first, then f(9) = 19. Working outwards from the bracket is the whole rule.", evidence: ["nearest the x"] },
@@ -6632,7 +6632,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ],
     estimate: [
       { method: "Round to one significant figure", teach: "Estimating means rounding each number to one significant figure and working with those instead, so 312 \u00D7 48 becomes 300 \u00D7 50 = 15000. It is not laziness: it tells you roughly what the answer should be, so a slipped decimal point stands out immediately.", evidence: ["rounds to"] },
-      { method: "Choosing numbers that divide", teach: "For a division, rounding to one significant figure can leave you no better off: 287 \u00F7 6 becomes 300 \u00F7 6, which is fine, but 287 \u00F7 7 is better estimated as 280 \u00F7 7 = 40. Round the top to the nearest multiple of the bottom instead, and the estimate lands closer while staying just as easy.", why: "Rounding both to one figure is the right move for multiplying; for dividing you choose numbers that go into each other, which is a different judgement.", evidence: ["nearest multiple"] }
+      { method: "Choosing numbers that divide", teach: "For a division, rounding to one significant figure can leave you no better off: 287 \u00F7 6 becomes 300 \u00F7 6, which is fine, but 287 \u00F7 7 is better estimated as 280 \u00F7 7 = 40. Round the top to the nearest multiple of the bottom instead, and the estimate lands closer while staying just as easy.", why: "Rounding both to one figure is the right move for multiplying; for dividing you choose numbers that go into each other, which is a different judgment.", evidence: ["nearest multiple"] }
     ],
     bounds: [
       { method: "Half a unit either way", teach: "A rounded number hides a range. If a length is 24 cm to the nearest centimetre, the true value lies anywhere from 23.5 up to 24.5, because everything in that interval rounds to 24. The bound is always half the unit you rounded to, so the nearest 10 gives a spread of 5 either side.", evidence: ["either side", "runs from"] },
@@ -6712,7 +6712,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ],
     "frac-mul": [
       { method: "Straight across", teach: "Multiplying fractions is the one operation that needs no common denominator: multiply the tops, multiply the bottoms. 2/3 \u00D7 4/5 = 8/15. It works because taking two thirds of four fifths cuts the whole into 15 pieces and keeps 8 of them.", evidence: ["Tops"] },
-      { method: "Cancel first", teach: "Any top and any bottom sharing a factor can be cancelled BEFORE multiplying, even across two different fractions. In 3/8 \u00D7 4/9 the 4 and the 8 share a factor of 4, and the 3 and the 9 share 3, leaving 1/2 \u00D7 1/3 = 1/6. The answer is identical, but you never handle 12/72 or have to reduce it afterwards, because the cancelling has already been done while the numbers were small.", why: "Multiplying first works but leaves large numbers to simplify; cancelling first keeps every number small and the answer arrives already reduced.", evidence: ["shared by a top and a bottom"] }
+      { method: "Cancel first", teach: "Any top and any bottom sharing a factor can be canceled BEFORE multiplying, even across two different fractions. In 3/8 \u00D7 4/9 the 4 and the 8 share a factor of 4, and the 3 and the 9 share 3, leaving 1/2 \u00D7 1/3 = 1/6. The answer is identical, but you never handle 12/72 or have to reduce it afterwards, because the canceling has already been done while the numbers were small.", why: "Multiplying first works but leaves large numbers to simplify; canceling first keeps every number small and the answer arrives already reduced.", evidence: ["shared by a top and a bottom"] }
     ],
     distribute: [
       { method: "Multiply everything inside", teach: "The number outside a bracket multiplies every term inside it, not just the first. 3(x + 4) is 3x + 12, because you have 3 lots of the whole bracket. Forgetting the second term is the most common slip in the topic.", evidence: ["Multiply the"] },
@@ -6727,7 +6727,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { method: "Powers count too", teach: "The power has to match as well as the letter, so x\u00B2 and x are NOT like terms however similar they look: one is x times x, the other is a single x. In 3x\u00B2 + 2x + x\u00B2 you collect only the squares, giving 4x\u00B2 + 2x. Adding them into 6x\u00B3 or 5x\u00B2 are both common and both wrong.", why: "Sorting by letter is enough until powers appear; then two terms in the same letter can still be unlike.", evidence: ["NOT like terms"] }
     ],
     mode: [
-      { method: "The one that repeats most", teach: "The mode is the value that occurs most often, and it is the only average that also works on things that are not numbers \u2014 the most common colour, the most common shoe size. In 3, 7, 3, 9, 3 the mode is 3, because it appears 3 times and nothing else appears more than once.", evidence: ["appears"] },
+      { method: "The one that repeats most", teach: "The mode is the value that occurs most often, and it is the only average that also works on things that are not numbers \u2014 the most common color, the most common shoe size. In 3, 7, 3, 9, 3 the mode is 3, because it appears 3 times and nothing else appears more than once.", evidence: ["appears"] },
       { method: "The modal class", teach: "With grouped data no single value can repeat, because the individual values were never recorded. Instead you name the CLASS with the highest frequency: if 10\u201320 has a frequency of 12 and every other class has fewer, the modal class is 10\u201320. The answer is which class, not how many are in it, and giving the frequency instead is the standard mistake.", why: "There is no repeating value to find, so the question changes from which value to which group.", evidence: ["highest frequency"] }
     ],
     "place-value": [
@@ -6812,7 +6812,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ],
     "deriv-power": [
       { method: "The power rule", teach: "To differentiate a power, multiply by the power and then drop it by one. Each term is handled separately, and a constant on its own differentiates to zero because a flat line has no slope. Differentiating 4x\u00B3 + 7x + 2 gives 12x\u00B2 + 7.", evidence: ["multiply by"] },
-      { method: "Negative and fractional powers", teach: "The rule never changes, but it can only be applied once the function is written as a power. A fraction like 3/x\u00B2 must first become 3x\u207B\u00B2, and a root like \u221Ax must become x^(1/2). Then multiplying by the power and dropping it by one works exactly as before, giving \u22126x\u207B\u00B3 and \u00BDx^(\u22121/2), so the difficulty is entirely in the rewriting rather than in the differentiating.", why: "The rule is unchanged; what is new is recognising that a fraction or a root is a power in disguise, which is the step that actually gets missed.", evidence: [["Rewrite it as a power", "power of a half"]] }
+      { method: "Negative and fractional powers", teach: "The rule never changes, but it can only be applied once the function is written as a power. A fraction like 3/x\u00B2 must first become 3x\u207B\u00B2, and a root like \u221Ax must become x^(1/2). Then multiplying by the power and dropping it by one works exactly as before, giving \u22126x\u207B\u00B3 and \u00BDx^(\u22121/2), so the difficulty is entirely in the rewriting rather than in the differentiating.", why: "The rule is unchanged; what is new is recognizing that a fraction or a root is a power in disguise, which is the step that actually gets missed.", evidence: [["Rewrite it as a power", "power of a half"]] }
     ],
     "sine-rule": [
       { method: "Finding a side", teach: "The sine rule links each side to the sine of the angle opposite it: a/sin A = b/sin B. Knowing one full pair lets you find any other side. With angle 40\u00B0 opposite a side of 10, a side opposite 70\u00B0 is 10 \u00F7 sin 40\u00B0 \u00D7 sin 70\u00B0, which is about 14.6, because the ratio is the same for every pair in the triangle.", evidence: ["sin"] },
@@ -6828,7 +6828,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ],
     mean: [
       { method: "Total, then share", teach: "The mean levels everything out: add every value, then share the total equally between however many there were. The mean of 4, 9 and 8 is 21 \u00F7 3 = 7. It is the number each one would be if they were all the same, which is why a single extreme value can drag it a long way.", evidence: ["Add them"] },
-      { method: "Finding a missing value", teach: "Because the mean fixes the total, you can run it backwards. If 4 numbers have a mean of 10 they must total 40, so if 3 of them add to 28 the last is 12. The same relationship is being used in the other direction, which is worth recognising because most real questions are this way round.", why: "The first method goes from values to the mean; this goes from the mean back to a value, and it needs the total as the middle step.", evidence: ["they total"] }
+      { method: "Finding a missing value", teach: "Because the mean fixes the total, you can run it backwards. If 4 numbers have a mean of 10 they must total 40, so if 3 of them add to 28 the last is 12. The same relationship is being used in the other direction, which is worth recognizing because most real questions are this way round.", why: "The first method goes from values to the mean; this goes from the mean back to a value, and it needs the total as the middle step.", evidence: ["they total"] }
     ],
     surds: [
       { method: "Pulling out square factors", teach: "A surd is a root that will not come out as a whole number. It is simplified when nothing square is left underneath: look for the largest square number that divides what is inside, and its root moves outside. \u221A72 = \u221A(36 \u00D7 2) = 6\u221A2. Leaving it as a surd keeps the value exact instead of rounding it away.", evidence: ["\u00D7"] },
@@ -6839,11 +6839,11 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { method: "The normal", teach: "The normal is the line at right angles to the curve at that point, so its gradient is the negative reciprocal of the tangent's. If the tangent gradient is 4 the normal's is \u22120.25, and it passes through the same point. Everything else is the same straight-line work as before.", why: "The tangent follows the curve; the normal cuts across it, and that needs the perpendicular rule rather than the derivative alone.", evidence: ["perpendicular"] }
     ],
     units: [
-      { method: "Length units", teach: "Converting units means multiplying or dividing by the factor between them, and the direction is decided by whether the new unit is bigger or smaller. There are 1000 metres in a kilometre, so 2.5 km is 2500 m, and 4500 m is 4.5 km. If the number gets bigger when the unit gets smaller, you have gone the right way.", evidence: ["in one"] },
-      { method: "Area and volume units", teach: "Area and volume units do not use the same factor as lengths, because they cover 2 or 3 dimensions. There are 100 cm in a metre, but 100\u00B2 = 10000 cm\u00B2 in a square metre and 100\u00B3 = 1000000 cm\u00B3 in a cubic metre. Using the length factor is the single most common conversion error there is.", why: "The length rule gives an answer a hundred or a thousand times too small, so this genuinely needs its own step rather than more practice.", evidence: [["square", "cube"]] }
+      { method: "Length units", teach: "Converting units means multiplying or dividing by the factor between them, and the direction is decided by whether the new unit is bigger or smaller. There are 1000 meters in a kilometre, so 2.5 km is 2500 m, and 4500 m is 4.5 km. If the number gets bigger when the unit gets smaller, you have gone the right way.", evidence: ["in one"] },
+      { method: "Area and volume units", teach: "Area and volume units do not use the same factor as lengths, because they cover 2 or 3 dimensions. There are 100 cm in a meter, but 100\u00B2 = 10000 cm\u00B2 in a square meter and 100\u00B3 = 1000000 cm\u00B3 in a cubic meter. Using the length factor is the single most common conversion error there is.", why: "The length rule gives an answer a hundred or a thousand times too small, so this genuinely needs its own step rather than more practice.", evidence: [["square", "cube"]] }
     ],
     limit: [
-      { method: "Substitute and see", teach: "A limit asks what a function heads towards near a point. Most of the time you can simply put the value in: for (x + 2)/(x + 4) at x = 1 you get 3/5, and because the bottom is not zero that is the answer. Checking by substitution first tells you whether there is any difficulty at all.", evidence: ["straight in"] },
+      { method: "Substitute and see", teach: "A limit asks what a function heads toward near a point. Most of the time you can simply put the value in: for (x + 2)/(x + 4) at x = 1 you get 3/5, and because the bottom is not zero that is the answer. Checking by substitution first tells you whether there is any difficulty at all.", evidence: ["straight in"] },
       { method: "Factor and cancel", teach: "When substitution gives 0/0 the function has a hole rather than a value, so factorise and cancel the part causing it. For (x\u00B2 \u2212 9)/(x \u2212 3) at x = 3, the top factorises to (x \u2212 3)(x + 3), the (x \u2212 3) cancels, and what is left heads for 6.", why: "Substitution answers most limits outright; this is the technique for the ones where it breaks down, and 0/0 is the signal to switch.", evidence: ["0/0"] }
     ],
     "coordinates-plot": [
@@ -6904,7 +6904,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ],
     "parallel-angles": [
       { method: "Corresponding angles", evidence: ["Corresponding angles"], teach: "When a line crosses two parallel lines, the angles repeat in a pattern. Angles in matching corners are equal, angles in a Z shape are equal, and angles in a C shape add to 180°. They all follow from the fact that the parallel lines never converge, so the crossing looks identical at both. So if one angle is 70°, its corresponding angle is 70°, its alternate angle is also 70°, but its co-interior angle is 110°." },
-      { method: "Alternate and co-interior", evidence: [["Alternate angles", "Co-interior angles"]], teach: "Alternate angles sit inside the parallel lines on opposite sides, in a Z shape, and are equal. Co-interior angles sit inside on the same side, in a C shape, and add to 180°. So an angle of 70° has an alternate angle of 70° but a co-interior angle of 110°.", why: "Corresponding angles are simply equal, but co-interior angles add to 180° instead — so recognising which pattern you are looking at decides the whole answer." }
+      { method: "Alternate and co-interior", evidence: [["Alternate angles", "Co-interior angles"]], teach: "Alternate angles sit inside the parallel lines on opposite sides, in a Z shape, and are equal. Co-interior angles sit inside on the same side, in a C shape, and add to 180°. So an angle of 70° has an alternate angle of 70° but a co-interior angle of 110°.", why: "Corresponding angles are simply equal, but co-interior angles add to 180° instead — so recognizing which pattern you are looking at decides the whole answer." }
     ],
     coordinates: [
       { method: "Midpoint", evidence: ["Average the x values"], teach: "The midpoint of two points is just the average of the x values and the average of the y values. The distance between them comes from Pythagoras: the horizontal and vertical gaps are the short sides of a right-angled triangle, so the distance is the square root of their squares added. For example, the midpoint of (2, 3) and (8, 11) is (5, 7), because 2 and 8 average to 5 and 3 and 11 average to 7." },
@@ -6915,7 +6915,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { method: "The complement", evidence: ["are not red"], teach: "Everything that can happen must total 1, so the chance of something not happening is 1 minus the chance that it does. In a bag of 3 red and 5 blue, the chance of not red is 5/8, which you can get either by counting the blues or by working out 1 − 3/8.", why: "Counting what you do not want is often far quicker than counting what you do, and everything must total 1, so subtracting is legitimate." }
     ],
     sohcahtoa: [
-      { method: "Sine: opposite and hypotenuse", evidence: ["want the opposite"], teach: "In a right-angled triangle, sine is opposite over hypotenuse, cosine is adjacent over hypotenuse, and tangent is opposite over adjacent. Choosing between them is just a matter of which two sides you have. With a 35° angle and a hypotenuse of 10, the opposite side is 10 × sin 35° = 5.74. Which ratio you reach for is decided entirely by which two sides the question involves, so labelling the sides opposite, adjacent and hypotenuse first makes the choice obvious." },
+      { method: "Sine: opposite and hypotenuse", evidence: ["want the opposite"], teach: "In a right-angled triangle, sine is opposite over hypotenuse, cosine is adjacent over hypotenuse, and tangent is opposite over adjacent. Choosing between them is just a matter of which two sides you have. With a 35° angle and a hypotenuse of 10, the opposite side is 10 × sin 35° = 5.74. Which ratio you reach for is decided entirely by which two sides the question involves, so labeling the sides opposite, adjacent and hypotenuse first makes the choice obvious." },
       { method: "Cosine: adjacent and hypotenuse", evidence: ["want the adjacent"], teach: "When the adjacent side and the hypotenuse are involved, cosine is the ratio you need: adjacent = hypotenuse × cos of the angle. With a 40° angle and a hypotenuse of 12, the adjacent side is 12 × cos 40° = 9.19, because cosine pairs those two sides specifically.", why: "Which ratio you need is decided by which two sides are involved, so a different pair of sides means a genuinely different choice, not a harder sum." }
     ],
     add: [
@@ -6965,7 +6965,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ],
     exponent: [
       { method: "Writing out the copies", evidence: ["copies"], teach: "A power counts how many copies get multiplied: x\u00B3 is x \u00D7 x \u00D7 x. Writing them out is slow but it is where every rule comes from, and it is always available when you cannot remember one. For example, 2⁵ means 2 × 2 × 2 × 2 × 2, which is 32." },
-      { method: "The index laws", evidence: [["cancel", "lots of"]], teach: "The index laws are not arbitrary: because powers are just counted copies, multiplying adds the counts and dividing subtracts them: x\u00B3 \u00D7 x\u00B2 is three copies beside two copies, so x\u2075. A power of a power multiplies the counts. The rules are shortcuts for counting, not separate facts to memorise. For example, x⁷ ÷ x³ = x⁴, because three of the seven copies cancel, and (x²)⁴ = x⁸, because four lots of two copies is eight.", why: "Writing out copies stops being practical at x\u00B9\u2070. The laws do the same counting without the writing." }
+      { method: "The index laws", evidence: [["cancel", "lots of"]], teach: "The index laws are not arbitrary: because powers are just counted copies, multiplying adds the counts and dividing subtracts them: x\u00B3 \u00D7 x\u00B2 is three copies beside two copies, so x\u2075. A power of a power multiplies the counts. The rules are shortcuts for counting, not separate facts to memorize. For example, x⁷ ÷ x³ = x⁴, because three of the seven copies cancel, and (x²)⁴ = x⁸, because four lots of two copies is eight.", why: "Writing out copies stops being practical at x\u00B9\u2070. The laws do the same counting without the writing." }
     ],
     "trig-exact": [
       { method: "The first quadrant", evidence: ["unit circle"], teach: "The unit circle turns an angle into a coordinate: cosine is how far across, sine is how far up. At 30\u00B0, 45\u00B0 and 60\u00B0 the coordinates are exact values worth knowing by heart, because they appear constantly and rounding them loses information. For example, at 60° the point on the circle is (1/2, √3/2), so cos 60° = 1/2 and sin 60° = √3/2." },
@@ -6977,7 +6977,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ],
     median: [
       { method: "The middle value", evidence: ["In order", "middle"], teach: "The median is the middle value once everything is in order, so sorting is most of the work. With an even count there are two in the middle and you take the point halfway between them. Unlike the mean, one extreme value barely moves it. For example, 7, 2, 9, 4, 5 sorts to 2, 4, 5, 7, 9, so the median is 5 — the third of five values." },
-      { method: "Range as well", evidence: ["Largest", "Range"], teach: "The range is the gap between the largest and smallest value \u2014 a measure of spread rather than of centre. A median tells you where the data sits; a range tells you how spread out it is, and you usually want both. For example, in 2, 4, 5, 7, 9 the range is 9 − 2 = 7, while the median stays 5.", why: "Median and range answer different questions, so knowing which is being asked for is half of getting it right." }
+      { method: "Range as well", evidence: ["Largest", "Range"], teach: "The range is the gap between the largest and smallest value \u2014 a measure of spread rather than of center. A median tells you where the data sits; a range tells you how spread out it is, and you usually want both. For example, in 2, 4, 5, 7, 9 the range is 9 − 2 = 7, while the median stays 5.", why: "Median and range answer different questions, so knowing which is being asked for is half of getting it right." }
     ],
     area: [
       { method: "Rectangles", evidence: ["two sides multiplied"], teach: "A rectangle's area is its two sides multiplied, because it is a grid of unit squares with that many rows and columns. Counting the squares and multiplying the sides are the same operation. For example, a rectangle 7 by 4 holds 4 rows of 7 squares, so its area is 7 × 4 = 28." },
@@ -7099,7 +7099,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
 
     {
       id: "primes", name: "Prime numbers", strand: "Number", needs: ["div"],
-      teach: "A prime has exactly two factors, and every whole number is built from primes in exactly one way, which is why they are worth recognising on sight.",
+      teach: "A prime has exactly two factors, and every whole number is built from primes in exactly one way, which is why they are worth recognizing on sight.",
       gen: function (r, d) {
         var isPrime = function (n) {
           if (n < 2) return false;
@@ -7174,7 +7174,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
 
     {
       id: "area-under", name: "Area under a graph", strand: "Algebra", needs: ["rate-graphs", "area"],
-      teach: "On a graph of speed against time the area underneath is the distance travelled, so an area calculation answers a question about motion.",
+      teach: "On a graph of speed against time the area underneath is the distance traveled, so an area calculation answers a question about motion.",
       gen: function (r, d) {
         var sp = ri(r, 2, 6 + 4 * d) * 5, t1 = ri(r, 1, 2 + d);
         if (d >= 2) {
@@ -7182,22 +7182,22 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
           var sp2 = sp + ri(r, 2, 6 + 4 * d) * 5;
           var dist2 = (sp + sp2) / 2 * t1;
           return {
-            ask: "On a speed-time graph the speed rises steadily from " + sp + " to " + sp2 + " m/s over " + t1 + " s. How far is travelled?",
+            ask: "On a speed-time graph the speed rises steadily from " + sp + " to " + sp2 + " m/s over " + t1 + " s. How far is traveled?",
             criterion: { kind: "numeric", value: dist2, tol: 1e-9 },
-            steps: [step("On a speed-time graph the AREA underneath is the distance travelled."),
+            steps: [step("On a speed-time graph the AREA underneath is the distance traveled."),
             step("The shape here is a trapezium, not a rectangle, because the speed is changing."),
             step("Its area is the average of the two parallel sides times the width: (" + sp + " + " + sp2 + ") \u00F7 2 \u00D7 " + t1 + "."),
-            step("That gives " + dist2 + " metres.")],
+            step("That gives " + dist2 + " meters.")],
             hints: ["What does the area under a speed-time graph represent?",
             "The shape is a trapezium, so average the two ends."]
           };
         }
         return {
-          ask: "On a speed-time graph the speed is a steady " + sp + " m/s for " + t1 + " s. How far is travelled?",
+          ask: "On a speed-time graph the speed is a steady " + sp + " m/s for " + t1 + " s. How far is traveled?",
           criterion: { kind: "numeric", value: sp * t1, tol: 1e-9 },
-          steps: [step("The area under a speed-time graph is the distance travelled, because speed multiplied by time is distance."),
+          steps: [step("The area under a speed-time graph is the distance traveled, because speed multiplied by time is distance."),
           step("A steady speed makes the shape a rectangle, " + sp + " tall and " + t1 + " wide."),
-          step(sp + " \u00D7 " + t1 + " = " + (sp * t1) + " metres.")],
+          step(sp + " \u00D7 " + t1 + " = " + (sp * t1) + " meters.")],
           hints: ["Work out the area of the shape under the line.",
           "A steady speed gives a rectangle."]
         };
@@ -7233,7 +7233,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
           step("At the point of contact it is always perpendicular to the radius."),
           step("So the angle is 90\u00B0, for every circle and every tangent.")],
           hints: ["This is the same for every tangent ever drawn.",
-          "Think about the shortest distance from the centre to the tangent line."]
+          "Think about the shortest distance from the center to the tangent line."]
         };
       }
     },
@@ -7480,7 +7480,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "substitute:0": [["substitute", "to replace a letter with a number"]],
     "func-roots:0": [["root", "an input making the function come out as zero"]],
     "func-piece:0": [["condition", "the test deciding which rule applies to a given input"]],
-    "measures-words:0": [["unit", "what a measurement is counted in, such as metres or centimetres"]],
+    "measures-words:0": [["unit", "what a measurement is counted in, such as meters or centimetres"]],
     "sharing-words:0": [["grouping", "dividing to find how many groups, rather than the size of each"]],
     "table-words:0": [["row", "one line of a table, holding the values for a single thing"]],
     "estimate-words:0": [["estimate", "a rough answer used to check a real one is sensible"]],
@@ -7490,7 +7490,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "trig-area:0": [["rule", "one of the formulas available, each needing particular facts to start"]],
     "trig-bearings:0": [["bearing", "a direction measured clockwise from north"]],
     "trig-elevation-2:0": [["elevation", "an angle measured upwards from the horizontal"]],
-    "limit:0": [["limit", "the value something settles towards without necessarily reaching it"]],
+    "limit:0": [["limit", "the value something settles toward without necessarily reaching it"]],
     "integral-parts:1": [["factor", "one of the things being multiplied together"]],
     "coordinates-plot:0": [["coordinates", "a pair of numbers fixing a point, across first and then up"]],
     "coordinates-plot:1": [["quadrant", "one of the four regions the two axes cut the plane into"]],
@@ -7502,7 +7502,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "graph-transform:1": [["stretch", "a change that pulls a graph outwards from an axis"]],
     "rate-graphs:0": [["speed", "distance covered in each unit of time"]],
     "rate-graphs:1": [["gradient", "the steepness of a line, which on this graph is a rate"]],
-    "circle-eq:0": [["radius", "the distance from the centre to the edge"]],
+    "circle-eq:0": [["radius", "the distance from the center to the edge"]],
     "circle-eq:1": [["substitute", "to replace a letter with a known number"]],
     "quad-sequence:0": [["difference", "the gap between one term and the next"]],
     "quad-sequence:1": [["coefficient", "the number in front of a letter"]],
@@ -7533,7 +7533,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "simple-interest:0": [["interest", "the amount added for keeping or borrowing money"]],
     "simple-interest:1": [["compound", "interest calculated on the new total each time, so it earns interest itself"]],
     "iteration:0": [["rearrange", "to rewrite an equation so a chosen letter is on its own"]],
-    "iteration:1": [["converge", "to settle towards a single value as the steps are repeated"]],
+    "iteration:1": [["converge", "to settle toward a single value as the steps are repeated"]],
     "quad-inequality:0": [["root", "a value making the expression equal zero"]],
     "quad-inequality:1": [["region", "a stretch of the number line where the statement holds"]],
     "algebra-proof:0": [["proof", "an argument showing something is true in every case, not just the ones tried"]],
@@ -7542,7 +7542,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "shape-props:1": [["quadrilateral", "a flat shape with four straight sides"]],
     "arc-sector:0": [["sector", "a slice of a circle between two radii"], ["arc", "part of the curved edge of a circle"]],
     "arc-sector:1": [["circumference", "the distance all the way round the outside of a circle"]],
-    "solids:0": [["sphere", "a solid where every point on the surface is the same distance from the centre"]],
+    "solids:0": [["sphere", "a solid where every point on the surface is the same distance from the center"]],
     "solids:1": [["cone", "a solid tapering from a circular base to a single point"]],
     "surface-area:0": [["face", "one of the flat surfaces of a solid"]],
     "surface-area:1": [["cube", "a solid with six identical square faces"]],
@@ -7555,7 +7555,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "transformations:0": [["reflection", "a flip in a mirror line"], ["translation", "a slide with no turning or resizing"]],
     "transformations:1": [["rotation", "a turn about a fixed point"], ["enlargement", "a resizing that keeps every angle the same"]],
     "circle-theorems:0": [["circumference", "the curved edge of a circle"], ["semicircle", "half a circle, cut by a diameter"]],
-    "circle-theorems:1": [["diameter", "a straight line right across a circle through the centre"]],
+    "circle-theorems:1": [["diameter", "a straight line right across a circle through the center"]],
     "constructions:0": [["locus", "the set of every point obeying a given rule"]],
     "constructions:1": [["bisector", "a line cutting something exactly in half"]],
     "bearings:0": [["bearing", "a direction measured clockwise from north, written with three figures"]],
@@ -7571,8 +7571,8 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "word:1": [["operation", "the thing being done: adding, subtracting, multiplying or dividing"]],
     "quad-formula:1": [["turning point", "where a curve stops rising and starts falling, or the reverse"]],
     "logs:1": [["power", "the number of times a base is multiplied by itself"]],
-    "limit-inf:0": [["limit", "the value something settles towards without necessarily reaching"]],
-    "limit-inf:1": [["limit", "the value something settles towards as the input grows without bound"]],
+    "limit-inf:0": [["limit", "the value something settles toward without necessarily reaching"]],
+    "limit-inf:1": [["limit", "the value something settles toward as the input grows without bound"]],
     "stationary:1": [["maximum", "the highest point in that part of the curve"], ["minimum", "the lowest point in that part of the curve"]],
     "integral-sub:0": [["bracket", "the grouping symbol whose contents get replaced by a single letter"]],
     "place-value:1": [["tenths", "the first place after the point, each one a tenth of a whole"]],
@@ -7638,7 +7638,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "indices-neg:1": [["cube root", "the number giving this one when multiplied by itself three times"]],
     "inequality:0": [["inequality", "a statement that one side is larger or smaller than the other"]],
     "sequence:1": [["position", "which term you mean, counting from the first"]],
-    "circle:1": [["radius", "the distance from the centre to the edge"]],
+    "circle:1": [["radius", "the distance from the center to the edge"]],
     "systems:0": [["eliminate", "to remove one unknown by adding or subtracting the equations"]],
     "logs:0": [["logarithm", "the power a base must be raised to in order to give a number"]],
     "stationary:0": [["turning point", "where a curve stops rising and starts falling, or the reverse"]],
@@ -7648,7 +7648,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "distribute:1": [["expand", "to multiply out a bracket so none is left"]],
     "quad-roots:1": [["discriminant", "the part under the root in the formula, deciding how many roots there are"]],
     "slope:1": [["rearrange", "to rewrite an equation into a more useful form without changing what it says"]],
-    "simplify-rational:0": [["factor", "something multiplying the whole expression, which is what may be cancelled"], ["difference of two squares", "an expression of the form a² − b², which always factorises"]],
+    "simplify-rational:0": [["factor", "something multiplying the whole expression, which is what may be canceled"], ["difference of two squares", "an expression of the form a² − b², which always factorises"]],
     "fn-eval:1": [["output", "the number a function produces from a given input"]],
     "limit:1": [["hole", "a single point where a function is undefined although it behaves normally nearby"]],
     "deriv-chain:0": [["chain rule", "differentiate the outside, then multiply by the derivative of the inside"]],
@@ -7678,7 +7678,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "hcf-lcm:0": [["prime factor", "a prime number that divides exactly into a given number"], ["highest common factor", "the largest number dividing exactly into both"]],
     "standard-form:0": [["standard form", "a number written as something between 1 and 10 times a power of ten"], ["power of ten", "10 multiplied by itself a given number of times"]],
     "indices-neg:0": [["index", "the small raised number saying how many times to multiply"]],
-    "area:0": [["unit square", "a small tile one centimetre or metre across, used as the measure of surface covered"]],
+    "area:0": [["unit square", "a small tile one centimetre or meter across, used as the measure of surface covered"]],
     "angles:0": [["full turn", "a complete rotation, which is 360 degrees"]],
     "sohcahtoa:0": [["opposite", "the side across from the angle you are using"], ["adjacent", "the side next to the angle, which is not the hypotenuse"], ["hypotenuse", "the longest side, always opposite the right angle"]],
     "tangent:0": [["tangent", "a straight line touching a curve at one point with the same gradient there"], ["gradient", "how steep something is: how far it rises for each step across"]],
@@ -7698,7 +7698,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "inequality:1": [["inequality", "a statement that one side is larger or smaller than the other"], ["reverse", "to turn the inequality sign round, which a negative divisor forces"]],
     "sequence:0": [["term", "one of the numbers in a sequence"], ["nth term", "a rule giving any term from its position number"]],
     "area:1": [["perpendicular height", "the distance straight up from the base, measured at right angles to it"], ["base", "the side the height is measured from"]],
-    "circle:0": [["radius", "the distance from the centre to the edge"], ["circumference", "the distance all the way round the outside"]],
+    "circle:0": [["radius", "the distance from the center to the edge"], ["circumference", "the distance all the way round the outside"]],
     "angles:1": [],
     "factor-gcf:0": [["factorise", "to write an expression as things multiplied together"]],
     "add:0": [["sum", "the answer you get from adding"], ["total", "the amount you get when everything is added together"]],
@@ -8402,12 +8402,12 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
         return {
           ask: "A " + (totalCm / 100) + " m ribbon is cut into " + each + " cm pieces. How many pieces?",
           criterion: { kind: "numeric", value: pieces, tol: 1e-9 },
-          steps: [step("Metres and centimetres cannot be divided into each other directly."),
+          steps: [step("Meters and centimetres cannot be divided into each other directly."),
           step("Convert: " + (totalCm / 100) + " m \u00D7 100 = " + totalCm + " cm."),
           step(totalCm + " \u00F7 " + each + " = " + pieces + " pieces."),
           step("Dividing " + (totalCm / 100) + " by " + each + " would give a fraction of a piece, which should look obviously wrong.")],
           hints: ["The two lengths are in different units.",
-          "There are 100 cm in a metre."]
+          "There are 100 cm in a meter."]
         };
       }
     },
@@ -8449,7 +8449,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     {
       id: "table-words", name: "Reading tables and charts", strand: "Word problems", needs: ["charts", "sub"],
       method: "Find the rows, then compare",
-      teach: "A table answers questions you have to locate first: find the right row and column, read the value, and only then calculate. If Monday shows 45 and Friday shows 62, the increase is 17, and the commonest error is reading the neighbouring row rather than doing the arithmetic wrongly.",
+      teach: "A table answers questions you have to locate first: find the right row and column, read the value, and only then calculate. If Monday shows 45 and Friday shows 62, the increase is 17, and the commonest error is reading the neighboring row rather than doing the arithmetic wrongly.",
       gen: function (r, d) {
         var days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
         var vals = [];
@@ -8713,7 +8713,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
           steps: [step("tan 45\u00B0 is exactly 1, which makes this the easiest angle of all."),
           step("So the height equals the distance."),
           step("The tower is " + h + " m tall."),
-          step("At 45\u00B0 the opposite and adjacent sides are always equal, which is worth recognising on sight.")],
+          step("At 45\u00B0 the opposite and adjacent sides are always equal, which is worth recognizing on sight.")],
           hints: ["What is tan 45\u00B0?",
           "That makes the height and the distance the same."]
         };
@@ -9004,7 +9004,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "trig-elevation-2:0": { title: "elevation 45° from 30 m away", lines: [
       { does: "tan 45° is exactly 1.", why: "At 45° the opposite and adjacent sides are equal.", paper: ["  tan 45° = 1"] },
       { does: "So height ÷ distance = 1.", why: "The ratio being 1 forces the two lengths to match.", paper: ["  h / 30 = 1"] },
-      { does: "The tower is 30 m tall.", why: "Recognising 45° on sight saves reaching for a calculator at all.", paper: ["  h = 30 m"] }
+      { does: "The tower is 30 m tall.", why: "Recognizing 45° on sight saves reaching for a calculator at all.", paper: ["  h = 30 m"] }
     ] },
     "primes:1": { title: "60 as a product of primes", lines: [
       { does: "Divide by the smallest prime that goes: 2.", why: "Starting small means nothing composite is ever taken out by mistake.", paper: ["  60 ÷ 2 = 30"] },
@@ -9024,19 +9024,19 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "area-under:0": { title: "20 m/s for 30 s", lines: [
       { does: "On a speed-time graph the area underneath is the distance.", why: "Speed multiplied by time is distance, and that product is the area.", paper: ["  ┌───────┐ 20", "  └───────┘", "      30"] },
       { does: "A steady speed makes a rectangle.", why: "The height never changes, so the shape is simple.", paper: ["  20 × 30"] },
-      { does: "600 metres.", why: "The units confirm it: m/s times s leaves m.", paper: ["  600 m"] }
+      { does: "600 meters.", why: "The units confirm it: m/s times s leaves m.", paper: ["  600 m"] }
     ] },
     "area-under:1": { title: "speed rising from 10 to 30 m/s over 4 s", lines: [
       { does: "The speed changes, so the shape is a trapezium.", why: "The top slopes instead of being flat.", paper: ["      ╱│ 30", "  10 │ │", "  └───┘", "     4"] },
       { does: "Average the two ends: (10 + 30) ÷ 2 = 20.", why: "The average speed does the work of a single steady speed.", paper: ["  average = 20"] },
-      { does: "20 × 4 = 80 metres.", why: "Using either end speed alone would be wrong, since the speed was only briefly equal to it.", paper: ["  80 m"] }
+      { does: "20 × 4 = 80 meters.", why: "Using either end speed alone would be wrong, since the speed was only briefly equal to it.", paper: ["  80 m"] }
     ] },
     "circle-tangent:0": { title: "a tangent and the radius", lines: [
       { does: "A tangent touches the circle at exactly one point.", why: "It grazes the edge rather than cutting through it.", paper: ["    ──────", "   ╱      ╲"] },
-      { does: "The radius is the shortest distance from the centre to that line.", why: "The shortest distance to any line is always perpendicular to it.", paper: ["  centre → point"] },
+      { does: "The radius is the shortest distance from the center to that line.", why: "The shortest distance to any line is always perpendicular to it.", paper: ["  center → point"] },
       { does: "So the angle is 90°, for every circle.", why: "That single fact turns most tangent problems into ordinary geometry.", paper: ["  90°"] }
     ] },
-    "circle-tangent:1": { title: "tangent at (3, 4), centre the origin", lines: [
+    "circle-tangent:1": { title: "tangent at (3, 4), center the origin", lines: [
       { does: "The radius to (3, 4) has gradient 4/3.", why: "Rise over run from the origin to the point.", paper: ["  m(radius) = 4/3"] },
       { does: "The tangent is perpendicular to it.", why: "So its gradient is the negative reciprocal.", paper: ["  flip and change sign"] },
       { does: "The tangent gradient is −3/4.", why: "No calculus is needed, which is worth knowing before implicit differentiation arrives.", paper: ["  m = −3/4"] }
@@ -9129,7 +9129,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "func-notation:1": { title: "f(x) = 3x + 5, find f(4) − f(0)", lines: [
       { does: "Work out each value separately.", why: "f(4) − f(0) is not f(4 − 0), which is where the notation misleads.", paper: ["  f(4) = 17", "  f(0) = 5"] },
       { does: "17 − 5 = 12.", why: "The subtraction happens after both are evaluated.", paper: ["  12"] },
-      { does: "The constant cancelled, leaving 3 × 4.", why: "f(0) is always the constant term, so it drops out of any difference.", paper: ["  3 × 4 = 12"] }
+      { does: "The constant canceled, leaving 3 × 4.", why: "f(0) is always the constant term, so it drops out of any difference.", paper: ["  3 × 4 = 12"] }
     ] },
     "domain-range:0": { title: "f(x) = 2x for 0 ≤ x ≤ 6", lines: [
       { does: "The domain is the inputs allowed: 0 to 6.", why: "It has been stated by the question rather than by the function.", paper: ["  domain: 0 to 6"] },
@@ -9213,7 +9213,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ] },
     "measures-words:0": { title: "2 m ribbon cut into 25 cm pieces", lines: [
       { does: "The two lengths are in different units.", why: "They cannot be divided into each other until they agree.", paper: ["  2 m and 25 cm"] },
-      { does: "Convert: 2 m is 200 cm.", why: "There are 100 cm in a metre.", paper: ["  200 cm"] },
+      { does: "Convert: 2 m is 200 cm.", why: "There are 100 cm in a meter.", paper: ["  200 cm"] },
       { does: "200 ÷ 25 = 8 pieces.", why: "Dividing 2 by 25 would give a fraction of a piece, which is obviously wrong.", paper: ["  8 pieces"] }
     ] },
     "sharing-words:0": { title: "24 sweets, 4 children", lines: [
@@ -9222,7 +9222,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { does: "24 ÷ 4 = 6 each.", why: "Bags of 4 would give 6 bags — the same number, meaning something different.", paper: ["  6 each"] }
     ] },
     "table-words:0": { title: "Monday 45, Friday 62", lines: [
-      { does: "Locate both rows before calculating.", why: "Reading the neighbouring row is a commoner error than the arithmetic.", paper: ["  Mon 45", "  Fri 62"] },
+      { does: "Locate both rows before calculating.", why: "Reading the neighboring row is a commoner error than the arithmetic.", paper: ["  Mon 45", "  Fri 62"] },
       { does: "Subtract in the order asked: 62 − 45.", why: "The order decides whether the answer is positive or negative.", paper: ["  62 − 45"] },
       { does: "The increase is 17.", why: "A negative answer would mean a fall, which is a valid answer too.", paper: ["  17"] }
     ] },
@@ -9257,7 +9257,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { does: "x = 30 is extrapolation, and unreliable.", why: "Nothing was ever observed out there, so the pattern may not continue.", paper: ["  x = 30  ✗"] }
     ] },
     "box-plots:0": { title: "reading a box plot", lines: [
-      { does: "Five numbers are drawn: min, LQ, median, UQ, max.", why: "Together they summarise both position and spread.", paper: ["  ├──┌──┬──┐──┤", "  5  20 30 50 65"] },
+      { does: "Five numbers are drawn: min, LQ, median, UQ, max.", why: "Together they summarize both position and spread.", paper: ["  ├──┌──┬──┐──┤", "  5  20 30 50 65"] },
       { does: "The box spans the middle half of the data.", why: "A quarter lies below it and a quarter above.", paper: ["  box: 20 to 50"] },
       { does: "So the interquartile range is 30.", why: "Unlike the full range it ignores the extremes entirely.", paper: ["  IQR = 30"] }
     ] },
@@ -9313,7 +9313,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ] },
     "first-principles:1": { title: "the same, done with algebra", lines: [
       { does: "Use a general step h instead of 0.1.", why: "Letters cover every step size at once.", paper: ["  from x to x + h"] },
-      { does: "((x + h)² − x²)/h simplifies to 2x + h.", why: "Expanding and cancelling removes the division entirely.", paper: ["  = 2x + h"] },
+      { does: "((x + h)² − x²)/h simplifies to 2x + h.", why: "Expanding and canceling removes the division entirely.", paper: ["  = 2x + h"] },
       { does: "Letting h → 0 leaves exactly 2x.", why: "The h vanishes exactly rather than approximately, which makes it a proof.", paper: ["  dy/dx = 2x"] }
     ] },
     "numerical:0": { title: "trapezium rule, 2 strips under y = x² from 0 to 2", lines: [
@@ -9417,12 +9417,12 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { does: "The image is (2, −3).", why: "Reflecting in the y-axis instead would flip the x, giving (−2, 3).", paper: ["  (2, −3)"] }
     ] },
     "transformations:1": { title: "(2, 3) enlarged by 3 about the origin", lines: [
-      { does: "An enlargement multiplies both coordinates.", why: "Distances from the centre all grow by the same factor.", paper: ["  scale factor 3"] },
+      { does: "An enlargement multiplies both coordinates.", why: "Distances from the center all grow by the same factor.", paper: ["  scale factor 3"] },
       { does: "2 × 3 = 6 and 3 × 3 = 9.", why: "Each coordinate is a distance from the origin, so each scales.", paper: ["  (6, 9)"] },
       { does: "A rotation of 180° would give (−2, −3) instead.", why: "Turning flips both signs; resizing multiplies both, which is a different move.", paper: ["  enlarge: (6, 9)", "  rotate:  (−2, −3)"] }
     ] },
-    "circle-theorems:0": { title: "angle at the centre is 80°", lines: [
-      { does: "The angle at the centre is twice the one at the edge.", why: "Both stand on the same arc, and the centre one always wins.", paper: ["  centre 80°"] },
+    "circle-theorems:0": { title: "angle at the center is 80°", lines: [
+      { does: "The angle at the center is twice the one at the edge.", why: "Both stand on the same arc, and the center one always wins.", paper: ["  center 80°"] },
       { does: "So halve it for the circumference angle.", why: "The relationship is fixed for every circle and every arc.", paper: ["  80 ÷ 2"] },
       { does: "The angle at the circumference is 40°.", why: "Doubling instead would give 160°, which is the wrong way round.", paper: ["  40°"] }
     ] },
@@ -9571,14 +9571,14 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { does: "Same direction means direct, and the RATIO is fixed.", why: "Driving further at the same speed takes more time, so time and distance are direct.", paper: ["  direct: ratio fixed"] },
       { does: "Opposite means inverse, and the PRODUCT is fixed.", why: "More people on one job means less time each, so those are inverse.", paper: ["  inverse: product fixed"] }
     ] },
-    "units:0": { title: "convert 2.5 km into metres", lines: [
-      { does: "There are 1000 metres in a kilometre.", why: "The conversion factor has to be known before anything can be decided.", paper: ["  1 km = 1000 m"] },
-      { does: "Metres are smaller, so the number gets bigger.", why: "It takes more of a small unit to cover the same distance.", paper: ["  smaller unit → bigger number"] },
+    "units:0": { title: "convert 2.5 km into meters", lines: [
+      { does: "There are 1000 meters in a kilometre.", why: "The conversion factor has to be known before anything can be decided.", paper: ["  1 km = 1000 m"] },
+      { does: "Meters are smaller, so the number gets bigger.", why: "It takes more of a small unit to cover the same distance.", paper: ["  smaller unit → bigger number"] },
       { does: "2.5 × 1000 = 2500 m.", why: "Dividing instead would give 0.0025, which is obviously the wrong size.", paper: ["  2500 m"] }
     ] },
     "units:1": { title: "convert 3 m² into cm²", lines: [
-      { does: "There are 100 cm in a metre, but that is the LENGTH factor.", why: "Using it directly here is the commonest conversion error there is.", paper: ["  1 m = 100 cm"] },
-      { does: "Area covers 2 dimensions, so square the factor.", why: "A square metre is 100 cm by 100 cm, which is 10000 small squares.", paper: ["  100² = 10000"] },
+      { does: "There are 100 cm in a meter, but that is the LENGTH factor.", why: "Using it directly here is the commonest conversion error there is.", paper: ["  1 m = 100 cm"] },
+      { does: "Area covers 2 dimensions, so square the factor.", why: "A square meter is 100 cm by 100 cm, which is 10000 small squares.", paper: ["  100² = 10000"] },
       { does: "3 × 10000 = 30000 cm².", why: "Using 100 would give 300, a hundred times too small.", paper: ["  30000 cm²"] }
     ] },
     "compound-measures:0": { title: "240 km in 3 hours", lines: [
@@ -9586,7 +9586,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { does: "240 ÷ 3 = 80.", why: "Each hour covers the same distance at a steady speed.", paper: ["  240 / 3 = 80"] },
       { does: "So 80 km/h.", why: "The same shape works for density and pressure, just with different quantities.", paper: ["  80 km/h"] }
     ] },
-    "compound-measures:1": { title: "72 km/h in metres per second", lines: [
+    "compound-measures:1": { title: "72 km/h in meters per second", lines: [
       { does: "Both parts of the unit change, not just one.", why: "There is a top and a bottom, and each needs converting.", paper: ["  km → m", "  hours → seconds"] },
       { does: "72 km is 72000 m; 1 hour is 3600 s.", why: "Handle each conversion separately before combining them.", paper: ["  72000 m", "  3600 s"] },
       { does: "72000 ÷ 3600 = 20 m/s.", why: "Converting only the top would leave the answer 3600 times too big.", paper: ["  20 m/s"] }
@@ -9629,7 +9629,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "iteration:1": { title: "the same, two steps on", lines: [
       { does: "x₁ was 2.646, so feed that back in.", why: "The output of one step is the input of the next.", paper: ["  x₂ = √(2.646 + 6)"] },
       { does: "√8.646 = 2.941.", why: "The value has moved less than it did on the first step.", paper: ["  x₂ = 2.941"] },
-      { does: "The steps are shrinking, so it is converging.", why: "If the values moved further apart the rearrangement chosen would be the wrong one.", paper: ["  1 → 2.646 → 2.941", "  settling towards 3"] }
+      { does: "The steps are shrinking, so it is converging.", why: "If the values moved further apart the rearrangement chosen would be the wrong one.", paper: ["  1 → 2.646 → 2.941", "  settling toward 3"] }
     ] },
     "quad-inequality:0": { title: "x² − 5x + 6 < 0", lines: [
       { does: "Find where it crosses zero: (x − 2)(x − 3).", why: "The roots divide the number line into the regions to choose between.", paper: ["  roots: 2 and 3"] },
@@ -9782,7 +9782,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { does: "So 50 km per hour.", why: "Steeper means faster and flat means stopped, which is the idea that becomes differentiation later.", paper: ["  50 km/h"] }
     ] },
     "circle-eq:0": { title: "circle centred on the origin, radius 5", lines: [
-      { does: "Every point on it is 5 from the centre.", why: "That is what a circle is, and the distance comes from Pythagoras.", paper: ["  √(x² + y²) = 5"] },
+      { does: "Every point on it is 5 from the center.", why: "That is what a circle is, and the distance comes from Pythagoras.", paper: ["  √(x² + y²) = 5"] },
       { does: "Squaring both sides gives x² + y² = 25.", why: "Squaring removes the root and leaves the standard form.", paper: ["  x² + y² = 25"] },
       { does: "So r² is 25, not 5.", why: "The right-hand side is the radius SQUARED, which is the usual slip.", paper: ["  r² = 25"] }
     ] },
@@ -9804,7 +9804,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "special-seq:0": { title: "next in 1, 3, 6, 10", lines: [
       { does: "The gaps are 2, 3, 4 — growing by one each time.", why: "Each new row of a triangle is one longer than the last.", paper: ["  1, 3, 6, 10", "   2  3  4"] },
       { does: "So the next gap is 5.", why: "The pattern is in the gaps rather than the terms.", paper: ["  next gap = 5"] },
-      { does: "10 + 5 = 15.", why: "These are the triangular numbers, worth recognising on sight.", paper: ["  next term = 15"] }
+      { does: "10 + 5 = 15.", why: "These are the triangular numbers, worth recognizing on sight.", paper: ["  next term = 15"] }
     ] },
     "special-seq:1": { title: "next in 2, 3, 5, 8, 13", lines: [
       { does: "The gaps are 1, 2, 3, 5 — no constant step.", why: "Neither the terms nor the gaps follow a simple rule.", paper: ["  2, 3, 5, 8, 13"] },
@@ -9838,7 +9838,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ] },
     "bounds:1": { title: "24 + 31, each to the nearest cm", lines: [
       { does: "Each has half a centimetre of uncertainty.", why: "Combining measurements combines their errors too.", paper: ["  24 ± 0.5", "  31 ± 0.5"] },
-      { does: "For the largest total, take the upper bound of both.", why: "The two half-centimetres add together rather than cancelling.", paper: ["  24.5 + 31.5"] },
+      { does: "For the largest total, take the upper bound of both.", why: "The two half-centimetres add together rather than canceling.", paper: ["  24.5 + 31.5"] },
       { does: "So the total could be as much as 56.", why: "A whole centimetre out, even though each measurement was only half out.", paper: ["  max = 56"] }
     ] },
     "listing:0": { title: "4 shirts and 3 trousers", lines: [
@@ -9954,7 +9954,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "mode:0": { title: "mode of 3, 7, 3, 9, 3", lines: [
       { does: "Count how often each value appears.", why: "The mode is about frequency rather than size or position.", paper: ["  3: three times", "  7: once", "  9: once"] },
       { does: "3 appears most often.", why: "Nothing else appears more than once, so there is no tie.", paper: ["  most common: 3"] },
-      { does: "The mode is 3.", why: "It is the only average that also works on things that are not numbers, such as colours.", paper: ["  mode = 3"] }
+      { does: "The mode is 3.", why: "It is the only average that also works on things that are not numbers, such as colors.", paper: ["  mode = 3"] }
     ] },
     "mode:1": { title: "modal class from grouped data", lines: [
       { does: "No single value can repeat here.", why: "Grouped data records only how many fall in each class, not the values themselves.", paper: ["   0–10: 4", "  10–20: 9", "  20–30: 6"] },
@@ -10078,7 +10078,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     ] },
     "limit-inf:1": { title: "lim of x/(x² + 1) as x → ∞", lines: [
       { does: "The bottom has a higher power than the top.", why: "That changes the kind of answer, not just its value.", paper: ["  top:    x", "  bottom: x²"] },
-      { does: "Divide through by x²: (1/x) over (1 + 1/x²).", why: "Dividing by the highest power on the bottom is what makes the behaviour visible.", paper: ["    1/x", "  ────────", "  1 + 1/x²"] },
+      { does: "Divide through by x²: (1/x) over (1 + 1/x²).", why: "Dividing by the highest power on the bottom is what makes the behavior visible.", paper: ["    1/x", "  ────────", "  1 + 1/x²"] },
       { does: "The top vanishes, so the limit is 0.", why: "The bottom outgrows the top, squeezing the fraction to nothing.", paper: ["  → 0/1 = 0"] }
     ] },
     "stationary:1": { title: "is x = 3 a maximum on y = −x² + 6x?", lines: [
@@ -10296,7 +10296,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { does: "Nothing cancels yet, because both parts are sums.", why: "Only whole factors cancel, never single terms, so crossing off the x² would be wrong.", paper: ["   x² − x − 6", "   ───────────", "    x² − 9"] },
       { does: "Factorise the top: two numbers multiplying to −6, adding to −1.", why: "−3 and 2 fit, giving (x − 3)(x + 2).", paper: ["  x² − x − 6", "  = (x − 3)(x + 2)"] },
       { does: "The bottom is a difference of two squares: (x − 3)(x + 3).", why: "x² − 9 has no middle term, which is the signal for that pattern.", paper: ["  x² − 9", "  = (x − 3)(x + 3)"] },
-      { does: "(x − 3) appears top and bottom, so it cancels.", why: "It is a genuine factor of both, which is exactly what makes cancelling legal.", paper: ["  (x − 3)(x + 2)     x + 2", "  ───────────────  =  ─────", "  (x − 3)(x + 3)     x + 3"] }
+      { does: "(x − 3) appears top and bottom, so it cancels.", why: "It is a genuine factor of both, which is exactly what makes canceling legal.", paper: ["  (x − 3)(x + 2)     x + 2", "  ───────────────  =  ─────", "  (x − 3)(x + 3)     x + 3"] }
     ] },
     "fn-eval:1": { title: "f(x) = 3x + 2, find x when f(x) = 17", lines: [
       { does: "This runs the machine backwards.", why: "You know the output and want the input, which is the reverse of substituting.", paper: ["  f(x) = 3x + 2", "  f(x) = 17"] },
@@ -10509,7 +10509,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { does: "The missing angle is 70°.", why: "Checking: 110 + 70 = 180, so the two angles do make a straight line.", paper: ["  110° + 70° = 180°  ✓"] }
     ] },
     "sohcahtoa:0": { title: "angle 30°, hypotenuse 10, find the opposite", lines: [
-      { does: "Label the sides against the angle you know.", why: "Opposite and adjacent depend on which angle you are standing at, so labelling first prevents the usual mix-up.", paper: ["      |\\", "  opp | \\  hyp = 10", "      |  \\", "      |30°_\\", "        adj"] },
+      { does: "Label the sides against the angle you know.", why: "Opposite and adjacent depend on which angle you are standing at, so labeling first prevents the usual mix-up.", paper: ["      |\\", "  opp | \\  hyp = 10", "      |  \\", "      |30°_\\", "        adj"] },
       { does: "You have the hypotenuse and want the opposite, so use sine.", why: "Sine is opposite over hypotenuse, which is the ratio linking exactly those two sides.", paper: ["  sin = opp / hyp"] },
       { does: "sin 30° = opp ÷ 10, so opp = 10 × sin 30°.", why: "Rearranging makes the unknown the subject before any calculating.", paper: ["  sin 30° = opp / 10", "  opp = 10 × sin 30°"] },
       { does: "sin 30° = 0.5, so the opposite is 5.", why: "The opposite must be shorter than the hypotenuse, and 5 < 10, so the answer is plausible.", paper: ["  opp = 10 × 0.5", "      = 5   ✓"] }
@@ -10572,7 +10572,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
       { does: "3 and 4 share nothing, so 3/4 is simplest.", why: "Once the top and bottom have no common factor left, the fraction cannot be reduced further.", paper: ["   18     3", "  ───  =  ─", "   24     4"] }
     ] },
     "frac-mul:1": { title: "3/8 × 4/9", lines: [
-      { does: "Look for factors shared across the two fractions.", why: "Cancelling before multiplying keeps every number small, so there is nothing large to simplify at the end.", paper: ["   3     4", "  ──  ×  ─", "   8     9"] },
+      { does: "Look for factors shared across the two fractions.", why: "Canceling before multiplying keeps every number small, so there is nothing large to simplify at the end.", paper: ["   3     4", "  ──  ×  ─", "   8     9"] },
       { does: "4 and 8 share 4, leaving 1 and 2.", why: "A top and a bottom may share a factor even when they are in different fractions, because multiplying puts them on the same line anyway.", paper: ["   3     1", "  ──  ×  ─", "   2     9"] },
       { does: "3 and 9 share 3, leaving 1 and 3.", why: "The same reasoning applied to the other diagonal pair.", paper: ["   1     1", "  ──  ×  ─", "   2     3"] },
       { does: "Now multiply: 1 × 1 over 2 × 3 = 1/6.", why: "The answer arrives already in its simplest form, with no 12/72 to reduce.", paper: ["   1     1     1", "  ──  ×  ─  =  ─", "   2     3     6"] }
@@ -10664,7 +10664,7 @@ var kind = d === 1 ? "sphere" : pick(r, ["cone", "pyramid"]);   // tier 2 IS the
     "sub:0": { title: "13 − 5", lines: [
       { does: "Start at 5 and count up to 13.", why: "Subtraction is the distance between two numbers, so counting up finds the same answer as taking away, with less to keep track of.", paper: ["  13 − 5", "", "  start at 5, aim for 13"] },
       { does: "5 to 10 is 5 steps, then 10 to 13 is 3 more.", why: "Stopping at 10 on the way splits an awkward jump into two easy ones.", paper: ["  5 ──→ 10 ──→ 13", "     +5      +3"] },
-      { does: "5 + 3 = 8, so 13 − 5 = 8.", why: "The total distance travelled is the answer.", paper: ["  5 + 3 = 8", "", "  13 − 5 = 8"] },
+      { does: "5 + 3 = 8, so 13 − 5 = 8.", why: "The total distance traveled is the answer.", paper: ["  5 + 3 = 8", "", "  13 − 5 = 8"] },
       { does: "Check: 8 + 5 = 13.", why: "Adding the answer back must return the number you started from, which catches most slips.", paper: ["  13 − 5 = 8", "", "  check:  8 + 5 = 13  ✓"] }
     ] },
     "mul:0": { title: "4 × 3", lines: [
@@ -11358,7 +11358,7 @@ function solveCoefficient(ast, power, varName) {
   };
 }
 
-/* A trigonometric ratio from two labelled sides.
+/* A trigonometric ratio from two labeled sides.
 
    The labels ARE the model here \u2014 "opposite 5 and adjacent 12" states the
    configuration rather than leaving it to be inferred from a story, which is
@@ -11368,7 +11368,7 @@ function solveCoefficient(ast, power, varName) {
    form sine and cosine from it, and check tan = sin/cos. A slip in the first
    route does not survive the second. */
 function solveRatio(which, opp, adj, hypGiven) {
-  /* Any two labelled sides fix the third by Pythagoras, so the same routine
+  /* Any two labeled sides fix the third by Pythagoras, so the same routine
      serves whichever pair was stated. */
   if (hypGiven != null && isFinite(hypGiven)) {
     if (opp == null && isFinite(adj)) {
@@ -11428,7 +11428,7 @@ function solveUnion(a, b, both) {
    the differences and a rule that reproduces the data are two different
    claims, and only the second is worth anything.
 
-   Linear, quadratic and geometric are recognised. Anything else is refused
+   Linear, quadratic and geometric are recognized. Anything else is refused
    rather than guessed at \u2014 a sequence has infinitely many continuations, and
    picking a plausible one is exactly the confident-wrong failure to avoid. */
 function solveSequence(terms, wantNext, statedRule) {
@@ -11943,7 +11943,7 @@ function solveSystem(a1, b1, c1, a2, b2, c2) {
   var fitsSecond = Math.abs(a2 * x + b2 * y - c2) < 1e-9 * (1 + Math.abs(c2));
   return {
     ok: true,
-    /* Two unknowns need labelling: "6, 1" does not say which is which, and a
+    /* Two unknowns need labeling: "6, 1" does not say which is which, and a
        question asking for x and y is not answered by an unlabelled pair. */
     value: "x = " + (nearlyInt(x) ? Math.round(x) : x) + ", y = " + (nearlyInt(y) ? Math.round(y) : y),
     x: nearlyInt(x) ? Math.round(x) : x, y: nearlyInt(y) ? Math.round(y) : y,
@@ -12049,7 +12049,7 @@ function solveSimplifyRational(topAst, botAst, varName) {
   }
   var tb = brackets(top.text), bb = brackets(bot.text);
   /* Cancel each shared bracket only as many times as it appears on BOTH sides.
-     (x \u2212 3)\u00b2 over (x \u2212 3)(x \u2212 2) leaves one (x \u2212 3) on top; cancelling both
+     (x \u2212 3)\u00b2 over (x \u2212 3)(x \u2212 2) leaves one (x \u2212 3) on top; canceling both
      copies gives 1/(x \u2212 2), which is a different function. The equivalence
      check caught it, which is exactly what it is for. */
   var shared = [];
@@ -12085,7 +12085,7 @@ function solveSimplifyRational(topAst, botAst, varName) {
   return {
     ok: true, value: text, text: text,
     confirmed: checked >= 4 && agree === checked,
-    method: "factorised and cancelled, checked by equivalence"
+    method: "factorised and canceled, checked by equivalence"
   };
 }
 
@@ -12105,7 +12105,7 @@ function solveHCF(a, b) {
    the multiples of the larger number until one divides by the smaller \u2014 a
    search rather than a formula, so the two share nothing.
 
-   The reader recognised these before this existed, and they fell through to a
+   The reader recognized these before this existed, and they fell through to a
    path that could not evaluate them. Reading a question you cannot answer is
    worse than not reading it, because the refusal reads like a verdict. */
 function solveLCM(a, b) {
@@ -13096,7 +13096,7 @@ function solveChord(curve, x1, x2, v) {
 }
 
 /* The trapezium rule. Confirmed against a finer estimate: doubling the strips
-   must move the answer towards the true area, not away from it. */
+   must move the answer toward the true area, not away from it. */
 function solveTrapezium(curve, lo, hi, strips, v) {
   v = v || "x";
   if (![lo, hi, strips].every(isFinite) || strips < 1) return { ok: false, note: "needs limits and a strip count" };
@@ -13413,7 +13413,7 @@ function solveLogSum(a, b, subtract, wantsLog) {
   };
 }
 
-/* Ordering numbers. Confirmed by checking each neighbouring pair really is in
+/* Ordering numbers. Confirmed by checking each neighboring pair really is in
    order, which sorting alone asserts rather than demonstrates. */
 function solveOrdering(list, which) {
   if (!list || !list.length || !list.every(isFinite)) return { ok: false, note: "a value is missing" };
@@ -13554,7 +13554,7 @@ function solveMultiStep(count, each, extra, discount) {
     return {
       ok: true, value: Math.abs(after - Math.round(after)) < 1e-9 ? Math.round(after) : Math.round(after * 100) / 100,
       confirmed: Math.abs(forward - total) < 1e-6 * (1 + total),
-      method: "totalled then discounted, checked by reversing the discount"
+      method: "totaled then discounted, checked by reversing the discount"
     };
   }
   var back = total - extra;
@@ -13886,7 +13886,7 @@ function solveQuadArea(a, b, kind) {
 }
 
 
-/* The mean of a list. Confirmed by the deviations from it cancelling out,
+/* The mean of a list. Confirmed by the deviations from it canceling out,
    which is what makes it the mean rather than any other middle. */
 function solveListMean(list) {
   if (!list || !list.length || !list.every(isFinite)) return { ok: false, note: "a value is missing" };
@@ -13961,7 +13961,7 @@ function solveQuadIneqRoots(r1, r2, dir, from) {
 function solveGraphShape(ast, v, src) {
   v = v || "x";
   /* An exponential such as 2^x is not a polynomial, so coefficient recovery
-     never sees it. Recognise it structurally instead, and confirm the way the
+     never sees it. Recognize it structurally instead, and confirm the way the
      shape is defined: the RATIO between successive values is constant, where a
      polynomial's differences are. */
   if (ast && ast.t === "op" && ast.o === "^" && ast.a && ast.a.t === "num" &&
@@ -14163,7 +14163,7 @@ function extract(ask) {
        That is confirmable without knowing which of them was asked for. */
     else if (/nth term/.test(instr)) want = "nth";
     /* "give y in terms of x" asks for an equation rather than a number. It is
-       a form instruction, not a different question, so it can be recognised
+       a form instruction, not a different question, so it can be recognized
        and passed through. */
     else if (/in terms of x|as an equation/.test(instr)) want = "equation-form";
     else if (/find x and y|what is x|stationary point|give it exactly|exact value|in terms of y|expression in x|decimal places|smallest whole number|find p and q|give it as|in terms of \u03c0|add up to what|significant figure|upper bound|lower bound|was it before|combinations|multiple of \u03c0|in degrees|that works|for congruence|what radius|of the answer|as a fraction|how much is left|its plan|frequency density|comes first|comes last|much change|in degrees|discriminant|when does it end|better value|goes in|how many cars|how many pieces|how many bags|its area|from the start|how tall|what is it|meet at|1 for dashed|how many are left|per second|on the ground|one more|does a side of|the range|which rule|how much more|in km/.test(instr)) want = "solve-for";
@@ -14216,7 +14216,7 @@ function extract(ask) {
   }
 
   /* "A triangle has angle A = 57\u00b0 with opposite side 8, and angle B = 35\u00b0.
-     How long is ...?" \u2014 every quantity is labelled, so the configuration is
+     How long is ...?" \u2014 every quantity is labeled, so the configuration is
      stated rather than inferred from a description of a situation. */
   var masa = ask.match(/angle A = (\d+)\u00b0 with opposite side (\d+), and angle B = (\d+)\u00b0/i);
   if (masa) return { kind: "asa", angA: Number(masa[1]), sideA: Number(masa[2]), angB: Number(masa[3]), want: want, dp: dp };
@@ -14328,7 +14328,7 @@ function extract(ask) {
   var mdist = ask.match(/speed is ([\d.]+) km per hour and the time is ([\d.]+) hours?/i);
   if (mdist) return { kind: "steadyspeed", speed: Number(mdist[1]), hours: Number(mdist[2]), want: want, dp: dp };
 
-  // "135 km per hour is how many metres per second?"
+  // "135 km per hour is how many meters per second?"
   var mur = ask.match(/([\d.]+) (mm|cm|m|km) per (second|minute|hour) is how many (mm|cm|m|km) per (second|minute|hour)/i);
   if (mur) {
     var shortOf = { second: "s", minute: "min", hour: "h" };
@@ -14684,7 +14684,7 @@ function extract(ask) {
     /* One sentence, four questions: how many are NEEDED (round up), how many
        will be FULL (round down), how many are in the LAST one (the remainder),
        and how many are LEFT OVER. Guessing between them accepted a wrong
-       answer, so recognise each explicitly and refuse anything else \u2014 a
+       answer, so recognize each explicitly and refuse anything else \u2014 a
        phrasing I have not seen is not a phrasing I can answer. */
     var mode = null;
     if (/are needed|will be needed|how many cars are needed/i.test(ask)) mode = "needed";
@@ -14803,7 +14803,7 @@ function extract(ask) {
   }
 
   // "Something costs 6.82 and you pay with 10.00. How much change?"
-  /* The normalised text turns "10.00" into something the earlier substitutions
+  /* The normalized text turns "10.00" into something the earlier substitutions
      have already touched, so match on the raw prompt for money. */
   var mmo = String(ask).match(/costs\s*([\d]+(?:\.\d+)?)\s*and you pay with\s*([\d]+(?:\.\d+)?)/i);
   if (mmo) return { kind: "moneychange", cost: Number(mmo[1]), paid: Number(mmo[2]), want: want, dp: dp };
@@ -15290,7 +15290,7 @@ function extract(ask) {
   if (mrect) return { kind: "rect", w: Number(mrect[2]), h: Number(mrect[3]), perimeter: /perimeter/i.test(mrect[1]), want: want, dp: dp };
 
   // "Simplify (x^2 - 5x + 6) / (x^2 - 7x + 12)"
-  /* Read the NORMALISED text: the raw prompt still has x\u00b2 and \u2212, which the
+  /* Read the NORMALIZED text: the raw prompt still has x\u00b2 and \u2212, which the
      parser cannot take, so matching on `ask` produced halves that never parsed. */
   var mrat = t.match(/^Simplify\s*\((.+?)\)\s*\/\s*\((.+?)\)\s*$/i);
   if (mrat) {
@@ -15482,7 +15482,7 @@ function explicit(src) {
 
    And it verifies ANSWERS, not reasoning. A proposer using a broken method
    that happens to land on the right answer will be accepted, because the
-   question and answer really do match. That is the correct behaviour \u2014 the
+   question and answer really do match. That is the correct behavior \u2014 the
    learner is never shown the proposer's reasoning \u2014 but it is worth being
    plain that a clean run here says nothing about whether the proposer
    understands anything. It says only that what it produced is true.
@@ -16020,7 +16020,7 @@ function answerTextOf(c) {
    and why copying their shape is stated as the first rule. */
 function generationPrompt(examples, count) {
   return [
-    "Write " + count + " maths practice questions.",
+    "Write " + count + " math practice questions.",
     "",
     "Return ONLY a JSON array. No prose, no markdown fences. Each element:",
     '  {"ask": "<the question, as plain text>", "answer": "<the answer>"}',
@@ -16034,7 +16034,7 @@ function generationPrompt(examples, count) {
     "",
     "Rules:",
     "- Change the numbers only. Do not add words, context, or a story.",
-    "- Write maths in plain text: x^2 for powers, * for multiply, / for divide, sqrt(9) for roots.",
+    "- Write math in plain text: x^2 for powers, * for multiply, / for divide, sqrt(9) for roots.",
     "- Give the exact answer, not a rounded one, unless the question asks for a rounding.",
     "- Do not repeat any example.",
     "- If you are not certain an answer is correct, leave that question out rather than guessing."
@@ -16325,6 +16325,13 @@ function placementReport(state, skills, byId) {
 
 /* --------------------------------- CSS -------------------------------- */
 const CSS = `
+.colsum{display:flex;justify-content:center;margin:10px 0}
+.colsum pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:22px;
+  line-height:1.35;font-weight:700;color:var(--ink);margin:0;letter-spacing:.06em}
+.colsum .colop{color:var(--a)}
+.colsum .colrule{color:var(--a)}
+.circw{display:block;margin:6px auto;max-width:180px;height:auto}
+
 /* Cloud sign-in fields. Full width and body-sized; everything else about them
    is whatever the app already uses for an input. */
 input.cloudin{display:block;width:100%;margin-top:var(--s2);padding:11px 13px;
@@ -17329,6 +17336,55 @@ function Shape({ spec, revealed }) {
   );
 }
 
+/* Column arithmetic, set out the way it is written on paper.
+
+   The generator has been producing this spec all along and the Widget had no
+   case for it, so add and sub at their top tier silently showed nothing. The
+   answer row appears only once the question is answered — showing it up front
+   would hand over the very thing being asked for. */
+function Column({ spec, revealed }) {
+  const a = String(spec.a == null ? "" : spec.a);
+  const b = String(spec.b == null ? "" : spec.b);
+  const ans = String(spec.answer == null ? "" : spec.answer);
+  const width = Math.max(a.length, b.length, ans.length) + 1;
+  const pad = (t) => t.padStart(width, "\u00a0");
+  return (
+    <div className="colsum" role="img"
+      aria-label={"Column arithmetic: " + a + " " + (spec.op || "+") + " " + b +
+        (revealed ? ", answer " + ans : "")}>
+      <pre>
+        {pad(a)}{"\n"}
+        <span className="colop">{spec.op || "+"}</span>{pad(b).slice(1)}{"\n"}
+        <span className="colrule">{"\u2500".repeat(width)}</span>{"\n"}
+        {revealed ? pad(ans) : pad("?")}
+      </pre>
+    </div>
+  );
+}
+
+/* A circle with its radius marked. Same story: the spec was being produced and
+   nothing drew it, so the circle questions had no diagram at all. */
+function Circle({ spec, revealed }) {
+  const r = Number(spec.r) || 1;
+  const R = 60, cx = 82, cy = 74;
+  return (
+    <svg className="circw" viewBox="0 0 164 148" role="img"
+      aria-label={"A circle of radius " + r}>
+      <circle cx={cx} cy={cy} r={R} fill="var(--a-tint)" stroke="var(--a)" strokeWidth="2.5" />
+      <line x1={cx} y1={cy} x2={cx + R} y2={cy} stroke="var(--a)" strokeWidth="2.5" />
+      <circle cx={cx} cy={cy} r="3.5" fill="var(--a)" />
+      <text x={cx + R / 2} y={cy - 9} textAnchor="middle"
+        fontSize="14" fontWeight="700" fill="var(--a)">r = {r}</text>
+      {revealed && (
+        <text x={cx} y={cy + R + 26} textAnchor="middle"
+          fontSize="12.5" fill="var(--ink-faint)">
+          diameter {2 * r}
+        </text>
+      )}
+    </svg>
+  );
+}
+
 function Widget({ spec, revealed, onPick, picked, balanceState, onMove }) {
   if (!spec) return null;
   switch (spec.kind) {
@@ -17339,6 +17395,8 @@ function Widget({ spec, revealed, onPick, picked, balanceState, onMove }) {
     case "grapher": return <Grapher spec={spec} revealed={revealed} />;
     case "unitcircle": return <UnitCircle spec={spec} revealed={revealed} />;
     case "shape": return <Shape spec={spec} revealed={revealed} />;
+    case "column": return <Column spec={spec} revealed={revealed} />;
+    case "circle": return <Circle spec={spec} revealed={revealed} />;
     default: return null;
   }
 }
@@ -17569,7 +17627,7 @@ function Practice({ skillId, difficulty, seed, onDone, onExit, workDefault, setW
 
           <button className="btn primary" onClick={submit} disabled={!answer.trim()}>Check it</button>
           {res && !res.ok && phase === "attempt" && (
-            <div className={"verdict " + verdictClass}>
+            <div role="status" aria-live="polite" className={"verdict " + verdictClass}>
               {res.verdict === "unsure"
                 ? "I couldn't check that one safely, so I'm not going to call it wrong. Try writing it another way."
                 : res.verdict === "unreadable" ? "I couldn't read that — " + res.why
@@ -17586,7 +17644,7 @@ function Practice({ skillId, difficulty, seed, onDone, onExit, workDefault, setW
 
       {phase === "after" && (
         <>
-          <div className={"verdict " + verdictClass}>
+          <div role="status" aria-live="polite" className={"verdict " + verdictClass}>
             {res.ok ? "Correct." : "Not this one."}
             {near && <div className="nearmiss">{near.say}</div>}
             {res.ok && tries > 1 && <div className="vsub">Got there on attempt {tries}.</div>}
@@ -17875,7 +17933,7 @@ function Learn({ skillId, level, onPractise, onExit, onLevel }) {
           <AnswerBox value={answer} onChange={setAnswer} onSubmit={check} strand={guided.strand} />
           <button className="btn primary" onClick={check} disabled={!answer.trim()}>Check it</button>
           {res && (
-            <div className={"verdict " + (res.ok ? "good" : res.verdict === "unsure" ? "hm" : "bad")}>
+            <div role="status" aria-live="polite" className={"verdict " + (res.ok ? "good" : res.verdict === "unsure" ? "hm" : "bad")}>
               {res.ok ? "That's it — same method, your own working." : "Not quite. The steps above are for a different question, but the method is the same one."}
             </div>
           )}
@@ -18009,7 +18067,7 @@ function Session({ scope, startDifficulty, skillIds, onExit, mark, aiMaker }) {
       )}
       {res && (
         <>
-          <div className={"verdict " + (res.ok ? "good" : res.verdict === "unsure" ? "hm" : "bad")}>
+          <div role="status" aria-live="polite" className={"verdict " + (res.ok ? "good" : res.verdict === "unsure" ? "hm" : "bad")}>
             {res.ok ? "Correct." : "Not this one."}
             {(() => { const nm = S.readNearMiss(q.criterion, answer, res); return nm ? <div className="nearmiss">{nm.say}</div> : null; })()}
           </div>
@@ -18088,7 +18146,7 @@ const TABS = [
 
 /* Mathema keeps its own routes in the URL, and when it runs inside the hub the
    hub is reading that same hash. Without a prefix the two routers fight: the
-   hub sees "#/progress", doesn't recognise it, and bounces back to the hub —
+   hub sees "#/progress", doesn't recognize it, and bounces back to the hub —
    so every internal link in Mathema took you home.
 
    ROUTE_BASE is that prefix. Empty when Mathema runs standalone, "math" when
@@ -18131,7 +18189,7 @@ function parseRoute(hash) {
    corner of each. The spiral is produced by the squares rather than drawn on
    top of them, which is the mathematical idea the icon is standing for.
 
-   The colour runs from cyan to pink across the sequence. This is the app-bar
+   The color runs from cyan to pink across the sequence. This is the app-bar
    version: fewer squares than the full icon, because at 17px any more turns to
    mush. Generated from the same geometry as mathema-icon.svg. */
 function Mark({ size }) {
@@ -18409,7 +18467,7 @@ function Workbench() {
       </div>
 
       {result && readable >= 2 && (
-        <div className={"verdict " + (result.firstBreak != null ? "bad" : result.rows.some(r => r.state === "gained" || r.state === "lost") ? "hm" : "good")}>
+        <div role="status" aria-live="polite" className={"verdict " + (result.firstBreak != null ? "bad" : result.rows.some(r => r.state === "gained" || r.state === "lost") ? "hm" : "good")}>
           {result.firstBreak != null
             ? "Line " + (result.firstBreak + 1) + " is where it stops following from the line above."
             : "Every line follows from the one above it."}
@@ -18728,6 +18786,7 @@ function Placement({ state, setState, onExit, onOpen }) {
         <div className="muted" style={{ marginBottom: 6 }}>{K.BY_ID[q.skill].strand}</div>
         <p className="ask">{q.ask}</p>
         <input className="ans" value={given} placeholder="Your answer"
+          aria-label={"Your answer to: " + (q && q.ask ? q.ask : "this question")}
           onChange={e => setGiven(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") submit(); }} />
         {unreadable && <div className="fb no" style={{ marginTop: 10 }}>{unreadable} Nothing was counted — try writing it again.</div>}
