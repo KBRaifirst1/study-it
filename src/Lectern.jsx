@@ -1440,6 +1440,11 @@ const CSS = `
   .setmid{flex:1;min-width:0}
   .settitle{font-weight:750}
   .setdesc{font-size:12.5px;color:var(--ink-faint)}
+  /* Used on the install screen when the browser offers no install prompt.
+     It had no rule, so the fallback instructions \u2014 the ONLY guidance an
+     iPhone user gets \u2014 rendered as unstyled default text next to properly
+     styled siblings. Matches .setdesc, which does the same job beside it. */
+  .installnote{font-size:12.5px;color:var(--ink-faint);line-height:1.5}
   .switch{width:54px;height:32px;border-radius:999px;background:var(--line);border:none;position:relative;cursor:pointer;flex:0 0 auto;transition:background var(--t) var(--ease);padding:0}
   .switch.on{background:var(--a)}
   .switch .knob{position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;transition:left var(--t) var(--ease);box-shadow:0 2px 4px rgba(0,0,0,.25)}
