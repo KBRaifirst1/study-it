@@ -946,7 +946,13 @@ const Academy = (function () {
     { id: "french", name: "French", icon: "🇫🇷", blurb: "Bonjour — start speaking French", accent: "#6741d9", tint: "#e9e4ff" },
     { id: "latin", name: "Latin", icon: "🏛️", blurb: "The ancient root of many languages", accent: "#0b8a9c", tint: "#d6f2f5" },
     { id: "chinese", name: "Chinese", icon: "🀄", blurb: "Characters, pinyin, and tones", accent: "#e64980", tint: "#ffe1ef" },
-    { id: "music", name: "Music", icon: "🎵", blurb: "Notes and sounds you can hear", accent: "#9c36b5", tint: "#f4e2fb", kind: "music" }
+    { id: "music", name: "Music", icon: "🎵", blurb: "Notes and sounds you can hear", accent: "#9c36b5", tint: "#f4e2fb", kind: "music" },
+    /* Study It and CodeQuest sit here as subjects rather than in a separate
+       doors strip. Every route into learning is now one grid: a learner picks
+       what they want to learn, not which app to open. The doors duplicated
+       Math and Science once those cards started opening the real apps. */
+    { id: "study", name: "Study It", icon: "\ud83d\udcda", blurb: "Notebooks, an AI tutor, flashcards and quizzes", accent: "#2f6ff0", tint: "#dfeaff" },
+    { id: "code", name: "Code", icon: "\ud83d\udcbb", blurb: "Learn to code by writing it \u2014 real engines grade it", accent: "#0ca678", tint: "#d8f5ec" },
   ];
 
   /* =======================================================================
@@ -2599,7 +2605,7 @@ function CommandPalette({ app, close }) {
     const rec = recommendNext(app).filter(r => r.id === "continue")[0];
     if (rec) out.unshift({ group: "Go to", label: rec.title, icon: "forward", on: rec.on });
     app.trackedSubjects.forEach(sub => {
-      out.push({ group: "Subjects", label: sub.name, hint: sub.icon, on: () => app.go({ tab: "learn", scr: "subject", subj: sub.id }) });
+      out.push({ group: "Subjects", label: sub.name, hint: sub.icon, on: () => openSubject(app, sub) });
     });
     (app.savedList() || []).forEach(x => {
       out.push({
@@ -4001,6 +4007,34 @@ function Ring({ done, total }) {
     </div>
   );
 }
+/* Where a subject card actually goes.
+
+   Lectern listed Math and Science as its own short courses while also showing
+   doors to Mathema and Elements on the same screen. A learner met "Science"
+   twice meaning two different things \u2014 a handful of built-in steps, and a
+   136-skill app \u2014 and neither label said which.
+
+   Any subject that has a real app now opens it. Lectern keeps the subjects
+   nothing else covers (languages, history, English, music) and stops
+   competing with itself on the two it does.
+
+   Every route in goes through here: the subject grid, the dashboard and the
+   command palette. Wiring one and not the others would leave a path to the
+   course that no longer has a card. */
+const SUBJECT_APP = { math: "onOpenMathema", science: "onOpenElements", study: "onOpenStudyIt" };
+
+/* CodeQuest is a separate deploy, so it is a link rather than a route. */
+const SUBJECT_URL = { code: "https://code-quest-tau-puce.vercel.app" };
+
+function openSubject(app, s) {
+  const id = s && s.id;
+  const handler = SUBJECT_APP[id];
+  if (handler && typeof app[handler] === "function") { app[handler](); return; }
+  const url = SUBJECT_URL[id];
+  if (url) { window.open(url, "_blank", "noopener"); return; }
+  app.go({ tab: "learn", scr: "subject", subj: id });
+}
+
 function SubjectCard({ app, s }) {
   const isCourse = s.kind !== "math" && s.kind !== "music";
   let cls = null;
@@ -4013,7 +4047,7 @@ function SubjectCard({ app, s }) {
   const allDone = isCourse && steps > 0 && stepsDone === steps;
   const pct = steps ? Math.round(stepsDone / steps * 100) : 0;
   return (
-    <button className="subj" style={{ "--a": s.accent, "--a-tint": s.tint }} onClick={() => app.go({ tab: "learn", scr: "subject", subj: s.id })}>
+    <button className="subj" style={{ "--a": s.accent, "--a-tint": s.tint }} onClick={() => openSubject(app, s)}>
       <div className="ic" style={{ background: s.tint }}>{s.icon}</div>
       <div className="nm">{s.name}{allDone && <span className="tick" style={{ color: s.accent }}>✓</span>}</div>
       <div className="bl">{s.blurb || (s.kind === "topic" ? "Made with AI · your topic" : "")}</div>
@@ -4197,7 +4231,7 @@ function Dashboard({ app }) {
       <div className="secttl">Jump into a subject</div>
       <div className="grid">{A.SUBJECTS.slice(0, 6).map(s => <SubjectCard app={app} s={s} key={s.id} />)}</div>
       <div style={{ textAlign: "center" }}><button className="linkbtn" onClick={() => app.go({ tab: "learn", scr: "grid" })}>See all {A.SUBJECTS.length} subjects →</button></div>
-      <AppDoors app={app} />
+      {/* The doors strip is gone: every app is a subject card now. */}
     </div>
   );
 }
@@ -4286,49 +4320,14 @@ function AppLauncher({ app, compact }) {
   );
 }
 
-function AppDoors({ app }) {
-  const handlers = { studyit: app.onOpenStudyIt, mathema: app.onOpenMathema, elements: app.onOpenElements };
-  const doors = openDoors(handlers);
-  if (doors.length === 0) return null;
-  const inner = d => (
-    <>
-      <div className="cic" style={{ background: d.tint }} aria-hidden="true">{d.icon}</div>
-      <div>
-        <div className="cl">{d.kicker}</div>
-        <div className="ct2">{d.name}</div>
-        <div className="cs">{d.blurb}</div>
-      </div>
-      <div className="go2" aria-hidden="true">{d.internal ? "\u203a" : "\u2197"}</div>
-    </>
-  );
-  return (
-    <div>
-      <div className="secttl">Your other apps</div>
-      {doors.map(d => d.internal ? (
-        <button className="cont door" key={d.id} type="button"
-          style={{ "--a": d.accent, "--a-tint": d.tint }}
-          aria-label={"Open " + d.name}
-          title={"Open " + d.name}
-          onClick={() => { haptic(6); handlers[d.id](); }}>
-          {inner(d)}
-        </button>
-      ) : (
-        <a className="cont door" key={d.id} href={d.url} target="_blank" rel="noopener noreferrer"
-          style={{ "--a": d.accent, "--a-tint": d.tint }}
-          aria-label={"Open " + d.name + " — opens in a new tab"}
-          title={"Open " + d.name + " in a new tab"}
-          onClick={() => haptic(6)}>
-          {inner(d)}
-        </a>
-      ))}
-      <div className="doornote">
-        {doors.some(d => !d.internal)
-          ? "CodeQuest opens in a new tab. Your Lectern progress stays here."
-          : "Your Lectern progress stays here."}
-      </div>
-    </div>
-  );
-}
+/* AppDoors used to render the grid of app cards under the subjects. Study It
+   and CodeQuest are subject cards now and Math and Science open the real apps,
+   so the grid duplicated every route it offered. Removed rather than hidden:
+   a component nothing renders is the dead-field bug in component form.
+
+   AppLauncher stays \u2014 it is the compact switcher in the header and on the
+   sign-in screen, which is a different thing from the grid. */
+
 /* search across subject names and lesson titles, accent- and case-insensitive */
 function searchLearn(app, q) {
   const nq = A.norm(q);
@@ -4363,7 +4362,7 @@ function Grid({ app }) {
           {res.count === 0 && <div className="sub">Nothing matches “{q}”. Try a subject name like Spanish, or part of a lesson title.</div>}
           {res.subjects.map(sub => (
             <button className="cont" key={"s" + sub.id} style={{ "--a": sub.accent, "--a-tint": sub.tint }}
-              onClick={() => { haptic(6); app.go({ tab: "learn", scr: "subject", subj: sub.id }); }}>
+              onClick={() => { haptic(6); openSubject(app, sub); }}>
               <div className="cic" style={{ background: sub.tint }}>{sub.icon}</div>
               <div><div className="cl">{sub.name}</div><div className="cs">Subject</div></div>
               <div className="go2">›</div>
