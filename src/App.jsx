@@ -817,6 +817,27 @@ const HELP_CONTENT = [
   },
 ];
 
+/* Enter and Space on something that is not a <button>.
+
+   Five interactive elements were plain divs with onClick: a card, a menu item,
+   a notebook selector, the flashcard flip and a saved-generation opener. None
+   could be reached by tab and none responded to the keyboard, so a keyboard
+   or screen-reader user could not use them at all.
+
+   They stay as divs because each contains block layout that a button would
+   fight, and get role, tabIndex and this handler instead. Space is prevented
+   from scrolling the page, which is what a real button does. */
+const clickableProps = (onActivate) => ({
+  role: "button",
+  tabIndex: 0,
+  onKeyDown: (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onActivate(e);
+    }
+  },
+});
+
 const VALID_MODES = ["flashcards", "practice", "exam", "explain", "cheatsheet", "recall", "freeResponse", "derive", "critique", "curriculum", "conceptMap", "diagnostic", "tutor", "errorReview"];
 const safeMode = (m, fallback = "explain") => VALID_MODES.includes(m) ? m : fallback;
 
@@ -902,7 +923,7 @@ const PROJECTS = [
   { title: "Make a flashcard deck and publish it", tag: "Any · Portfolio", why: "Teaching is the strongest test of learning.", steps: ["Pick a unit you mostly know", "Write 50 atomic cards", "Test with 3 friends, revise", "Publish on Anki or Quizlet"], hours: 3 },
   { title: "Record a 5-minute explainer video", tag: "Any · Portfolio", why: "Forces Feynman-level clarity. Goes on a personal site.", steps: ["Pick one concept", "Outline in 5 bullets", "Record screen + voice", "Edit and publish"], hours: 4 },
   { title: "Translate a short story into your target language", tag: "Languages · Portfolio", why: "Reading + writing + cultural register in one artifact.", steps: ["Pick a 1000-word public-domain story", "Draft your translation", "Get a native speaker to mark it up", "Write a translator's note on hard choices"], hours: 8 },
-  { title: "Compose and record a 60-second piece", tag: "Music · Portfolio", why: "Composition forces you to deploy theory, not just analyse it.", steps: ["Pick a key, time signature, and form", "Sketch the melody on paper or DAW", "Add harmony + rhythm section", "Record and export"], hours: 6 },
+  { title: "Compose and record a 60-second piece", tag: "Music · Portfolio", why: "Composition forces you to deploy theory, not just analyze it.", steps: ["Pick a key, time signature, and form", "Sketch the melody on paper or DAW", "Add harmony + rhythm section", "Record and export"], hours: 6 },
   { title: "Run a small user-research study", tag: "Soft skills · UX", why: "Five 30-min interviews teach more about people than a year of reading.", steps: ["Write a 5-question semi-structured guide", "Recruit 5 participants", "Interview, record, transcribe", "Synthesize into 3 insights"], hours: 8 },
   { title: "Build a mini case study from a real company", tag: "Business · Writing", why: "Strategy is invisible until you write one. Becomes interview material.", steps: ["Pick a public company you understand", "Read 3 quarterly reports", "Map their strategy on a 2x2", "Write a 1-page memo"], hours: 6 },
   { title: "Make one piece of physical work this month", tag: "Crafts · Portfolio", why: "A drawing, a knitted square, a 3D-printed widget — anything that exists.", steps: ["Pick a technique you've only read about", "Source minimum materials", "Make a deliberately ugly v1", "Make a better v2 with what you learned"], hours: 5 },
@@ -929,7 +950,7 @@ const Rule = ({ vertical, style }) => (
 );
 
 const Card = ({ children, style, onClick, hoverable }) => (
-  <div onClick={onClick} style={{
+  <div onClick={onClick} {...clickableProps(onClick)} style={{
     background: C.paperLight, border: `1px solid ${C.rule}`, borderRadius: 4,
     padding: 22, position: "relative", cursor: onClick ? "pointer" : "default",
     transition: "transform 0.15s, box-shadow 0.15s, border-color 0.15s",
@@ -1889,6 +1910,10 @@ function AppInner() {
       preferredStyle: "balanced", recentTopics: [], masteredConcepts: [],
       totalMinutes: 0, sessionsCount: 0, lastSessionAt: 0, persona: "default",
       cardStates: {}, // SM-2 per-card: key -> { ef, interval, reps, due }
+      /* Per-topic accuracy: name -> { seen, correct, last }. Declared here so
+         an existing profile loaded from storage still gets a defined value
+         rather than undefined on first read. */
+      topicStats: {},
       freezeTokens: 1, // forgiving streak — earn 1 every 5 sessions, max 3
       displayName: "", // what the greeting calls you
       ageOrGrade: "", // e.g. "10th grade", "undergrad junior", "adult, no formal CS background"
@@ -1981,7 +2006,48 @@ function AppInner() {
   const [reviewCardIdx, setReviewCardIdx] = useState(0);
   const [reviewFlipped, setReviewFlipped] = useState(false);
   const [reviewSessionCards, setReviewSessionCards] = useState([]); // snapshot of due cards at session start
-  const [reviewSessionStats, setReviewSessionStats] = useState({ correct: 0, total: 0, started: 0 });
+  const [reviewSessionStats, setReviewSessionStats] = useState({ correct: 0, total: 0, started: 0 })
+
+  /* The Vault listed every saved generation with no way to narrow it. That is
+     fine at ten and useless at two hundred \u2014 and the app encourages saving,
+     so two hundred is where a real user ends up.
+
+     Filtering happens on topic and title text plus the mode badge, both of
+     which are already on the record. Nothing is stored for this. */
+  const [vaultQuery, setVaultQuery] = useState("");
+  const [vaultMode, setVaultMode] = useState("all");;
+
+  /* Weakest topics, for the one question a study app should answer.
+
+     Three attempts minimum: one wrong answer out of one is not evidence of a
+     weakness, and showing it as one would send someone to revise something
+     they simply had a bad moment on. */
+  const weakTopics = useMemo(() => {
+    const stats = persistentProfile.topicStats || {};
+    return Object.entries(stats)
+      .filter(([, v]) => (v.seen || 0) >= 3)
+      .map(([name, v]) => ({ name, seen: v.seen, correct: v.correct,
+        pct: Math.round(100 * v.correct / v.seen) }))
+      .sort((a, b) => a.pct - b.pct)
+      .slice(0, 5);
+  }, [persistentProfile.topicStats]);
+
+  const vaultFiltered = useMemo(() => {
+    const q = vaultQuery.trim().toLowerCase();
+    return savedGenerations.filter((g) => {
+      if (vaultMode !== "all" && g.mode !== vaultMode) return false;
+      if (!q) return true;
+      return String(g.topic || "").toLowerCase().includes(q) ||
+             String(g.title || "").toLowerCase().includes(q) ||
+             String(g.mode || "").toLowerCase().includes(q);
+    });
+  }, [savedGenerations, vaultQuery, vaultMode]);
+
+  /* Only offer modes that are actually present, so the filter never shows an
+     option that would return nothing. */
+  const vaultModes = useMemo(
+    () => Array.from(new Set(savedGenerations.map((g) => g.mode).filter(Boolean))).sort(),
+    [savedGenerations]);
 
   const dueCardsList = useMemo(() => {
     const now = Date.now();
@@ -2891,6 +2957,32 @@ function AppInner() {
 
   const addTimeline = (label) => setStudyTimeline((t) => [{ label, ts: Date.now() }, ...t].slice(0, 100));
   const addReward = (label) => setRewards((r) => [{ label, ts: Date.now() }, ...r].slice(0, 20));
+  /* Per-topic accuracy.
+
+     sessionStats only ever held totals, so the app could say "you got 71%"
+     and never "you are weak on trigonometry". brainConcepts recorded which
+     topics had been seen but nothing about how they went, so the one question
+     a study app should be able to answer \u2014 what should I work on \u2014 had
+     no data behind it.
+
+     Both answer paths (multiple choice and free response) call this, because
+     a picture built from one of them is worse than none: it would look
+     complete and be half the story. */
+  const recordTopicResult = (topicName, wasCorrect) => {
+    const t = String(topicName || "").trim();
+    if (!t) return;
+    setPersistentProfile((p) => {
+      const prev = (p.topicStats || {})[t] || { seen: 0, correct: 0 };
+      return {
+        ...p,
+        topicStats: {
+          ...(p.topicStats || {}),
+          [t]: { seen: prev.seen + 1, correct: prev.correct + (wasCorrect ? 1 : 0), last: Date.now() },
+        },
+      };
+    });
+  };
+
   const addConcept = (c) => { if (c && !brainConcepts.includes(c)) setBrainConcepts((p) => [...p, c].slice(-24)); };
 
   // Personas
@@ -3731,6 +3823,133 @@ Respond ONLY with valid JSON: { "transcript": "full transcription", "uncertainCo
    * @param {string} [overrideTopic] - Optional topic to use instead of the current state. Used by
    *   the Derive prompt flow (avoids stale-closure bug from earlier rounds)
    */
+
+  /* Hoisted out of generateContent. A second caller — the mastery check —
+     sits outside that function, so the validator has to live where both can
+     reach it. Left inside, the new call would have thrown at runtime the
+     first time a mastery check ran, and nothing in a parse or bundle catches
+     an out-of-scope reference. */
+  /* Every structured mode parsed its JSON and rendered it unchecked.
+
+     Each of these asks the model for a specific shape \u2014 explain wants
+     sections, mindMap wants branches, slideDeck wants slides. When the array
+     came back missing or empty the mode rendered a title and nothing else,
+     which looks like the app failing rather than the generation failing.
+
+     One table instead of seven bespoke checks: the key that must be a
+     non-empty array, and what to say when it is not. Modes not listed are
+     unaffected. */
+  const REQUIRED_SHAPE = {
+    explain:    { key: "sections", label: "sections" },
+    cheatsheet: { key: "sections", label: "sections" },
+    dataTable:  { key: "rows",     label: "rows" },
+    conceptMap: { key: "concepts", label: "concepts" },
+    mindMap:    { key: "branches", label: "branches" },
+    slideDeck:  { key: "slides",   label: "slides" },
+    briefing:   { key: "sections", label: "sections" },
+    /* curriculum returns units of study. It had no shape check at all, so an
+       overview with no units rendered as a title and a paragraph promising a
+       course that was not there. */
+    curriculum: { key: "units",    label: "units of study" },
+  };
+
+  /* What each item in that array must actually carry.
+
+     The shape check confirmed the array existed and was not empty, and
+     nothing about what was in it. explain renders a numbered heading and then
+     <RichText>{section.content}</RichText> \u2014 so a section with a heading and
+     no content draws a heading above empty space, which reads as the app
+     failing rather than the generation being thin.
+
+     Only the field the renderer actually reads is required. Anything optional
+     stays optional. */
+  const REQUIRED_ITEM = {
+    explain:    "content",
+    briefing:   "content",
+    conceptMap: "name",
+    mindMap:    "label",
+    slideDeck:  "title",
+    curriculum: "title",
+  };
+
+  const validateShape = (mode, parsed) => {
+    const want = REQUIRED_SHAPE[mode];
+    if (!want) return { ok: true };
+    if (!parsed || typeof parsed !== "object") {
+      return { ok: false, reason: "nothing usable came back" };
+    }
+    const arr = parsed[want.key];
+    if (!Array.isArray(arr) || arr.length === 0) {
+      return { ok: false, reason: "no " + want.label + " came back" };
+    }
+    /* Every item must carry the field the renderer reads. A single empty one
+       is enough to leave a gap on the page, so this refuses the batch rather
+       than dropping the item \u2014 a numbered list with #3 missing is worse
+       than an honest retry. */
+    const field = REQUIRED_ITEM[mode];
+    if (field) {
+      const empty = arr.filter((x) => !x || typeof x !== "object" ||
+        typeof x[field] !== "string" || !x[field].trim()).length;
+      if (empty) {
+        return { ok: false, reason: empty + " of the " + want.label + " came back empty" };
+      }
+    }
+    return { ok: true };
+  };
+
+  /* Move the correct answer around.
+
+     Elements had the answer at index 0 in 85% of its questions and CodeQuest
+     in 88%, both because whoever writes a question writes the right answer
+     first. A language model does the same thing, and for the same reason: the
+     training text is full of question-then-answer.
+
+     Nothing here shuffled, so the same "always pick the first" strategy
+     applies to AI-generated questions too. Shuffling on arrival, before
+     anything is stored or shown, keeps correctIndex and the option array in
+     step \u2014 they are rewritten together and never read apart. */
+  const shuffleProblem = (p) => {
+    if (!p || !Array.isArray(p.options) || p.options.length < 2) return p;
+    if (!Number.isInteger(p.correctIndex)) return p;
+    const order = p.options.map((_, i) => i);
+    for (let i = order.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = order[i]; order[i] = order[j]; order[j] = t;
+    }
+    return { ...p, options: order.map((i) => p.options[i]), correctIndex: order.indexOf(p.correctIndex) };
+  };
+
+  const validateMcqStructure = (problems) => {
+    if (!Array.isArray(problems)) return { ok: false, reason: "Not an array" };
+    if (problems.length === 0) return { ok: false, reason: "Empty array" };
+    const failures = [];
+    problems.forEach((q, i) => {
+      if (!q || typeof q !== "object") { failures.push(`#${i + 1}: not an object`); return; }
+      if (!q.question || typeof q.question !== "string") failures.push(`#${i + 1}: missing question`);
+      if (!Array.isArray(q.options)) { failures.push(`#${i + 1}: missing options array`); return; }
+      if (q.options.length !== 4) failures.push(`#${i + 1}: has ${q.options.length} options (need exactly 4)`);
+      const optsUnique = new Set(q.options.map((o) => String(o).trim().toLowerCase()));
+      if (optsUnique.size !== q.options.length) failures.push(`#${i + 1}: duplicate options`);
+      if (typeof q.correctIndex !== "number" || q.correctIndex < 0 || q.correctIndex >= q.options.length) {
+        failures.push(`#${i + 1}: invalid correctIndex (${q.correctIndex})`);
+      }
+      const optsLower = q.options.map((o) => String(o).toLowerCase());
+      if (optsLower.some((o) => /^all of (the )?above$|^none of (the )?above$|^both [a-d] and [a-d]$/i.test(o.trim()))) {
+        failures.push(`#${i + 1}: contains "all/none of above" or "both X and Y" distractor`);
+      }
+    /* The explanation is rendered unconditionally after every answer, so a
+       missing one leaves a blank panel where the reason should be \u2014 the
+       moment the question is actually teaching something. The validator
+       checked structure and never checked that. */
+    if (!q.explanation || typeof q.explanation !== "string" || !q.explanation.trim()) {
+      failures.push(`#${i + 1}: no explanation`);
+    } else if (q.explanation.trim().length < 25) {
+      failures.push(`#${i + 1}: explanation is too thin to teach anything`);
+    }
+    });
+    return { ok: failures.length === 0, reason: failures.join("; "), failures };
+  };
+
   const generateContent = async (selectedMode, overrideTopic) => {
     const effectiveTopic = overrideTopic !== undefined ? overrideTopic : topic;
     if (overrideTopic !== undefined && overrideTopic !== topic) setTopic(overrideTopic);
@@ -3960,27 +4179,7 @@ OUTPUT
     // This validator catches structural failures cheaply (regex/length checks) and runs a SEMANTIC pass
     // (asking the model itself to flag broken questions) only when structural checks pass.
     // Retries up to 2 times with feedback. Claude-quality MCQs need no validator.
-    const validateMcqStructure = (problems) => {
-      if (!Array.isArray(problems)) return { ok: false, reason: "Not an array" };
-      if (problems.length === 0) return { ok: false, reason: "Empty array" };
-      const failures = [];
-      problems.forEach((q, i) => {
-        if (!q || typeof q !== "object") { failures.push(`#${i + 1}: not an object`); return; }
-        if (!q.question || typeof q.question !== "string") failures.push(`#${i + 1}: missing question`);
-        if (!Array.isArray(q.options)) { failures.push(`#${i + 1}: missing options array`); return; }
-        if (q.options.length !== 4) failures.push(`#${i + 1}: has ${q.options.length} options (need exactly 4)`);
-        const optsUnique = new Set(q.options.map((o) => String(o).trim().toLowerCase()));
-        if (optsUnique.size !== q.options.length) failures.push(`#${i + 1}: duplicate options`);
-        if (typeof q.correctIndex !== "number" || q.correctIndex < 0 || q.correctIndex >= q.options.length) {
-          failures.push(`#${i + 1}: invalid correctIndex (${q.correctIndex})`);
-        }
-        const optsLower = q.options.map((o) => String(o).toLowerCase());
-        if (optsLower.some((o) => /^all of (the )?above$|^none of (the )?above$|^both [a-d] and [a-d]$/i.test(o.trim()))) {
-          failures.push(`#${i + 1}: contains "all/none of above" or "both X and Y" distractor`);
-        }
-      });
-      return { ok: failures.length === 0, reason: failures.join("; "), failures };
-    };
+
 
     // Generate MCQ-mode JSON with validation + retry. Only runs the validator on local model;
     // Claude bypasses (its mcqVerifyClause in the system prompt is sufficient).
@@ -3991,10 +4190,16 @@ OUTPUT
         return await safeParseJSON(text);
       };
 
-      // Single shot — trust the mcqVerifyClause in the prompt.
-      return await tryOnce();
+      /* This used to `return await tryOnce()` here, which made everything
+         below unreachable. validateMcqStructure \u2014 which catches duplicate
+         options, the wrong number of options, an out-of-range correctIndex and
+         "all of the above" distractors \u2014 never ran once. The prompt asked
+         the model to check its own work, and nothing verified that it had.
 
-      // Local path — validate + retry up to 2 times
+         A question with two identical options, or a correctIndex pointing past
+         the end of the array, reached the learner and was marked against. */
+
+      // Validate, and retry with feedback up to twice more
       let lastFeedback = "";
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
@@ -4095,8 +4300,27 @@ OUTPUT
         prompt = `${sourceClause} Generate ${selectedMode === "recall" ? 12 : 10} flashcards. JSON: { "cards": [{"front": "question", "back": "answer", "category": "tag"}] }`;
         const text = await generate(systemPrompt, prompt, 3000, "Cards array schema.", "questions");
         parsed = await safeParseJSON(text);
-        setContent(parsed.cards);
-        if (selectedMode === "recall") setRecallQueue(parsed.cards.map((_, i) => i));
+        /* Cards went straight from the model into state with no shape check.
+           A card missing its back renders as a blank answer, one that is not
+           an object crashes the deck, and an empty array leaves a study
+           session with nothing in it \u2014 all silently.
+
+           This drops the unusable ones rather than the whole batch, and says
+           so, because nine good cards are worth more than an error message. */
+        const rawCards = Array.isArray(parsed?.cards) ? parsed.cards : [];
+        const cards = rawCards.filter((c) =>
+          c && typeof c === "object" &&
+          typeof c.front === "string" && c.front.trim() &&
+          typeof c.back === "string" && c.back.trim());
+        if (!cards.length) {
+          throw new Error("The cards came back unusable, so nothing has been saved. Try again.");
+        }
+        if (cards.length < rawCards.length) {
+          showToast(`${rawCards.length - cards.length} card${rawCards.length - cards.length === 1 ? " was" : "s were"} incomplete and left out.`);
+        }
+        parsed.cards = cards;
+        setContent(cards);
+        if (selectedMode === "recall") setRecallQueue(cards.map((_, i) => i));
       } else if (selectedMode === "explain") {
         systemPrompt = `Exceptional tutor building real understanding. ${baseEnd}\n\nStart with "why" before "what". Derive results rigorously. Vivid concrete examples. Address misconceptions explicitly. Genuinely illuminating analogy. Respond ONLY with valid JSON.`;
         prompt = `${sourceClause} JSON: { "title": "topic", "summary": "core insight", "sections": [{"heading": "name", "content": "explanation", "citation": "optional"}], "commonMisconceptions": ["..."], "keyTakeaways": ["..."], "analogy": "memorable analogy" }`;
@@ -4107,19 +4331,19 @@ OUTPUT
         systemPrompt = `Design serious MCQs. ${baseEnd}\n\nEvery distractor plausible (real misconception). No "all/none of above". Vary correct position. Explanations teach why correct AND why others fail.${mcqVerifyClause} Respond ONLY with valid JSON.`;
         prompt = `${sourceClause} 6 MCQs. JSON: { "problems": [{"question": "...", "options": ["A","B","C","D"], "correctIndex": 0, "explanation": "...", "topicArea": "sub-topic"}] }`;
         parsed = await generateMcqWithValidation(systemPrompt, prompt, 3000, "practice");
-        setContent(parsed.problems);
+        setContent(parsed.problems.map(shuffleProblem));
       } else if (selectedMode === "errorReview") {
         const spots = persistentProfile.weakSpots.slice(0, 8).map((w) => w.topic);
         if (spots.length === 0) { setError("No weak spots yet — get some questions wrong first to build a review queue."); setMode(null); return; }
         systemPrompt = `Design MCQs SPECIFICALLY on the user's weak spots, varying the angle from how they previously missed them. ${baseEnd}\n\nEvery distractor plausible. No "all/none of above". Explanations teach why correct AND why others fail.${mcqVerifyClause} Respond ONLY with valid JSON.`;
         prompt = `Weak spots to target (give one question per topic, ordered by weakness): ${spots.join(", ")}. 6 MCQs total. JSON: { "problems": [{"question": "...", "options": ["A","B","C","D"], "correctIndex": 0, "explanation": "...", "topicArea": "sub-topic"}] }`;
         parsed = await generateMcqWithValidation(systemPrompt, prompt, 3000, "errorReview");
-        setContent(parsed.problems);
+        setContent(parsed.problems.map(shuffleProblem));
       } else if (selectedMode === "exam") {
         systemPrompt = `Design comprehensive practice exams at the level of high-stakes assessments. ${baseEnd}\n\nMix types and difficulty. Cover full breadth. Genuinely challenging questions.${mcqVerifyClause} Respond ONLY with valid JSON.`;
         prompt = `${sourceClause} 10-question exam mixing easy/medium/hard. JSON: { "problems": [{"question": "...", "options": ["..."], "correctIndex": 0, "explanation": "...", "level": "easy|medium|hard", "topicArea": "..."}] }`;
         parsed = await generateMcqWithValidation(systemPrompt, prompt, 4500, "exam");
-        setContent(parsed.problems);
+        setContent(parsed.problems.map(shuffleProblem));
       } else if (selectedMode === "cheatsheet") {
         systemPrompt = `Create dense one-page study guides. ${baseEnd}\n\nMaximize signal-to-noise. Parallel structure. Formulas with LaTeX, key terms, relationships. Respond ONLY with valid JSON.`;
         prompt = `${sourceClause} JSON: { "title": "...", "sections": [{"heading": "...", "items": [{"term": "...", "definition": "..."}]}], "keyFormulas": ["..."], "mustRemember": ["..."] }`;
@@ -4130,13 +4354,13 @@ OUTPUT
         systemPrompt = `Design diagnostic pre-tests that identify weak spots. ${baseEnd}\n\nEach question targets a specific sub-skill. Cover breadth with minimal redundancy. Mix difficulty.${mcqVerifyClause} Respond ONLY with valid JSON.`;
         prompt = `${sourceClause} 10-question diagnostic. JSON: { "problems": [{"question": "...", "options": ["..."], "correctIndex": 0, "explanation": "...", "skill": "sub-skill", "difficulty": "easy|medium|hard"}] }`;
         parsed = await generateMcqWithValidation(systemPrompt, prompt, 4500, "diagnostic");
-        setContent(parsed.problems);
+        setContent(parsed.problems.map(shuffleProblem));
       } else if (selectedMode === "freeResponse") {
         systemPrompt = `Design free-response exam questions with rubrics. ${baseEnd}\n\nMulti-step reasoning. 5-15 min answers. Clear partial credit. Respond ONLY with valid JSON.`;
         prompt = `${sourceClause} 5 free-response questions. JSON: { "problems": [{"question": "...", "rubric": [{"criterion": "...", "max": 10, "guidance": "..."}], "modelAnswer": "complete reference", "topicArea": "..."}] }`;
         const text = await generate(systemPrompt, prompt, 4500, "FR schema.", "questions");
         parsed = await safeParseJSON(text);
-        setContent(parsed.problems);
+        setContent(parsed.problems.map(shuffleProblem));
       } else if (selectedMode === "derive") {
         systemPrompt = `Guide through rigorous derivations. ${baseEnd}\n\nEvery step justified (rule/theorem/assumption). State goal and strategy upfront. LaTeX rigorously. Highlight pitfalls. Respond ONLY with valid JSON.`;
         prompt = `${sourceClause} JSON: { "title": "...", "goal": "precise statement in LaTeX", "strategy": "approach in 1-2 sentences", "assumptions": ["..."], "steps": [{"step": "LaTeX claim", "justification": "why valid"}], "conclusion": "...", "pitfalls": ["..."] }`;
@@ -4202,6 +4426,19 @@ OUTPUT
         parsed = await safeParseJSON(text);
         setContent(parsed);
       }
+      /* One gate rather than nine. Every mode converges here, so the shape
+         check runs once and covers all of them \u2014 including any added later,
+         provided its key is listed in REQUIRED_SHAPE.
+
+         Throwing rather than continuing is deliberate: the catch below already
+         reports the failure and stops the session being saved, so a mode that
+         came back without its content does not get recorded as a successful
+         generation. */
+      const shape = validateShape(selectedMode, parsed);
+      if (!shape.ok) {
+        throw new Error("The " + selectedMode + " came back incomplete \u2014 " + shape.reason + ". Try again.");
+      }
+
       if (effectiveTopic.trim()) { addConcept(effectiveTopic.trim()); addTimeline(`${selectedMode}: ${effectiveTopic.trim()}`); }
       // Real activity tracking — one increment per successful generation. Drives the Today heatmap.
       logSessionToday();
@@ -4245,9 +4482,21 @@ OUTPUT
       const p = `Concepts the student missed:\n\n${conceptsList}\n\nGenerate ${n} fresh mastery-check MCQs. Different wording, same concepts.`;
       const text = await callClaude(p, sys, false, { maxTokens: 3000 });
       const parsed = await safeParseJSON(text);
-      if (parsed && Array.isArray(parsed.problems) && parsed.problems.length) {
+      /* The mastery check was the one MCQ path that skipped validation. It
+         confirmed the array was non-empty and nothing about the questions in
+         it, so a duplicate option or an out-of-range correctIndex reached the
+         learner here even after the main quiz paths were fixed.
+
+         This is the retry on questions they already got wrong, which makes it
+         the worst place to mark a correct answer against them. */
+      const masteryOk = parsed && Array.isArray(parsed.problems) && parsed.problems.length &&
+        validateMcqStructure(parsed.problems).ok;
+      if (!masteryOk && parsed && Array.isArray(parsed.problems) && parsed.problems.length) {
+        showToast("The mastery check came back malformed, so it has not been started.");
+      }
+      if (masteryOk) {
         setInMasteryCheck(true);
-        setContent(parsed.problems);
+        setContent(parsed.problems.map(shuffleProblem));
         setProblemIndex(0); setSelectedAnswer(null); setSubmitted(false);
         setScore({ correct: 0, total: 0 });
         // IMPORTANT: keep missedProblems intact so the user can revisit if they want; we use a separate flag
@@ -4501,6 +4750,29 @@ OUTPUT
     if (!content || mode !== "recall") return;
     const card = content[cardIndex];
     if (!typedAnswer.trim()) return;
+
+    /* Do not ask the model something already settled.
+
+       If the typed answer matches the reference \u2014 ignoring case, spacing
+       and trailing punctuation \u2014 it is correct, and there is nothing to
+       judge. Sending it anyway gives the model a chance to mark a verbatim
+       correct answer wrong, and that verdict is not cosmetic: it pushes the
+       card back into the repetition queue and denies the learner the mastery
+       credit they earned.
+
+       Judgement is still needed for everything else, which is most answers.
+       This only removes the cases where judgement was never required. */
+    const tidy = (x) => String(x || "").toLowerCase().replace(/\s+/g, " ")
+      .replace(/[.,;:!?]+$/, "").trim();
+    if (tidy(typedAnswer) === tidy(card.back) && tidy(card.back)) {
+      setAnswerFeedback({ correctness: "correct",
+        feedback: "That matches the answer exactly." });
+      setKnownCards((p) => new Set([...p, cardIndex]));
+      setSessionStats((s) => ({ ...s, cardsReviewed: s.cardsReviewed + 1,
+        cardsMastered: s.cardsMastered + 1 }));
+      return;
+    }
+
     setGradingAnswer(true);
     try {
       const sys = `Grade student answers strictly but fairly. Respond ONLY with JSON: { "correctness": "correct|partial|incorrect", "score": 0-100, "feedback": "1-2 sentences" }`;
@@ -4527,9 +4799,30 @@ OUTPUT
       const p = `Q: ${problem.question}\nRubric: ${JSON.stringify(problem.rubric)}\nStudent answer:\n${frAnswer}`;
       const text = await callClaude(p, sys, true, { maxTokens: 1800, ...(deepMode ? { thinking: true, thinkingBudget: 5000 } : {}) });
       const result = await safeParseJSON(text);
-      setFrFeedback(result);
-      setScore((s) => ({ correct: s.correct + (result.score >= 70 ? 1 : 0), total: s.total + 1 }));
+
+      /* The score drives the session record, so it is checked before it is
+         trusted. A model that returns "85%", or 850, or nothing at all would
+         otherwise be counted as-is \u2014 and a malformed grade is worse than no
+         grade, because it looks like a real one.
+
+         Unlike recall, there is no shortcut here: a rubric answer genuinely
+         needs judging. What can be done is refuse to record a number that is
+         not a number. */
+      const raw = result && result.score;
+      const score = typeof raw === "number" ? raw
+        : typeof raw === "string" ? Number(String(raw).replace(/[^0-9.\-]/g, ""))
+        : NaN;
+      if (!isFinite(score) || score < 0 || score > 100) {
+        setFrFeedback({ error: "The grade came back unreadable, so nothing has been recorded. Try again." });
+        return;
+      }
+      setFrFeedback(Object.assign({}, result, { score: score }));
+      setScore((s) => ({ correct: s.correct + (score >= 70 ? 1 : 0), total: s.total + 1 }));
       setSessionStats((s) => ({ ...s, questionsAnswered: s.questionsAnswered + 1, questionsCorrect: s.questionsCorrect + (result.score >= 70 ? 1 : 0) }));
+      /* effectiveTopic is local to generateContent and out of scope here \u2014
+         scopecheck caught it. topic is the component-level state and is what
+         this grading path is actually about. */
+      recordTopicResult(topic, score >= 70);
     } catch {} finally { setFrGrading(false); }
   };
 
@@ -5205,7 +5498,7 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
               { time: "After", task: "Practice quiz on your weak spots", duration: "20 min", action: () => { setView("tutor"); const wt = persistentProfile.weakSpots[0]?.topic; if (wt) { setTopic(wt); generateContent("practice", wt); } } },
               { time: "Evening", task: "Write a learning journal entry", duration: "5 min", action: () => document.getElementById("journal-input")?.focus() },
             ].map((item, i) => (
-              <div key={i} onClick={item.action} style={{ display: "flex", alignItems: "center", gap: 20, padding: "18px 12px 18px 0", borderBottom: i < 2 ? `1px solid ${C.rule}` : "none", cursor: "pointer", borderRadius: 3, transition: "background 0.15s, padding 0.15s" }}
+              <div key={i} onClick={item.action} {...clickableProps(item.action)} style={{ display: "flex", alignItems: "center", gap: 20, padding: "18px 12px 18px 0", borderBottom: i < 2 ? `1px solid ${C.rule}` : "none", cursor: "pointer", borderRadius: 3, transition: "background 0.15s, padding 0.15s" }}
                 onMouseEnter={(e) => { e.currentTarget.style.background = C.paperDark; e.currentTarget.style.paddingLeft = "12px"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.paddingLeft = "0px"; }}>
                 <div style={{ width: 60, fontFamily: fontMono, fontSize: 11, color: C.inkMuted, letterSpacing: "0.08em", textTransform: "uppercase", flexShrink: 0 }}>{item.time}</div>
@@ -5367,6 +5660,7 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
               const ageLabel = ageMs < 60000 ? "just now" : ageMs < 3600000 ? `${Math.floor(ageMs / 60000)}m ago` : ageMs < 86400000 ? `${Math.floor(ageMs / 3600000)}h ago` : `${Math.floor(ageMs / 86400000)}d ago`;
               return (
                 <div key={n.id} onClick={() => { switchToNotebook(n.id); setView("tutor"); }}
+                  {...clickableProps(() => { switchToNotebook(n.id); setView("tutor"); })}
                   style={{ position: "relative", padding: 16, background: C.paper, border: `2px solid ${isActive ? bgColor : C.rule}`, borderRadius: 4, cursor: "pointer", transition: "all 0.15s", display: "flex", flexDirection: "column", gap: 8 }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = bgColor; e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = `0 4px 14px -8px rgba(0,0,0,0.2)`; }}
                   onMouseLeave={(e) => { e.currentTarget.style.borderColor = isActive ? bgColor : C.rule; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
@@ -5741,7 +6035,9 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
         )}
       </div>
 
-      {error && <div style={{ marginBottom: 16, padding: "10px 14px", background: C.accentSoft, color: C.accent, borderRadius: 2, fontSize: 14 }}>{error}</div>}
+      {/* Errors were shown visually only. A screen reader user got silence
+          where a sighted user got a red box. */}
+      {error && <div role="alert" aria-live="assertive" style={{ marginBottom: 16, padding: "10px 14px", background: C.accentSoft, color: C.accent, borderRadius: 2, fontSize: 14 }}>{error}</div>}
 
       {/* Study modifiers */}
       <div style={{ background: C.paperLight, border: `1px solid ${C.rule}`, borderRadius: 5, padding: 16, marginBottom: 16 }}>
@@ -5753,7 +6049,8 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
           <PowerToggle enabled={interleaved} onToggle={() => setInterleaved(!interleaved)} icon={<Repeat size={14} />} title="Interleave"
             desc="Mix sub-topics across the set. Harder now, much better for transfer." />
           <div style={{ padding: 12, border: `2px solid ${lastPrediction || showPrediction ? C.ink : C.rule}`, borderRadius: 2, background: lastPrediction || showPrediction ? C.paperDark : C.paperLight, cursor: showPrediction ? "default" : "pointer" }}
-            onClick={() => { if (!showPrediction) setShowPrediction(true); }}>
+            onClick={() => { if (!showPrediction) setShowPrediction(true); }}
+            {...clickableProps(() => { if (!showPrediction) setShowPrediction(true); })}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: showPrediction ? 6 : 0 }}>
               <Lightbulb size={14} color={lastPrediction || showPrediction ? C.ink : C.inkMuted} />
               <span style={{ fontFamily: fontSans, fontSize: 13, fontWeight: 600 }}>Predict first</span>
@@ -5870,7 +6167,9 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
       const progress = ((cardIndex + 1) / content.length) * 100;
       return (
         <ContentShell onBack={resetToHome} progress={progress} label={`Card ${cardIndex + 1} of ${content.length}`} topic={topic} onExport={exportCurrentContent} reasoningLog={generationLog} modelUsed={AI_MODELS[aiSettings.model]?.label}>
-          <div onClick={() => setFlipped(!flipped)} style={{ cursor: "pointer", perspective: "1000px", aspectRatio: "3/2", marginBottom: 24 }}>
+          <div onClick={() => setFlipped(!flipped)} {...clickableProps(() => setFlipped(!flipped))}
+            aria-label={flipped ? "Card back. Activate to see the front." : "Card front. Activate to see the answer."}
+            style={{ cursor: "pointer", perspective: "1000px", aspectRatio: "3/2", marginBottom: 24 }}>
             <div style={{ position: "relative", width: "100%", height: "100%", transition: "transform 0.5s", transformStyle: "preserve-3d", transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)" }}>
               <CardFace front title="Question" content={card.front} />
               <CardFace back title="Answer" content={card.back} />
@@ -6063,8 +6362,14 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
               </button>
             )}
 
+            {/* The verdict and its explanation are the core of the whole
+                interaction, and they appeared visually only \u2014 a screen
+                reader user submitted an answer and heard nothing back.
+                "polite" rather than "assertive" so it waits for the reader to
+                finish whatever it is saying rather than cutting across it. */}
             {submitted && (
-              <div style={{ background: correct ? C.mossSoft : C.goldSoft, border: `1px solid ${correct ? C.moss : C.gold}`, padding: 18, borderRadius: 2, marginBottom: 20 }}>
+              <div role="status" aria-live="polite" aria-atomic="true"
+                style={{ background: correct ? C.mossSoft : C.goldSoft, border: `1px solid ${correct ? C.moss : C.gold}`, padding: 18, borderRadius: 2, marginBottom: 20 }}>
                 <SectionLabel style={{ color: correct ? C.moss : C.gold, marginBottom: 6 }}>{correct ? "Correct!" : "Not quite."}</SectionLabel>
                 <div style={{ fontFamily: fontSerif, fontSize: 15, color: C.ink, lineHeight: 1.6 }}>
                   <RichText>{problem.explanation}</RichText>
@@ -6094,6 +6399,7 @@ ${isYoung ? "YOUNG LEARNER: Simple language, relatable examples, no mature theme
                 setSubmitted(true);
                 const isC = selectedAnswer === problem.correctIndex;
                 setScore({ correct: score.correct + (isC ? 1 : 0), total: score.total + 1 });
+                recordTopicResult(topic, isC);
                 setSessionStats((s) => ({ ...s, questionsAnswered: s.questionsAnswered + 1, questionsCorrect: s.questionsCorrect + (isC ? 1 : 0) }));
                 // Calibration: record felt confidence vs actual correctness
                 if (pendingConfidence !== null) {
@@ -8406,6 +8712,43 @@ Deno.serve(async (req) => {
 
         {/* ============ REVIEW QUEUE: Spaced Repetition ============ */}
         {/* Surfaces all cards due across notebooks. Uses the existing SM-2 algorithm in rateCard(). */}
+        {/* Weak topics. Written next to the review queue because they answer
+            the same question \u2014 what should I do now \u2014 from the other side:
+            the queue says what is due, this says what is not going well. */}
+        {weakTopics.length > 0 && (
+          <div style={{ background: C.paperLight, border: `1px solid ${C.rule}`, borderRadius: 5,
+            padding: 18, marginBottom: 18 }}>
+            <SectionLabel>Where you are weakest</SectionLabel>
+            <p style={{ fontFamily: fontSerif, fontSize: 13, color: C.inkSoft, fontStyle: "italic",
+              margin: "6px 0 12px" }}>
+              Based on questions you have answered. Topics need at least three attempts to appear.
+            </p>
+            {weakTopics.map((t) => (
+              <div key={t.name} style={{ display: "flex", alignItems: "center", gap: 12,
+                padding: "7px 0", borderBottom: `1px solid ${C.rule}` }}>
+                <span style={{ flex: 1, fontFamily: fontSans, fontSize: 13, color: C.ink }}>{t.name}</span>
+                <span style={{ fontFamily: fontMono, fontSize: 12,
+                  color: t.pct < 50 ? C.gold : C.inkMuted }}>
+                  {t.pct}%
+                </span>
+                <span style={{ fontFamily: fontMono, fontSize: 11, color: C.inkMuted }}>
+                  {t.correct}/{t.seen}
+                </span>
+                {/* Naming a weakness and offering nothing to do about it is
+                    half a feature. generateContent already takes an override
+                    topic, so this is the same path the tutor uses. */}
+                <button
+                  onClick={() => { setTopic(t.name); setView("tutor"); generateContent("practice", t.name); }}
+                  aria-label={`Practice ${t.name}`}
+                  style={{ background: "transparent", border: `1px solid ${C.rule}`, borderRadius: 3,
+                    padding: "3px 10px", fontFamily: fontSans, fontSize: 11, color: C.inkSoft,
+                    cursor: "pointer" }}>
+                  Practice
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div style={{ background: dueCardsList.length > 0 ? C.goldSoft : C.paperLight, border: `1px solid ${dueCardsList.length > 0 ? C.gold : C.rule}`, borderRadius: 5, padding: 20, marginBottom: 14 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexWrap: "wrap", gap: 10 }}>
             <SectionLabel style={{ color: dueCardsList.length > 0 ? C.gold : undefined }}>
@@ -8448,13 +8791,54 @@ Deno.serve(async (req) => {
           <p style={{ fontFamily: fontSerif, fontSize: 13, color: C.inkSoft, fontStyle: "italic", margin: "0 0 14px" }}>
             Every flashcard set, explanation, exam, cheat sheet, curriculum, and concept map you've generated is saved here automatically. Click any card to reopen it in the Tutor — no need to regenerate.
           </p>
+          {/* Search and mode filter. Only shown once there is enough saved for
+              narrowing to be worth the space. */}
+          {savedGenerations.length > 5 && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap", alignItems: "center" }}>
+              <input
+                value={vaultQuery}
+                onChange={(e) => setVaultQuery(e.target.value)}
+                placeholder="Search by topic or title"
+                aria-label="Search the Vault"
+                style={{ flex: "1 1 200px", minWidth: 0, padding: "8px 10px", fontFamily: fontSans,
+                  fontSize: 13, border: `1px solid ${C.rule}`, borderRadius: 4, background: C.paper, color: C.ink }} />
+              <select
+                value={vaultMode}
+                onChange={(e) => setVaultMode(e.target.value)}
+                aria-label="Filter by mode"
+                style={{ padding: "8px 10px", fontFamily: fontSans, fontSize: 13,
+                  border: `1px solid ${C.rule}`, borderRadius: 4, background: C.paper, color: C.ink }}>
+                <option value="all">All modes</option>
+                {vaultModes.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+              {(vaultQuery || vaultMode !== "all") && (
+                <button onClick={() => { setVaultQuery(""); setVaultMode("all"); }}
+                  style={{ background: "transparent", border: "none", fontFamily: fontSans, fontSize: 12,
+                    color: C.inkMuted, cursor: "pointer", textDecoration: "underline" }}>
+                  Clear
+                </button>
+              )}
+              <span aria-live="polite" style={{ fontFamily: fontSans, fontSize: 12, color: C.inkMuted }}>
+                {vaultFiltered.length} of {savedGenerations.length}
+              </span>
+            </div>
+          )}
           {savedGenerations.length === 0 ? (
             <div style={{ fontFamily: fontSerif, fontSize: 13, color: C.inkMuted, fontStyle: "italic" }}>
               Empty for now. Generate something in the AI Tutor and it'll appear here.
             </div>
           ) : (
             <div className="vault-grid stagger-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
-              {savedGenerations.map((g) => {
+              {vaultFiltered.length === 0 && (
+                /* Distinct from the empty-vault message above: there IS saved
+                   work, the filter just excluded it. Saying "empty" here would
+                   be alarming and wrong. */
+                <div style={{ gridColumn: "1 / -1", fontFamily: fontSerif, fontSize: 13,
+                  color: C.inkMuted, fontStyle: "italic" }}>
+                  Nothing matches that. Try a different search or clear the filter.
+                </div>
+              )}
+              {vaultFiltered.map((g) => {
                 const modeBadgeColor = { flashcards: C.gold, practice: C.blue, exam: C.accent, explain: C.moss, cheatsheet: C.ink, recall: C.gold, freeResponse: C.blue, derive: C.moss, critique: C.accent, curriculum: C.moss, conceptMap: C.blue, diagnostic: C.accent }[g.mode] || C.inkSoft;
                 const ageMs = Date.now() - g.createdAt;
                 const ageLabel = ageMs < 60000 ? "just now" : ageMs < 3600000 ? `${Math.floor(ageMs / 60000)}m ago` : ageMs < 86400000 ? `${Math.floor(ageMs / 3600000)}h ago` : `${Math.floor(ageMs / 86400000)}d ago`;
@@ -8471,6 +8855,7 @@ Deno.serve(async (req) => {
                 preview = String(preview).slice(0, 100);
                 return (
                   <div key={g.id} onClick={() => reopenSavedGeneration(g)}
+                    {...clickableProps(() => reopenSavedGeneration(g))}
                     style={{ position: "relative", padding: 14, background: C.paper, border: `1px solid ${C.rule}`, borderRadius: 3, cursor: "pointer", transition: "all 0.15s", display: "flex", flexDirection: "column", gap: 8 }}
                     onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.ink; e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = `0 4px 12px -6px rgba(0,0,0,0.15)`; }}
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.rule; e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
@@ -9591,7 +9976,11 @@ Deno.serve(async (req) => {
       )}
 
       {toast && (
-        <div role="status" style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", zIndex: 200,
+        /* role="status" alone is not reliably announced. aria-live="polite"
+           makes it explicit, and aria-atomic ensures the whole message is read
+           rather than just the changed words. */
+        <div role="status" aria-live="polite" aria-atomic="true"
+          style={{ position: "fixed", bottom: 28, left: "50%", transform: "translateX(-50%)", zIndex: 200,
           background: C.ink, color: C.paper, padding: "12px 22px", borderRadius: 3, fontFamily: fontSans, fontSize: 13, fontWeight: 500,
           letterSpacing: "0.02em", boxShadow: `0 12px 32px -8px rgba(0,0,0,0.5)`, display: "flex", alignItems: "center", gap: 10,
           animation: "fadeUp 0.3s cubic-bezier(0.2,0.7,0.2,1) both", maxWidth: "90vw" }}>
@@ -9694,7 +10083,13 @@ Deno.serve(async (req) => {
         {navItems.map((item) => (
           <div key={item.id}
             ref={(el) => { if (el && view === item.id && isMobile) { try { el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" }); } catch {} } }}
-            className="navtab" onClick={() => { setView(item.id); }} title={item.label} style={{
+            /* The main navigation was keyboard-unreachable \u2014 a keyboard user
+               could not move between views at all. aria-current marks the
+               active tab so a screen reader says where you are. */
+            className="navtab" onClick={() => { setView(item.id); }}
+            {...clickableProps(() => { setView(item.id); })}
+            aria-current={view === item.id ? "page" : undefined}
+            title={item.label} style={{
             padding: "12px 16px", fontFamily: fontSans, fontSize: 13, letterSpacing: "0.04em",
             color: view === item.id ? C.ink : C.inkMuted, fontWeight: view === item.id ? 600 : 500,
             borderBottom: view === item.id ? `2px solid ${C.accent}` : "2px solid transparent",
@@ -9962,6 +10357,17 @@ Deno.serve(async (req) => {
                 <SectionLabel style={{ color: C.gold }}>Answer</SectionLabel>
                 <div style={{ fontSize: 17, marginTop: 4 }}><RichText>{mathSolution.answer}</RichText></div>
               </div>
+              {/* Said plainly, because it is not true here and IS true elsewhere.
+                  Mathema solves every question independently and refuses to show
+                  anything it cannot confirm. This solver has no such check — the
+                  working is written by a model and displayed unverified, and a
+                  confident wrong answer looks exactly like a right one. Telling
+                  the learner to check it is the honest minimum. */}
+              <div style={{ marginTop: 10, fontSize: 12.5, lineHeight: 1.55, color: C.inkSoft }}>
+                This working has not been checked by anything. Treat it as a
+                worked example to follow rather than an answer to trust, and
+                verify the result yourself.
+              </div>
             </div>
           )}
           {mathSolution?.error && <div style={{ marginTop: 14, padding: 12, background: C.accentSoft, color: C.accent, borderRadius: 2, fontSize: 14 }}>{mathSolution.error}</div>}
@@ -10048,7 +10454,7 @@ Deno.serve(async (req) => {
             {persistentProfile.sessionsCount > 0 && (
               <button onClick={() => {
                 if (confirm("Clear all memory? Resets weak spots, recent topics, and exam plan.")) {
-                  setPersistentProfile({ goal: "", examDate: "", examPlan: null, weakSpots: [], preferredStyle: "balanced", recentTopics: [], masteredConcepts: [], totalMinutes: 0, sessionsCount: 0, lastSessionAt: 0, persona: "default", cardStates: {}, freezeTokens: 1, displayName: "", ageOrGrade: "" });
+                  setPersistentProfile({ goal: "", examDate: "", examPlan: null, weakSpots: [], preferredStyle: "balanced", recentTopics: [], masteredConcepts: [], totalMinutes: 0, sessionsCount: 0, lastSessionAt: 0, persona: "default", topicStats: {}, cardStates: {}, freezeTokens: 1, displayName: "", ageOrGrade: "" });
                   setShowWelcomeBack(false); setWelcomeInsights(null); setExamPlan(null);
                 }
               }} style={{ marginTop: 16, background: "transparent", border: "none", fontSize: 11, color: C.inkMuted, cursor: "pointer", padding: 0 }}>
