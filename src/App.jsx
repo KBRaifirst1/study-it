@@ -1090,8 +1090,23 @@ class AppErrorBoundary extends React.Component {
 // MAIN APP
 // ============================================================
 function AppInner() {
-  // Navigation
-  const [view, setView] = useState("today");
+  /* Which screen you were on, kept across a tab being discarded.
+
+     Browsers throw away background tabs under memory pressure and reload them
+     when you return \u2014 routine on mobile. This held the current view in
+     memory only, so coming back to the tab dropped you on "today" no matter
+     where you had been.
+
+     sessionStorage, not localStorage: this is where you were in THIS tab. A
+     second tab opened on purpose should start at today rather than jumping to
+     wherever the first one happened to be. */
+  const VIEW_KEY = "studyit.view.v1";
+  const [view, setView] = useState(() => {
+    try { return sessionStorage.getItem(VIEW_KEY) || "today"; } catch (e) { return "today"; }
+  });
+  useEffect(() => {
+    try { sessionStorage.setItem(VIEW_KEY, view); } catch (e) {}
+  }, [view]);
 
   // Library state
   const [journal, setJournal] = useState(seedJournal);
@@ -1871,6 +1886,19 @@ function AppInner() {
   const [timerActive, setTimerActive] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(25 * 60);
   const [timerMode, setTimerMode] = useState("focus");
+  /* When the current phase should END, as wall-clock time.
+
+     The timer used to count ticks: setInterval every 1000ms doing s - 1.
+     Browsers throttle background tabs \u2014 often to one tick a minute, and on
+     mobile they may suspend the page entirely \u2014 so a 25-minute pomodoro in a
+     background tab took far longer than 25 real minutes, and the whole point
+     of a pomodoro is that it measures real time while you work elsewhere.
+
+     Holding a deadline instead means the interval only READS the clock. A
+     throttled tab catches up the moment it runs again, and a tab that was
+     suspended for ten minutes comes back correct rather than ten minutes
+     behind. */
+  const timerDeadline = useRef(null);
   const [pomodoroCount, setPomodoroCount] = useState(0);
 
   // Session stats
@@ -3711,10 +3739,14 @@ Respond ONLY with valid JSON: { "transcript": "full transcription", "uncertainCo
 
   // Pomodoro
   useEffect(() => {
-    if (!timerActive) return;
+    if (!timerActive) { timerDeadline.current = null; return; }
+    /* Set the deadline from whatever is left when the phase starts or resumes,
+       so pausing and restarting still works. */
+    if (timerDeadline.current === null) timerDeadline.current = Date.now() + timerSeconds * 1000;
     const id = setInterval(() => {
-      setTimerSeconds((s) => {
-        if (s <= 1) {
+      const left = Math.max(0, Math.round((timerDeadline.current - Date.now()) / 1000));
+      setTimerSeconds(() => {
+        if (left <= 0) {
           if (timerMode === "focus") {
             setPomodoroCount((p) => p + 1);
             setSessionStats((stats) => ({ ...stats, minutesStudied: stats.minutesStudied + 25 }));
@@ -3729,24 +3761,40 @@ Respond ONLY with valid JSON: { "transcript": "full transcription", "uncertainCo
               gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
               osc.start(); osc.stop(ctx.currentTime + 0.5);
             } catch {}
+            timerDeadline.current = Date.now() + 5 * 60 * 1000;
             return 5 * 60;
           } else {
             setTimerMode("focus");
+            timerDeadline.current = Date.now() + 25 * 60 * 1000;
             return 25 * 60;
           }
         }
-        return s - 1;
+        return left;
       });
     }, 1000);
     return () => clearInterval(id);
   }, [timerActive, timerMode]);
 
+  /* Minutes studied, measured against the clock rather than counted.
+
+     This added one minute per interval tick, which is only true while the tab
+     is in front. A background tab is throttled and a suspended one stops
+     entirely, so ten minutes of reading in another tab could record as one \u2014
+     or as nothing.
+
+     Now it records however many whole minutes have actually passed since it
+     last counted, so a tab that was away catches up in a single tick. */
+  const minutesMark = useRef(Date.now());
   useEffect(() => {
-    if (!mode) return;
+    if (!mode) { minutesMark.current = Date.now(); return; }
+    minutesMark.current = Date.now();
     const id = setInterval(() => {
-      setSessionStats((s) => ({ ...s, minutesStudied: s.minutesStudied + 1 }));
-      setPersistentProfile((p) => ({ ...p, totalMinutes: p.totalMinutes + 1 }));
-    }, 60 * 1000);
+      const whole = Math.floor((Date.now() - minutesMark.current) / 60000);
+      if (whole < 1) return;
+      minutesMark.current += whole * 60000;
+      setSessionStats((s) => ({ ...s, minutesStudied: s.minutesStudied + whole }));
+      setPersistentProfile((p) => ({ ...p, totalMinutes: (p.totalMinutes || 0) + whole }));
+    }, 15 * 1000);
     return () => clearInterval(id);
   }, [mode]);
 
