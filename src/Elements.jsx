@@ -9023,11 +9023,36 @@ function Home({ onOpen, rec, onReview, onAsk, topics, onOpenGen, onProgress, lev
 }
 
 export default function Elements() {
-  const [open, setOpen] = React.useState(null);
-  const [view, setView] = React.useState(null);      // "ask" | { gen: topic }
+  /* Where you were, kept across a tab being discarded.
+
+     A browser may throw away a background tab at any time and reload it when
+     you come back \u2014 routinely on mobile, and on desktop under memory
+     pressure. These two held the open topic and the current view in memory
+     only, so that reload dropped a learner back at the subject list with no
+     sign anything had happened.
+
+     sessionStorage rather than localStorage on purpose: this is where you
+     were in THIS tab, so a second tab opened deliberately should start fresh
+     rather than jumping to wherever the first one was. */
+  const SCREEN_KEY = "elements.screen.v1";
+  const loadScreen = () => {
+    try {
+      const raw = sessionStorage.getItem(SCREEN_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  };
+  const restored = React.useRef(loadScreen()).current;
+
+  const [open, setOpen] = React.useState(restored.open !== undefined ? restored.open : null);
+  const [view, setView] = React.useState(restored.view !== undefined ? restored.view : null);      // "ask" | { gen: topic }
   const [topics, setTopics] = React.useState(loadTopics);
   const [level, setLevel] = React.useState(null);   // null = show everything
   const [rec, setRec] = React.useState(loadRecord);
+  React.useEffect(() => {
+    try { sessionStorage.setItem(SCREEN_KEY, JSON.stringify({ open: open, view: view })); }
+    catch (e) {}
+  }, [open, view]);
+
   const topicName = React.useCallback(id => {
     const t = topics.find(x => x.id === id);
     return t ? t.name : null;
